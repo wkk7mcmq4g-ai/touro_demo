@@ -4,6 +4,7 @@ namespace App\Services\Elorus;
 
 use App\Models\Transfer;
 use App\Models\TransferCharge;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -63,7 +64,8 @@ class TransferInvoicing
     public function invoicesPerLeadName(Collection $transfers, string $date, bool $draft): InvoiceRun
     {
         return $this->run(function (InvoiceRun $run) use ($transfers, $date, $draft): void {
-            foreach ($transfers->sortBy('TransferDate')->groupBy(fn (Transfer $t): string => (string) $t->LeadName) as $lead => $group) {
+            foreach ($transfers->sortBy('TransferDate')->groupBy(fn (Transfer $t): string => self::leadKey($t->LeadName)) as $group) {
+                $lead = trim((string) $group->first()->LeadName);
                 $this->attempt($run, 'Lead '.($lead ?: '(empty)'), function () use ($run, $group, $date, $draft): void {
                     $billing = $this->customerBilling($this->singleCustomer($group));
                     $this->issueInvoice($run, $group, $billing, $date, $draft, $this->transferLines($group, $billing));
@@ -97,24 +99,29 @@ class TransferInvoicing
                     $run->created[] = $doc['number'] ?: $doc['id'];
                     $this->markInvoiced([$transfer->TransferID], $doc);
 
-                    $wantsPdf = $this->wantsPdf($transfer, $pdf, withCustomers: true);
-                    if ($wantsPdf) {
-                        $this->savePdf($run, $transfer->TransferID, $doc['id'], $doc['number'].'.pdf');
-                        DB::table('transfers')->where('TransferID', $transfer->TransferID)->update(['FLNM' => 'ΑΠΥ']);
+                    $credit = null;
+                    if ($taxi && $creditNote) {
+                        // Before any PDF download, so a PDF problem never leaves the taxi receipt uncancelled.
+                        $this->attempt($run, "Transfer {$transfer->TransferID} credit note", function () use ($run, $transfer, $billing, $draft, $today, &$credit): void {
+                            $credit = $this->elorus->createCreditNote(array_merge(
+                                $this->document($billing, $today, $draft, [$this->line($billing, 'ΑΑ'.$transfer->TaxiReceipt, (float) $transfer->TaxiReceiptAmount)]),
+                                ['documenttype' => config('elorus.taxi_document_type'), 'mydata_document_type' => config('elorus.taxi_mydata_document_type')],
+                            ));
+                            $run->created[] = $credit['number'] ?: $credit['id'];
+                            DB::table('transfers')->where('TransferID', $transfer->TransferID)->update([
+                                'TaxiReceipt_Issued' => 'Ναι',
+                                'ElorusTaxiNumber' => $this->prepend('ElorusTaxiNumber', $credit['number']),
+                            ]);
+                        });
                     }
 
-                    if ($taxi && $creditNote) {
-                        $credit = $this->elorus->createCreditNote(array_merge(
-                            $this->document($billing, $today, $draft, [$this->line($billing, 'ΑΑ'.$transfer->TaxiReceipt, (float) $transfer->TaxiReceiptAmount)]),
-                            ['documenttype' => config('elorus.taxi_document_type'), 'mydata_document_type' => config('elorus.taxi_mydata_document_type')],
-                        ));
-                        $run->created[] = $credit['number'] ?: $credit['id'];
-                        DB::table('transfers')->where('TransferID', $transfer->TransferID)->update([
-                            'TaxiReceipt_Issued' => 'Ναι',
-                            'ElorusTaxiNumber' => $this->prepend('ElorusTaxiNumber', $credit['number']),
-                        ]);
-                        if ($wantsPdf) {
-                            $this->savePdf($run, $transfer->TransferID, $credit['id'], $credit['number'].'.pdf', 'creditnotes');
+                    if ($this->wantsPdf($transfer, $pdf, withCustomers: true)) {
+                        $this->attempt($run, "Transfer {$transfer->TransferID} PDF", function () use ($run, $transfer, $doc): void {
+                            $this->savePdf($run, $transfer->TransferID, $doc['id'], $doc['number'].'.pdf');
+                            DB::table('transfers')->where('TransferID', $transfer->TransferID)->update(['FLNM' => 'ΑΠΥ']);
+                        });
+                        if ($credit) {
+                            $this->attempt($run, "Transfer {$transfer->TransferID} credit note PDF", fn () => $this->savePdf($run, $transfer->TransferID, $credit['id'], $credit['number'].'.pdf', 'creditnotes'));
                         }
                     }
                 });
@@ -173,6 +180,15 @@ class TransferInvoicing
 
     // ---------------------------------------------------------------------------------
 
+    /** Same lead name the way MariaDB compares it (case, accents, trailing spaces ignored). */
+    private static function leadKey(?string $name): string
+    {
+        $name = mb_strtolower(rtrim((string) $name));
+        $decomposed = \Normalizer::normalize($name, \Normalizer::FORM_D);
+
+        return (string) preg_replace('/\p{Mn}/u', '', $decomposed === false ? $name : $decomposed);
+    }
+
     private function run(callable $work): InvoiceRun
     {
         $run = new InvoiceRun;
@@ -194,6 +210,8 @@ class TransferInvoicing
             $work();
         } catch (ElorusException $e) {
             $run->failed[] = ($what ? "{$what}: " : '').$e->getMessage();
+        } catch (ConnectionException) {
+            $run->failed[] = ($what ? "{$what}: " : '').'Elorus did not answer in time. Check in Elorus whether the document was created before trying again.';
         } catch (Throwable $e) {
             report($e);
             $run->failed[] = ($what ? "{$what}: " : '').'unexpected error ('.class_basename($e).')';

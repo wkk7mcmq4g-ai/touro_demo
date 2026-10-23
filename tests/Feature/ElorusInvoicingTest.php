@@ -35,8 +35,11 @@ class ElorusInvoicingTest extends TestCase
 
         $this->actingAs($this->makeLegacyUser('Admin'));
 
+        $pdfWorks = $this->name() !== 'test_taxi_credit_note_is_issued_even_if_the_pdf_fails';
         Http::fake([
-            'api.elorus.com/v1.2/invoices/*/pdf/' => Http::response('%PDF-1.4 fake', 200, ['Content-Type' => 'application/pdf']),
+            'api.elorus.com/v1.2/invoices/*/pdf/' => $pdfWorks
+                ? Http::response('%PDF-1.4 fake', 200, ['Content-Type' => 'application/pdf'])
+                : Http::response(['detail' => 'Not found'], 404),
             'api.elorus.com/v1.2/creditnotes/*/pdf/' => Http::response('%PDF-1.4 credit', 200, ['Content-Type' => 'application/pdf']),
             'api.elorus.com/v1.2/invoices/' => fn () => Http::response(['id' => (string) (2208819500000000000 + ++$this->sequence), 'representation' => "ΤΠΥ Α {$this->sequence}", 'status' => 'draft']),
             'api.elorus.com/v1.2/creditnotes/' => fn () => Http::response(['id' => (string) (2208819600000000000 + ++$this->sequence), 'representation' => "ΠΙΣ Α {$this->sequence}", 'status' => 'draft']),
@@ -152,6 +155,29 @@ class ElorusInvoicingTest extends TestCase
         $a->refresh();
         $this->assertSame(['Ναι', 'ΠΙΣ Α 2'], [$a->TaxiReceipt_Issued, $a->ElorusTaxiNumber]);
         $this->assertSame(2, DB::table('myat_transfers_files')->where('TransferID', $a->TransferID)->count());
+    }
+
+    public function test_taxi_credit_note_is_issued_even_if_the_pdf_fails(): void
+    {
+        $a = $this->transfer(['TaxiReceipt' => '4471', 'TaxiReceiptAmount' => 35]);
+
+        Livewire::test(ListTransfers::class)
+            ->callTableBulkAction('taxiReceipts', [$a], data: ['draft' => true, 'price' => 'sale', 'pdf' => 'all', 'credit' => true])
+            ->assertNotified('Partly done');
+
+        $this->assertSame(['Ναι', 'ΠΙΣ Α 2'], [$a->fresh()->TaxiReceipt_Issued, $a->fresh()->ElorusTaxiNumber]);
+    }
+
+    public function test_one_invoice_per_lead_name_ignores_case_and_accents(): void
+    {
+        $a = $this->transfer(['LeadName' => 'Μαρία Παπά']);
+        $b = $this->transfer(['LeadName' => 'ΜΑΡΙΑ ΠΑΠΑ ']);
+
+        Livewire::test(ListTransfers::class)
+            ->callTableBulkAction('invoicesPerLead', [$a, $b], data: ['date' => '2026-10-23', 'draft' => true]);
+
+        Http::assertSentCount(1);
+        $this->assertSame($a->fresh()->ElorusID, $b->fresh()->ElorusID);
     }
 
     public function test_get_invoice_pdf_and_charge_receipts(): void

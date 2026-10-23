@@ -61,7 +61,8 @@ class ElorusClient
             ])
             ->acceptJson()
             ->asJson()
-            ->timeout(60);
+            ->connectTimeout(15)
+            ->timeout(180);
     }
 
     /** @return array{organization: string, token: string, product: string} */

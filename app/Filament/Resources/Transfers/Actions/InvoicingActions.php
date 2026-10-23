@@ -36,11 +36,11 @@ class InvoicingActions
             self::make('invoicesPerLead', 'Many invoices per lead name', [self::date(), self::draft()],
                 fn (TransferInvoicing $s, Collection $r, array $d) => $s->invoicesPerLeadName($r, $d['date'], $d['draft'])),
 
-            self::make('receipts', 'Many receipts with 1 product per line', [self::draft(), self::priceType(), self::getPdf(TransferInvoicing::PDF_AUTO)],
+            self::make('receipts', 'Many receipts with 1 product per line', [self::draft(), self::priceType(), self::getPdf(TransferInvoicing::PDF_ALL)],
                 fn (TransferInvoicing $s, Collection $r, array $d) => $s->receipts($r, $d['draft'], $d['price'] === 'platform', $d['pdf'])),
 
             self::make('taxiReceipts', 'Taxi many receipts with 1 product per line', [
-                self::draft(), self::priceType(), self::getPdf(TransferInvoicing::PDF_AUTO),
+                self::draft(), self::priceType(), self::getPdf(TransferInvoicing::PDF_ALL),
                 Toggle::make('credit')->label('Issue credit note for the taxi receipt')->default(true),
             ], fn (TransferInvoicing $s, Collection $r, array $d) => $s->receipts($r, $d['draft'], $d['price'] === 'platform', $d['pdf'], taxi: true, creditNote: (bool) $d['credit'])),
 
