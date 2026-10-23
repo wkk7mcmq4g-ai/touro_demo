@@ -27,6 +27,12 @@ class ListMyJobs extends ListRecords
     /** The day's jobs of the signed-in driver: [count, their ID in the daily sends (aid)]. */
     private static function myDay(Carbon $day): array
     {
+        // Today and later come from the one cached list; an earlier date (typed in the form) is asked for.
+        if ($day->gte(today())) {
+            $jobs = MyJobResource::upcomingOn($day);
+
+            return [$jobs->count(), $jobs->max('aid')];
+        }
         $row = VTransfer::query()->where('username', (string) auth()->user()?->username)->whereDate('TransferDate', $day)
             ->toBase()->selectRaw('COUNT(*) AS jobs, MAX(aid) AS aid')->first();
 
@@ -35,7 +41,9 @@ class ListMyJobs extends ListRecords
 
     private static function alreadyRead(Carbon $day, mixed $aid): bool
     {
-        return $aid !== null && DB::table('emails_sent')->whereDate('TransferDate', $day)->where('aID', (int) $aid)->exists();
+        static $cache = [];
+
+        return $aid !== null && ($cache[$day->toDateString().'#'.$aid] ??= DB::table('emails_sent')->where('TransferDate', $day->toDateString())->where('aID', (int) $aid)->exists());
     }
 
     /**
@@ -79,7 +87,7 @@ class ListMyJobs extends ListRecords
     /** PHPRunner's Σήμερα / Αύριο buttons; the view itself covers the next five days. */
     public function getTabs(): array
     {
-        $count = fn (Carbon $day): ?int => MyJobResource::getEloquentQuery()->whereDate('TransferDate', $day)->count() ?: null;
+        $count = fn (Carbon $day): ?int => MyJobResource::upcomingOn($day)->count() ?: null;
 
         return [
             'today' => Tab::make('Σήμερα')->badge($count(today()))
@@ -94,19 +102,12 @@ class ListMyJobs extends ListRecords
     public function getSubheading(): string|Htmlable|null
     {
         $tab = $this->activeTab ?? 'today';
-        $query = MyJobResource::getEloquentQuery();
         $day = match ($tab) {
             'today' => today(),
             'tomorrow' => today()->addDay(),
             default => null,
         };
-        if ($day) {
-            $query->whereDate('TransferDate', $day);
-        } else {
-            $query->whereDate('TransferDate', '>=', today());
-        }
-
-        $jobs = $query->orderBy('TransferDate')->orderBy('TransferTime_sort')->get(['TransferID', 'TransferDate', 'TransferTime', 'Pax']);
+        $jobs = $day ? MyJobResource::upcomingOn($day) : MyJobResource::upcoming();
         $date = ($day ?? today())->locale('el')->translatedFormat('l j F');
 
         if ($jobs->isEmpty()) {

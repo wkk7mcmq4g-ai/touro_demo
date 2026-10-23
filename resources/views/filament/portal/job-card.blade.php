@@ -6,15 +6,13 @@
     // The job's number in the day, earliest first (v_transfers row_num), out of the day's total.
     static $perDay = [];
     $day = $job->TransferDate?->toDateString();
-    $perDay[$day] ??= \App\Models\VTransfer::query()->where('username', $job->username)->whereDate('TransferDate', $day)->count();
+    $perDay[$day] ??= \App\Filament\Portal\Resources\MyJobs\MyJobResource::upcomingOn(\Illuminate\Support\Carbon::parse($day))->count()
+        ?: \App\Models\VTransfer::query()->where('username', $job->username)->whereDate('TransferDate', $day)->count();
     // Today: the next job to drive stands out, the ones already started step back.
-    static $nextToday = false;
     $isToday = $job->TransferDate?->isToday();
     $time = substr((string) $job->TransferTime, 0, 5);
-    if ($isToday && $nextToday === false) {
-        $nextToday = \App\Models\VTransfer::query()->where('username', $job->username)->whereDate('TransferDate', today())
-            ->where('TransferTime', '>=', now()->format('H:i'))->orderBy('TransferTime_sort')->value('TransferID');
-    }
+    $nextToday = $isToday ? \App\Filament\Portal\Resources\MyJobs\MyJobResource::upcomingOn(today())
+        ->first(fn ($j): bool => substr((string) $j->TransferTime, 0, 5) >= now()->format('H:i'))?->TransferID : null;
     $isNext = $isToday && $nextToday && (int) $nextToday === (int) $job->TransferID;
     $isPast = $isToday && ! $isNext && $time < now()->format('H:i');
     $minutes = $isNext ? (int) now()->diffInMinutes(\Illuminate\Support\Carbon::parse(today()->toDateString().' '.$time)) : null;

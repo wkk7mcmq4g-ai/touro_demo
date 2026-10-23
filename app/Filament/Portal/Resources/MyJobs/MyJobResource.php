@@ -16,6 +16,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\Layout\View;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
@@ -64,8 +65,45 @@ class MyJobResource extends Resource
         return parent::getEloquentQuery()->where('username', (string) auth()->user()?->username);
     }
 
-    /** Files of the job the office marked for drivers (PHPRunner myat_drivers_files datasource). */
+    /**
+     * The signed-in user's jobs from today on, read ONCE per request: v_transfers is a heavy view
+     * (materialised on every query), so tab badges, the day summary and the cards' "n/total" all
+     * work from this one list instead of querying the view again.
+     */
+    public static function upcoming(): Collection
+    {
+        static $cache = [];
+        $user = (string) auth()->user()?->username;
+
+        return $cache[$user] ??= VTransfer::query()->where('username', $user)->whereDate('TransferDate', '>=', today())
+            ->orderBy('TransferDate')->orderBy('TransferTime_sort')
+            ->get(['TransferID', 'TransferDate', 'TransferTime', 'Pax', 'aid'])
+            ->each(fn (VTransfer $job) => $job->setAttribute('day', $job->TransferDate?->toDateString()));
+    }
+
+    /** @return Collection<int, VTransfer> */
+    public static function upcomingOn(Carbon $day): Collection
+    {
+        return self::upcoming()->where('day', $day->toDateString())->values();
+    }
+
+    /** Files of the job the office marked for drivers (PHPRunner myat_drivers_files datasource), once per job per request. */
     public static function driverFiles(VTransfer $job): Collection
+    {
+        static $cache = [];
+
+        return $cache[$job->TransferID] ??= self::loadDriverFiles($job);
+    }
+
+    /** Comments on the job, counted once per request. */
+    public static function commentCount(VTransfer $job): int
+    {
+        static $cache = [];
+
+        return $cache[$job->TransferID] ??= DB::table('transfers_comms')->where('TransferID', $job->TransferID)->count();
+    }
+
+    private static function loadDriverFiles(VTransfer $job): Collection
     {
         $transferFiles = DB::table('myat_transfers_files as m')
             ->join('optionvalues as o', 'm.Type', '=', 'o.OptionID')
@@ -109,7 +147,7 @@ class MyJobResource extends Resource
                     ->modalContent(fn (VTransfer $record) => new HtmlString(self::driverFiles($record)->map(fn (array $f): string => '<p><a class="text-primary-600 underline" target="_blank" href="'.e($f['url']).'">'.e($f['name'] ?: 'file').'</a> <span class="text-gray-500 text-sm">'.e((string) $f['type']).'</span></p>')->implode('')))
                     ->modalSubmitAction(false)->modalCancelActionLabel('Close'),
                 Action::make('comments')->button()->outlined()->size('sm')->label('Σχόλια')->icon(Heroicon::OutlinedChatBubbleLeftEllipsis)->color('gray')
-                    ->badge(fn (VTransfer $record): ?int => DB::table('transfers_comms')->where('TransferID', $record->TransferID)->count() ?: null)
+                    ->badge(fn (VTransfer $record): ?int => self::commentCount($record) ?: null)
                     ->visible(fn (): bool => Permissions::allows(auth()->user(), 'transfers_comms', 'view'))
                     ->modalHeading('Σχόλια')
                     ->modalDescription(fn (VTransfer $record) => new HtmlString(DB::table('transfers_comms')->where('TransferID', $record->TransferID)->orderBy('CreatedDate')->get()

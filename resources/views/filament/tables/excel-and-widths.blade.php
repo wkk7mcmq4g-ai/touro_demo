@@ -11,6 +11,21 @@
 <script>
 (() => {
     if (window.myatTables) return;
+
+    /* Feedback while the server answers: a thin bar at the top, and a tab looks pressed at once. */
+    let busy = 0;
+    document.addEventListener('livewire:init', () => {
+        window.Livewire.hook('request', ({ succeed, fail }) => {
+            busy++; document.body.classList.add('myat-busy');
+            const done = () => { if (--busy <= 0) { busy = 0; document.body.classList.remove('myat-busy'); } };
+            succeed(done); fail(done);
+        });
+    });
+    document.addEventListener('click', (e) => {
+        const tab = e.target.closest?.('.fi-tabs-item');
+        if (! tab) return;
+        tab.parentElement?.querySelectorAll('.fi-tabs-item').forEach((t) => t.classList.toggle('myat-tab-pending', t === tab));
+    }, true);
     const T = window.myatTables = {
         widths: @json((object) session('myat.widths', [])),
         active: @json((object) $excelState),
