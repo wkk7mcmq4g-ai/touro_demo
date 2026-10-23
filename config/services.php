@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    // The old PHPRunner app, for links in notifications until a page is ported.
+    'phprunner' => [
+        'url' => env('PHPRUNNER_URL', 'https://myat.touro.gr'),
+    ],
+
 ];

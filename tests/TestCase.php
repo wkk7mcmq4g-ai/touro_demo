@@ -3,6 +3,7 @@
 namespace Tests;
 
 use App\Models\User;
+use App\Support\Lookups;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +18,8 @@ abstract class TestCase extends BaseTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        Lookups::flush();
 
         // phpunit.xml points at `myat_testing`; rebuild it from the schema once per run,
         // so a leftover database can never hide a broken schema file.
@@ -43,6 +46,24 @@ abstract class TestCase extends BaseTestCase
         }
 
         parent::tearDown();
+    }
+
+    /**
+     * Empties tables of the test database. Refuses to run on anything not named *_testing.
+     *
+     * @param  list<string>  $tables
+     */
+    protected function emptyTables(array $tables): void
+    {
+        $database = DB::connection()->getDatabaseName();
+
+        if (! str_ends_with($database, '_testing')) {
+            throw new \RuntimeException("Refusing to empty tables in [{$database}].");
+        }
+
+        foreach ($tables as $table) {
+            DB::table($table)->truncate();
+        }
     }
 
     /**

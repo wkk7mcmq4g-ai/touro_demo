@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * `myat_transfers_files` table of the MyAT database.
@@ -35,5 +37,25 @@ class MyatTransfersFile extends Model
             'TransferID' => 'integer',
             'Type' => 'integer',
         ];
+    }
+
+    /** The file itself is a blob in `Attachment`, as PHPRunner stores it. */
+    protected $hidden = ['Attachment'];
+
+    /** List columns without loading the blob, plus its size in bytes. */
+    public function scopeWithoutBlob(Builder $query): Builder
+    {
+        return $query->select(['ID', 'TransferID', 'Flnm', 'Type'])
+            ->selectRaw('OCTET_LENGTH(`Attachment`) as size_bytes');
+    }
+
+    public function typeOption(): BelongsTo
+    {
+        return $this->belongsTo(OptionValue::class, 'Type', 'OptionID');
+    }
+
+    public function transfer(): BelongsTo
+    {
+        return $this->belongsTo(Transfer::class, 'TransferID', 'TransferID');
     }
 }

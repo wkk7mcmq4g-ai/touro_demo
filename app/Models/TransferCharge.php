@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
@@ -61,5 +62,31 @@ class TransferCharge extends Model
             'ModifiedDate' => 'datetime',
             'ExpenseChargeCategory' => 'integer',
         ];
+    }
+
+    public const PAYMENT_VIA = ['Viva' => 'Viva', 'Cash' => 'Cash', 'ERB' => 'ERB'];
+
+    /** PHPRunner JS: Viva and ERB payments are invoiced, cash is not. */
+    public static function isInvoicedPayment(?string $paymentVia): bool
+    {
+        return in_array($paymentVia, ['Viva', 'ERB'], true);
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (TransferCharge $charge): void {
+            $charge->CreatedDate = now();
+            $charge->CreatedBy = auth()->user()?->username;
+        });
+
+        static::updating(function (TransferCharge $charge): void {
+            $charge->ModifiedDate = now();
+            $charge->ModifiedBy = auth()->user()?->username;
+        });
+    }
+
+    public function transfer(): BelongsTo
+    {
+        return $this->belongsTo(Transfer::class, 'TransferID', 'TransferID');
     }
 }

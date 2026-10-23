@@ -17,6 +17,15 @@ Laravel 13 + Filament 5 rebuild of the PHPRunner app `Touro_MyAT_v2026`. It runs
   `Entry` use this panel; drivers/partners/suppliers get their own portal later.
 - **Legacy names stay as they are**: table and column names (`TransferID`, `cID_Customer`, ...) are
   used verbatim in models; no renaming layer.
+- **Generated columns**: many legacy columns are `GENERATED ALWAYS` (e.g. on `transfers`: issue flags,
+  Assets/Income, voucher `*_Calc`, `TransferTime_sort`). Never write them; list them in the model's
+  `GENERATED` constant so `saving` strips them (see `App\Models\Transfer`).
+- **Blank = `''`, not NULL**: triggers test `= ''` (PHPRunner saved empty strings). Models list such text
+  columns in `BLANK_AS_EMPTY_STRING`.
+- **Files are blobs** in the database (e.g. `myat_transfers_files.Attachment`); read/write them there so
+  PHPRunner keeps working. Never select blob columns in lists.
+- **No outside calls**: no font CDNs, no ui-avatars (local initials avatar), nothing that sends staff or
+  customer data to third parties.
 - **No secrets in git.** Elorus/Telegram/SMTP credentials go in `.env`.
 
 ## Layout

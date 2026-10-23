@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
 
 /**
  * `price_list_transfers` table of the MyAT database.
@@ -36,5 +38,24 @@ class PriceListTransfer extends Model
             'TransferID' => 'integer',
             'PriceValue' => 'float',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        // Triggers recalculate transfers.SalePrice; PHPRunner AfterAdd/AfterEdit also ran this.
+        static::saved(fn (PriceListTransfer $line) => self::updateTransferPrice($line->TransferID));
+        static::deleted(fn (PriceListTransfer $line) => self::updateTransferPrice($line->TransferID));
+    }
+
+    private static function updateTransferPrice(?int $transferId): void
+    {
+        if ($transferId) {
+            DB::statement('CALL `Update_Transfers_Price`(?, ?)', [$transferId, (string) auth()->user()?->username]);
+        }
+    }
+
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(PriceList::class, 'ProductID', 'ID');
     }
 }

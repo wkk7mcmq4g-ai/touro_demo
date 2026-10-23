@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Support\PhpRunnerNotifications;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
@@ -45,5 +47,36 @@ class TransferNote extends Model
             'NoteDateModified' => 'datetime',
             'Alert' => 'integer',
         ];
+    }
+
+    public const CATEGORIES = ['Operational' => 'Operational', 'Financial' => 'Financial'];
+
+    protected static function booted(): void
+    {
+        static::creating(function (TransferNote $note): void {
+            $note->CreatedTimestamp = now();
+            $note->CreatedBy = auth()->user()?->username;
+        });
+
+        static::updating(function (TransferNote $note): void {
+            $note->NoteDateModified = now();
+            $note->ModifiedBy = auth()->user()?->username;
+        });
+
+        // PHPRunner AfterAdd: tell every Admin a new issue was raised.
+        static::created(function (TransferNote $note): void {
+            PhpRunnerNotifications::toGroup(
+                'Admin',
+                title: 'New issue raised',
+                message: "New {$note->Category} issue on case {$note->TransferID}",
+                url: PhpRunnerNotifications::legacyUrl('transfers_view.php?editid1='.$note->TransferID),
+                icon: 'glyphicon-warning-sign',
+            );
+        });
+    }
+
+    public function transfer(): BelongsTo
+    {
+        return $this->belongsTo(Transfer::class, 'TransferID', 'TransferID');
     }
 }

@@ -4,9 +4,12 @@ The new back office for MyAthens Transfers, built with **Laravel 13** and **Fila
 the PHPRunner app one module at a time and uses the **same MariaDB/MySQL database**, so both apps
 can run side by side during the switch-over.
 
-**Done so far:** login with the existing PHPRunner usernames and passwords, the PHPRunner user
-groups and permissions, a dashboard (today / tomorrow / pending / sales this month), and the Users
-screen.
+**Done so far:**
+- Login with the existing PHPRunner usernames and passwords; PHPRunner user groups and permissions.
+- Dashboard (today / tomorrow / pending / sales this month) and the Users screen.
+- **Transfers**: list with Today / Tomorrow / Next 5 days / Pending / All, PHPRunner's colours and TBD
+  warnings, filters and search; the edit form with all lookups and PHPRunner's date rules; tabs for
+  Notes & issues, Price lines, Charges and Files (files stay in the database, as in PHPRunner).
 
 ## Running it on your PC (Windows)
 
