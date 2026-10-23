@@ -2,9 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Filament\Widgets\TransfersOverview;
 use App\Support\Permissions;
-use Livewire\Livewire;
 use Tests\TestCase;
 
 class PermissionsTest extends TestCase
@@ -43,17 +41,18 @@ class PermissionsTest extends TestCase
     {
         $this->actingAs($this->makeLegacyUser('Admin'));
 
-        Livewire::test(TransfersOverview::class)
-            ->assertSee('Today')
-            ->assertSee('Sales this month');
+        $this->get('/admin')->assertOk()
+            ->assertSee('Σήμερα')
+            ->assertSee('Χρειάζονται προσοχή')
+            ->assertSee('Πωλήσεις μήνα');
     }
 
     public function test_office_dashboard_hides_sales(): void
     {
         $this->actingAs($this->makeLegacyUser('Entry'));
 
-        Livewire::test(TransfersOverview::class)
-            ->assertSee('Today')
-            ->assertDontSee('Sales this month');
+        $this->get('/admin')->assertOk()
+            ->assertSee('Σήμερα')
+            ->assertDontSee('Πωλήσεις μήνα');
     }
 }
