@@ -357,13 +357,13 @@
     font-weight: 600;
 }
 
-.fi-btn.fi-color-primary:not(.fi-outlined) {
+.fi-btn.fi-color-primary:not(.fi-outlined):not([aria-pressed='false']):not(input:not(:checked) + .fi-btn) {
     background-image: linear-gradient(135deg, #0aa2ff 0%, #0077d9 100%);
     box-shadow: 0 1px 2px rgb(0 80 160 / 0.25), 0 4px 12px -4px rgb(0 120 230 / 0.45);
     border: 0;
 }
 
-.fi-btn.fi-color-primary:not(.fi-outlined):hover {
+.fi-btn.fi-color-primary:not(.fi-outlined):not([aria-pressed='false']):hover {
     filter: brightness(1.06);
 }
 
@@ -403,10 +403,23 @@
     letter-spacing: -0.02em;
 }
 
-.fi-btn.fi-color-primary:not(.fi-outlined),
-.fi-btn.fi-color-primary:not(.fi-outlined) .fi-icon,
-.fi-btn.fi-color-primary:not(.fi-outlined) > span {
+.fi-btn.fi-color-primary:not(.fi-outlined):not([aria-pressed='false']),
+.fi-btn.fi-color-primary:not(.fi-outlined):not([aria-pressed='false']) .fi-icon,
+.fi-btn.fi-color-primary:not(.fi-outlined):not([aria-pressed='false']) > span {
     color: #fff;
+}
+
+/* toggle buttons not chosen: a quiet outline, the chosen one is the blue button */
+.fi-fo-toggle-buttons .fi-btn[aria-pressed='false'] {
+    color: #334155;
+    background: #fff;
+    box-shadow: 0 0 0 1px rgb(15 23 42 / 0.14);
+}
+
+.dark .fi-fo-toggle-buttons .fi-btn[aria-pressed='false'] {
+    color: #e2e8f0;
+    background: rgb(255 255 255 / 0.05);
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.14);
 }
 
 .fi-tabs:not(.fi-contained) {
@@ -1885,4 +1898,45 @@ html.myat-immersive .fi-header {
     flex-direction: row;
     align-items: center;
     flex-wrap: wrap;
+}
+
+/* ---------- Transfer form: essentials card + tabs, compact, phone friendly ---------- */
+
+.myat-form-essentials {
+    border-top: 3px solid var(--myat-azure);
+}
+
+/* form tabs: one scrollable row on phones instead of wrapping */
+.fi-sc-tabs.fi-contained .fi-sc-tabs-tablist,
+.fi-sc-tabs .fi-tabs {
+    overflow-x: auto;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+}
+
+.fi-sc-tabs .fi-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.fi-sc-tabs .fi-tabs-item {
+    flex: none;
+    white-space: nowrap;
+}
+
+/* denser fields on forms with many inputs */
+.fi-sc-tabs .fi-fo-field-label-content,
+.myat-form-essentials .fi-fo-field-label-content {
+    font-size: 0.8rem;
+}
+
+@media (max-width: 639px) {
+    .fi-sc-tabs .fi-tabs-item {
+        padding-inline: 0.7rem;
+    }
+
+    /* sticky Save / Cancel bar sits above the phone tab bar and the iPhone home bar */
+    .fi-form-actions.fi-sticky,
+    .fi-sticky.fi-form-actions {
+        padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+    }
 }

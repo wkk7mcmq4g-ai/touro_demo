@@ -7,6 +7,9 @@ use Filament\Resources\Pages\CreateRecord;
 
 class CreateTransfer extends CreateRecord
 {
+    /** Save stays in reach at the bottom of the screen, also on phones. */
+    public static bool $formActionsAreSticky = true;
+
     protected static string $resource = TransferResource::class;
 
     protected function getRedirectUrl(): string

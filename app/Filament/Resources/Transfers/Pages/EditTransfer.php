@@ -9,6 +9,9 @@ use Livewire\Attributes\On;
 
 class EditTransfer extends EditRecord
 {
+    /** Save stays in reach at the bottom of the screen, also on phones. */
+    public static bool $formActionsAreSticky = true;
+
     protected static string $resource = TransferResource::class;
 
     protected function getHeaderActions(): array

@@ -460,6 +460,27 @@ class TransfersTest extends TestCase
         $this->assertSame(0, Transfer::query()->count());
     }
 
+    public function test_the_form_marks_the_tab_with_an_error_and_accepts_both_platform_spellings(): void
+    {
+        $this->actingAs($this->makeLegacyUser('Entry'));
+        // The insert trigger writes "Ναί", the update trigger "Ναι": both must open and save.
+        $transfer = $this->transfer(['Platform' => 'Ναί', 'PlatformPrice' => 12]);
+
+        Livewire::test(EditTransfer::class, ['record' => $transfer->getKey()])
+            ->assertFormSet(['Platform' => 'Ναι'])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $page = Livewire::test(EditTransfer::class, ['record' => $transfer->getKey()])
+            ->fillForm(['ImportDate' => null])
+            ->call('save')
+            ->assertHasFormErrors(['ImportDate' => 'required']);
+        preg_match_all('/<button[^>]*fi-tabs-item.*?<\/button>/s', $page->html(), $tabs);
+        $labels = array_map(fn (string $tab): string => trim(preg_replace('/\s+/', ' ', strip_tags($tab))), $tabs[0]);
+        $this->assertContains('Trip !', $labels);
+        $this->assertContains('Pricing', $labels);
+    }
+
     public function test_editing_keeps_old_dates_but_cannot_move_a_transfer_into_the_past(): void
     {
         $user = $this->makeLegacyUser('Entry');

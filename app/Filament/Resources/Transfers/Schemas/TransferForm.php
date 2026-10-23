@@ -14,9 +14,10 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Components\ToggleButtons;
-use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Text;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
@@ -30,36 +31,57 @@ class TransferForm
     public static function configure(Schema $schema): Schema
     {
         return $schema
-            ->columns(3)
+            ->columns(1)
             ->components([
-                Group::make()
-                    ->columnSpan(['lg' => 2])
-                    ->components([
-                        self::tripSection(),
-                        self::passengerSection(),
-                        self::assistantSection(),
+                // What every transfer needs, always in view (all the required fields are here, so a
+                // missing one is never hidden behind a tab).
+                self::essentials(),
+                // Everything else, one tab per group.
+                Tabs::make('details')
+                    ->contained()
+                    ->persistTabInQueryString('tab')
+                    ->tabs([
+                        self::tab('Trip', Heroicon::OutlinedMapPin, self::tripTab(), ['SupplierCode', 'ImportDate', 'Flight_Ship_Num_From', 'TicketsRequested', 'PaymentType']),
+                        self::tab('Passenger', Heroicon::OutlinedUser, self::passengerTab(), ['PassengerName', 'LeadName', 'LeadPhone', 'LesseeName', 'Notes', 'DriverNotes']),
+                        self::tab('Pricing', Heroicon::OutlinedBanknotes, self::pricingTab(), ['PurchasePrice', 'SalePrice', 'PricePaid', 'PriceRcvd', 'ExtraIncome', 'Platform', 'PlatformPrice', 'TobeInvoiced', 'InvoicedIssued', 'InvoicedRcvd', 'SalesInvoiceNum', 'PurchaseInvoiceNum', 'ExpenseRcvd', 'ExpensePaid', 'ElorusID', 'VPOS', 'PaymentOnHoldFlag']),
+                        self::tab('Assistant', Heroicon::OutlinedUserGroup, self::assistantTab(), ['Assistant', 'cID_Assistant', 'Assistant_Price', 'AssistantStatus']),
+                        self::tab('Voucher', Heroicon::OutlinedTicket, self::voucherTab(), ['Voucher_StartDt', 'Voucher_StartTime', 'Voucher_EndDt', 'Voucher_EndTime']),
                     ]),
-                Group::make()
-                    ->columnSpan(['lg' => 1])
-                    ->components([
-                        self::statusSection(),
-                        self::pricingSection(),
-                        self::voucherSection(),
-                        self::auditText(),
-                    ]),
+                self::auditText(),
             ]);
     }
 
-    private static function tripSection(): Section
+    /**
+     * A tab of the form. A validation error on one of its fields shows as a red "!" on the tab, so it is
+     * found even when another tab is open.
+     *
+     * @param  list<string>  $fields
+     */
+    private static function tab(string $label, Heroicon $icon, array $components, array $fields): Tab
     {
-        return Section::make('Trip')
-            ->columns(['md' => 2, 'xl' => 3])
+        $hasError = fn ($livewire): bool => collect($fields)->contains(fn (string $field): bool => $livewire->getErrorBag()->has("data.{$field}"));
+
+        return Tab::make($label)
+            ->icon($icon)
+            ->badge(fn ($livewire): ?string => $hasError($livewire) ? '!' : null)
+            ->badgeColor('danger')
+            ->columns(['default' => 2, 'lg' => 4])
+            ->schema($components);
+    }
+
+    private static function essentials(): Section
+    {
+        return Section::make()
+            ->compact()
+            ->columns(['default' => 2, 'lg' => 4, 'xl' => 6])
+            ->extraAttributes(['class' => 'myat-form-essentials'])
             ->components([
                 Select::make('cID_Customer')
                     ->label('Customer')
                     ->options(fn (): array => Lookups::customers())
                     ->searchable()
                     ->required()
+                    ->columnSpan(['default' => 2, 'lg' => 2])
                     // PHPRunner's "Add new" on the customer lookup.
                     ->createOptionForm([
                         TextInput::make('CounterShortName')->label('Επωνυμία')->required()->maxLength(500),
@@ -82,12 +104,9 @@ class TransferForm
                     ->label('Type')
                     ->options(fn (): array => Lookups::optionValues('TransferType'))
                     ->required(),
-                TextInput::make('SupplierCode')
-                    ->label('Supplier code')
-                    ->maxLength(50),
-                DatePicker::make('ImportDate')
-                    ->label('Booked on')
-                    ->default(now())
+                Select::make('Status')
+                    ->options(fn (): array => Lookups::statusesFor(auth()->user()?->groupid))
+                    ->default('Pending')
                     ->required(),
                 DatePicker::make('TransferDate')
                     ->label('Date')
@@ -102,186 +121,186 @@ class TransferForm
                 TextInput::make('From')
                     ->datalist(fn (): array => array_keys(Lookups::pickupPlaces()))
                     ->autocomplete(false)
-                    ->required(),
+                    ->required()
+                    ->columnSpan(['default' => 2, 'lg' => 2]),
                 TextInput::make('To')
                     ->datalist(fn (): array => array_keys(Lookups::destinations()))
-                    ->autocomplete(false),
+                    ->autocomplete(false)
+                    ->columnSpan(['default' => 2, 'lg' => 2]),
                 TextInput::make('Pax')
                     ->maxLength(50),
-                Textarea::make('Flight_Ship_Num_From')
-                    ->label('Flight / ship')
-                    ->rows(2)
-                    ->columnSpan(['md' => 2, 'xl' => 1]),
                 Select::make('CarTypeID')
                     ->label('Car type')
                     ->options(fn (): array => Lookups::optionValues('CarType'))
                     ->required(),
                 Select::make('CoachCompanyID')
-                    ->label('Vehicle / coach company')
+                    ->label('Vehicle / coach')
                     ->options(fn (): array => Lookups::coaches())
                     ->searchable()
-                    ->helperText('Own vehicles set purchase price to 0 when saved.'),
+                    ->hintIcon(Heroicon::OutlinedInformationCircle, 'Own vehicles set purchase price to 0 when saved.')
+                    ->columnSpan(['default' => 2, 'lg' => 1, 'xl' => 2]),
+                // Calculated by the database from the open notes; shown, never saved.
+                TextInput::make('OperationalIssuesFlag')
+                    ->label('Operational issue')
+                    ->disabled()
+                    ->dehydrated(false)
+                    ->placeholder('No')
+                    ->visibleOn('edit'),
+                TextInput::make('FinancialIssuesFlag')
+                    ->label('Financial issue')
+                    ->disabled()
+                    ->dehydrated(false)
+                    ->placeholder('No')
+                    ->visibleOn('edit'),
             ]);
     }
 
-    private static function passengerSection(): Section
+    private static function tripTab(): array
     {
-        return Section::make('Passenger')
-            ->columns(2)
-            ->components([
-                Textarea::make('PassengerName')->label('Passenger name(s)')->rows(2),
-                Textarea::make('LeadName')
-                    ->label('Lead name')
-                    ->rows(2)
-                    // PHPRunner (add page): for some customers the lessee is the lead passenger.
-                    ->live(onBlur: true)
-                    ->afterStateUpdated(function (string $operation, ?string $state, Get $get, Set $set): void {
-                        // The customer's "Lessee = lead passenger" flag (counterparties.LeadName), as the
-                        // database trigger uses it; PHPRunner's page had customers 11, 37, 117 hard-coded.
-                        if ($operation === 'create' && filled($get('cID_Customer'))
-                            && (int) DB::table('counterparties')->where('CID', $get('cID_Customer'))->value('LeadName') === 1) {
-                            $set('LesseeName', $state);
-                        }
-                    }),
-                Textarea::make('LeadPhone')->label('Lead phone')->rows(1),
-                Textarea::make('LesseeName')
-                    ->label('Lessee')
-                    ->rows(1)
-                    ->helperText('Filled from the customer when you pick it; if left empty, it is filled when saved.'),
-                Textarea::make('Notes')->rows(3)->columnSpanFull(),
-                Textarea::make('DriverNotes')
-                    ->label('Driver notes')
-                    ->rows(2)
-                    ->columnSpanFull()
-                    // PHPRunner's ">>" button next to Notes.
-                    ->hintAction(Action::make('copyNotes')
-                        ->label('Copy from Notes')
-                        ->icon(Heroicon::OutlinedArrowDown)
-                        ->action(fn (Get $get, Set $set) => $set('DriverNotes', $get('Notes')))),
-            ]);
+        return [
+            TextInput::make('SupplierCode')
+                ->label('Supplier code')
+                ->maxLength(50),
+            DatePicker::make('ImportDate')
+                ->label('Booked on')
+                ->default(now())
+                ->required(),
+            Select::make('TicketsRequested')
+                ->label('Tickets')
+                ->options(array_combine($values = ['Contacted', 'Paid in Advance', 'Cash', "Purchased by\u{a0}client", 'No tickets needed'], $values)),
+            Select::make('PaymentType')
+                ->label('Payment type')
+                ->options(array_combine($values = ['Viator', 'Cash', 'PayPal', 'Eurobank', 'Viva', 'Why Athens', 'GYG'], $values))
+                ->hintIcon(Heroicon::OutlinedInformationCircle, 'Filled from the customer when you pick it; if left empty, it is filled when saved.'),
+            Textarea::make('Flight_Ship_Num_From')
+                ->label('Flight / ship')
+                ->rows(2)
+                ->columnSpanFull(),
+        ];
     }
 
-    private static function assistantSection(): Section
+    private static function passengerTab(): array
     {
-        return Section::make('Assistant')
-            ->columns(['md' => 2, 'xl' => 4])
-            ->collapsible()
-            ->collapsed(fn (?Transfer $record): bool => blank($record?->Assistant))
-            ->components([
-                TextInput::make('Assistant')
-                    ->datalist(fn (): array => array_keys(Lookups::assistantNames()))
-                    ->autocomplete(false),
-                Select::make('cID_Assistant')
-                    ->label('Assistant company')
-                    ->options(fn (): array => Lookups::assistantCompanies())
-                    ->searchable(),
-                TextInput::make('Assistant_Price')
-                    ->label('Assistant price')
-                    ->numeric()
-                    ->prefix('€'),
-                Select::make('AssistantStatus')
-                    ->label('Assistant status')
-                    ->options(array_combine($values = ['Request', 'Client Rejected', 'Payment Pending', 'Payment Received'], $values)),
-            ]);
+        return [
+            Textarea::make('LeadName')
+                ->label('Lead name')
+                ->rows(1)
+                ->autosize()
+                // PHPRunner (add page): for some customers the lessee is the lead passenger.
+                ->live(onBlur: true)
+                ->afterStateUpdated(function (string $operation, ?string $state, Get $get, Set $set): void {
+                    // The customer's "Lessee = lead passenger" flag (counterparties.LeadName), as the
+                    // database trigger uses it; PHPRunner's page had customers 11, 37, 117 hard-coded.
+                    if ($operation === 'create' && filled($get('cID_Customer'))
+                        && (int) DB::table('counterparties')->where('CID', $get('cID_Customer'))->value('LeadName') === 1) {
+                        $set('LesseeName', $state);
+                    }
+                })
+                ->columnSpan(['default' => 2, 'lg' => 2]),
+            Textarea::make('LeadPhone')->label('Lead phone')->rows(1)->autosize(),
+            Textarea::make('LesseeName')
+                ->label('Lessee')
+                ->rows(1)
+                ->autosize()
+                ->hintIcon(Heroicon::OutlinedInformationCircle, 'Filled from the customer when you pick it; if left empty, it is filled when saved.'),
+            Textarea::make('PassengerName')->label('Passenger name(s)')->rows(2)->autosize()->columnSpanFull(),
+            Textarea::make('Notes')->rows(2)->autosize()->columnSpan(['default' => 2, 'lg' => 2]),
+            Textarea::make('DriverNotes')
+                ->label('Driver notes')
+                ->rows(2)
+                ->autosize()
+                ->columnSpan(['default' => 2, 'lg' => 2])
+                // PHPRunner's ">>" button next to Notes.
+                ->hintAction(Action::make('copyNotes')
+                    ->label('Copy from Notes')
+                    ->icon(Heroicon::OutlinedArrowDown)
+                    ->action(fn (Get $get, Set $set) => $set('DriverNotes', $get('Notes')))),
+        ];
     }
 
-    private static function statusSection(): Section
+    private static function assistantTab(): array
     {
-        return Section::make('Status')
-            ->components([
-                Select::make('Status')
-                    ->options(fn (): array => Lookups::statusesFor(auth()->user()?->groupid))
-                    ->default('Pending')
-                    ->required(),
-                Select::make('PaymentType')
-                    ->label('Payment type')
-                    ->options(array_combine($values = ['Viator', 'Cash', 'PayPal', 'Eurobank', 'Viva', 'Why Athens', 'GYG'], $values))
-                    ->helperText('Filled from the customer when you pick it; if left empty, it is filled when saved.'),
-                Select::make('TicketsRequested')
-                    ->label('Tickets')
-                    ->options(array_combine($values = ['Contacted', 'Paid in Advance', 'Cash', "Purchased by\u{a0}client", 'No tickets needed'], $values)),
-                Grid::make(2)->components([
-                    // Calculated by the database from the open notes; shown, never saved.
-                    TextInput::make('OperationalIssuesFlag')
-                        ->label('Operational issue')
-                        ->disabled()
-                        ->dehydrated(false)
-                        ->placeholder('No'),
-                    TextInput::make('FinancialIssuesFlag')
-                        ->label('Financial issue')
-                        ->disabled()
-                        ->dehydrated(false)
-                        ->placeholder('No'),
-                ]),
-            ]);
+        return [
+            TextInput::make('Assistant')
+                ->datalist(fn (): array => array_keys(Lookups::assistantNames()))
+                ->autocomplete(false)
+                ->columnSpan(['default' => 2, 'lg' => 1]),
+            Select::make('cID_Assistant')
+                ->label('Assistant company')
+                ->options(fn (): array => Lookups::assistantCompanies())
+                ->searchable()
+                ->columnSpan(['default' => 2, 'lg' => 1]),
+            TextInput::make('Assistant_Price')
+                ->label('Assistant price')
+                ->numeric()
+                ->prefix('€'),
+            Select::make('AssistantStatus')
+                ->label('Assistant status')
+                ->options(array_combine($values = ['Request', 'Client Rejected', 'Payment Pending', 'Payment Received'], $values)),
+        ];
     }
 
-    private static function pricingSection(): Section
+    private static function pricingTab(): array
     {
         $money = fn (string $name, string $label): TextInput => TextInput::make($name)
             ->label($label)
             ->numeric()
             ->prefix('€');
 
-        $yesNo = ['Ναι' => 'Ναι', 'Όχι' => 'Όχι'];
-
-        return Section::make('Pricing & invoicing')
-            ->columns(2)
-            ->components([
-                $money('PurchasePrice', 'Purchase'),
-                $money('SalePrice', 'Sale')
-                    ->helperText(fn (?Transfer $record): ?string => $record?->priceLines()->where('ProductID', '<>', '')->exists()
-                        ? 'Set from the price lines below.'
-                        : null),
-                $money('PricePaid', 'Paid'),
-                $money('PriceRcvd', 'Received'),
-                $money('ExtraIncome', 'Extra income'),
-                // As in PHPRunner: not typed on the form (it is edited in the list / comes from charges).
-                $money('Expense', 'Expenses')->disabled()->dehydrated(false),
-                Select::make('Platform')->options(['Όχι' => 'Όχι', 'Ναι' => 'Ναι'])->live(),
-                // Only when the booking came through a platform; a stored price is kept as it is.
-                $money('PlatformPrice', 'Platform price')
-                    ->disabled(fn (Get $get): bool => $get('Platform') !== 'Ναι')
-                    ->dehydrated(),
-                ToggleButtons::make('TobeInvoiced')
-                    ->label('To be invoiced')
-                    ->options(['Όχι' => 'Όχι', 'Τιμολόγιο' => 'Τιμολόγιο', 'Απόδειξη' => 'Απόδειξη'])
-                    ->inline()
-                    ->helperText('Left empty, it is filled from the customer when saved.')
-                    ->columnSpanFull(),
-                Select::make('InvoicedIssued')->label('Invoice issued')->options(['Ναι' => 'Ναι']),
-                Select::make('InvoicedRcvd')
-                    ->label('Purchase invoice')
-                    ->options(['Δε θα λάβω' => 'Δε θα λάβω', 'Έχω λάβει' => 'Έχω λάβει']),
-                TextInput::make('SalesInvoiceNum')->label('Sales invoice no.'),
-                TextInput::make('PurchaseInvoiceNum')->label('Purchase invoice no.'),
-                Select::make('ExpenseRcvd')->label('Expenses received')->options(['Ναί' => 'Ναί', 'Όχι' => 'Όχι']),
-                Select::make('ExpensePaid')->label('Expenses paid')->options(['Ναί' => 'Ναί', 'Όχι' => 'Όχι']),
-                TextInput::make('ElorusID')->label('Elorus ID'),
-                TextInput::make('VPOS')->label('VPOS'),
-                Select::make('PaymentOnHoldFlag')->label('Payment on hold')->options(['Ναι' => 'Ναι']),
-            ]);
+        return [
+            $money('PurchasePrice', 'Purchase'),
+            $money('SalePrice', 'Sale')
+                ->hint(fn (?Transfer $record): ?string => $record?->priceLines()->where('ProductID', '<>', '')->exists()
+                    ? 'From the price lines'
+                    : null),
+            $money('PricePaid', 'Paid'),
+            $money('PriceRcvd', 'Received'),
+            $money('ExtraIncome', 'Extra income'),
+            // As in PHPRunner: not typed on the form (it is edited in the list / comes from charges).
+            $money('Expense', 'Expenses')->disabled()->dehydrated(false),
+            // The database triggers write both "Ναι" and "Ναί"; the form shows (and saves) "Ναι".
+            Select::make('Platform')->options(['Όχι' => 'Όχι', 'Ναι' => 'Ναι'])->live()
+                ->afterStateHydrated(fn (Select $component, $state) => $state === 'Ναί' ? $component->state('Ναι') : null),
+            // Only when the booking came through a platform; a stored price is kept as it is.
+            $money('PlatformPrice', 'Platform price')
+                ->disabled(fn (Get $get): bool => $get('Platform') !== 'Ναι')
+                ->dehydrated(),
+            ToggleButtons::make('TobeInvoiced')
+                ->label('To be invoiced')
+                ->options(['Όχι' => 'Όχι', 'Τιμολόγιο' => 'Τιμολόγιο', 'Απόδειξη' => 'Απόδειξη'])
+                ->inline()
+                ->hintIcon(Heroicon::OutlinedInformationCircle, 'Left empty, it is filled from the customer when saved.')
+                ->columnSpan(['default' => 2, 'lg' => 2]),
+            Select::make('InvoicedIssued')->label('Invoice issued')->options(['Ναι' => 'Ναι']),
+            Select::make('InvoicedRcvd')
+                ->label('Purchase invoice')
+                ->options(['Δε θα λάβω' => 'Δε θα λάβω', 'Έχω λάβει' => 'Έχω λάβει']),
+            TextInput::make('SalesInvoiceNum')->label('Sales invoice no.'),
+            TextInput::make('PurchaseInvoiceNum')->label('Purchase invoice no.'),
+            Select::make('ExpenseRcvd')->label('Expenses received')->options(['Ναί' => 'Ναί', 'Όχι' => 'Όχι']),
+            Select::make('ExpensePaid')->label('Expenses paid')->options(['Ναί' => 'Ναί', 'Όχι' => 'Όχι']),
+            TextInput::make('ElorusID')->label('Elorus ID'),
+            TextInput::make('VPOS')->label('VPOS'),
+            Select::make('PaymentOnHoldFlag')->label('Payment on hold')->options(['Ναι' => 'Ναι']),
+        ];
     }
 
-    private static function voucherSection(): Section
+    private static function voucherTab(): array
     {
         $calc = fn (?Transfer $record, string $column, string $format): ?string => $record?->{$column}
             ? 'Calculated: '.Carbon::parse($record->{$column})->format($format)
             : null;
 
-        return Section::make('Voucher')
-            ->columns(2)
-            ->collapsible()
-            ->components([
-                DatePicker::make('Voucher_StartDt')->label('Start date')
-                    ->helperText(fn (?Transfer $record) => $calc($record, 'Voucher_Start_Date_Calc', 'd/m/Y')),
-                TimePicker::make('Voucher_StartTime')->label('Start time')->seconds(false)
-                    ->helperText(fn (?Transfer $record) => $calc($record, 'Voucher_Start_StartTime_Calc', 'H:i')),
-                DatePicker::make('Voucher_EndDt')->label('End date')
-                    ->helperText(fn (?Transfer $record) => $calc($record, 'Voucher_End_Date_Calc', 'd/m/Y')),
-                TimePicker::make('Voucher_EndTime')->label('End time')->seconds(false)
-                    ->helperText(fn (?Transfer $record) => $calc($record, 'Voucher_End_Time_Calc', 'H:i')),
-            ]);
+        return [
+            DatePicker::make('Voucher_StartDt')->label('Start date')
+                ->helperText(fn (?Transfer $record) => $calc($record, 'Voucher_Start_Date_Calc', 'd/m/Y')),
+            TimePicker::make('Voucher_StartTime')->label('Start time')->seconds(false)
+                ->helperText(fn (?Transfer $record) => $calc($record, 'Voucher_Start_StartTime_Calc', 'H:i')),
+            DatePicker::make('Voucher_EndDt')->label('End date')
+                ->helperText(fn (?Transfer $record) => $calc($record, 'Voucher_End_Date_Calc', 'd/m/Y')),
+            TimePicker::make('Voucher_EndTime')->label('End time')->seconds(false)
+                ->helperText(fn (?Transfer $record) => $calc($record, 'Voucher_End_Time_Calc', 'H:i')),
+        ];
     }
 
     private static function auditText(): Text
