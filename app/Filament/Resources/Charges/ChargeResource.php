@@ -133,7 +133,7 @@ class ChargeResource extends Resource
                         default => $q,
                     }),
                 SelectFilter::make('ExpenseChargeCategory')->label('Κατηγορία')->options(fn (): array => Lookups::optionIds('ExpenseChargeCategory')),
-                Filter::make('dates')->columnSpan(2)->columns(2)->schema([
+                Filter::make('dates')->columnSpanFull()->columns(2)->schema([
                     DatePicker::make('from')->label('Transfer date from'),
                     DatePicker::make('until')->label('until'),
                 ])->query(fn (Builder $q, array $data): Builder => $q

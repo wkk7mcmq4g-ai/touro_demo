@@ -47,8 +47,10 @@
         for (const [name, cols] of Object.entries(T.widths)) {
             for (const [k, w] of Object.entries(cols || {})) {
                 const s = `[wire\\:name="${CSS.escape(name)}"]`;
-                out.push(`${s} .fi-ta-table th.fi-ta-header-cell-${CSS.escape(k)}, ${s} .fi-ta-table td.fi-ta-cell-${CSS.escape(k)} { width:${w}px; min-width:${w}px; max-width:${w}px; overflow:hidden; text-overflow:ellipsis; }`);
-                out.push(`${s} .fi-ta-table td.fi-ta-cell-${CSS.escape(k)} * { min-width:0 !important; max-width:100%; }`);
+                out.push(`${s} .fi-ta-table th.fi-ta-header-cell-${CSS.escape(k)}, ${s} .fi-ta-table td.fi-ta-cell-${CSS.escape(k)} { width:${w}px; min-width:${w}px; max-width:${w}px; overflow:hidden; }`);
+                // A resized column wraps its text onto more lines instead of cutting it off.
+                out.push(`${s} .fi-ta-table td.fi-ta-cell-${CSS.escape(k)} *, ${s} .fi-ta-table th.fi-ta-header-cell-${CSS.escape(k)} * { min-width:0 !important; max-width:100%; white-space:normal !important; overflow-wrap:break-word; word-break:normal; text-overflow:clip !important; -webkit-line-clamp:unset !important; }`);
+                out.push(`${s} .fi-ta-table th.fi-ta-header-cell-${CSS.escape(k)} { white-space:normal !important; }`);
             }
         }
         document.getElementById('myat-column-widths').textContent = out.join('\n');

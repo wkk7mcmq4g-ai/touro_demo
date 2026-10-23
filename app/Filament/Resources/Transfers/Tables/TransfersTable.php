@@ -17,7 +17,6 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\Summarizers\Count;
 use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\BaseFilter;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
@@ -57,8 +56,6 @@ class TransfersTable
             ->persistSortInSession()
             ->columns($columns)
             ->filters(self::filters())
-            ->filtersLayout(FiltersLayout::AboveContentCollapsible)
-            ->filtersFormColumns(['sm' => 2, 'lg' => 4, 'xl' => 6])
             ->recordActions([
                 EditAction::make(),
                 TransferActions::copy()->iconButton(),
@@ -240,7 +237,7 @@ class TransfersTable
                 filled($data['until'] ?? null) => "{$label} until ".Carbon::parse($data['until'])->format('d/m/Y'),
                 default => null,
             })
-            ->columnSpan(2);
+            ->columnSpanFull();
 
         return [
             // Search panel

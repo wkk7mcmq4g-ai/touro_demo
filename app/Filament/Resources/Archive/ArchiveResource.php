@@ -94,7 +94,7 @@ class ArchiveResource extends Resource
                 $text('Notes', 'Notes', true),
             ])
             ->filters([
-                Filter::make('dates')->columnSpan(2)->columns(2)->schema([
+                Filter::make('dates')->columnSpanFull()->columns(2)->schema([
                     DatePicker::make('from')->label('Transfer date from'),
                     DatePicker::make('until')->label('until'),
                 ])->query(fn (Builder $q, array $data): Builder => $q

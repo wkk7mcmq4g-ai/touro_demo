@@ -6,11 +6,14 @@ use App\Auth\PhpRunnerUserProvider;
 use App\Filament\Resources\Transfers\Pages\ListTransfers;
 use App\Listeners\LogAccess;
 use App\Support\ExcelFilters;
+use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Support\Enums\Width;
 use Filament\Support\Facades\FilamentView;
 use Filament\Tables\Columns\Column;
 use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Table;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Auth\Events\Login;
@@ -64,6 +67,11 @@ class AppServiceProvider extends ServiceProvider
         // Every table: columns can be reordered and hidden (Filament's column manager), resized,
         // and filtered Excel-style from the header. Layouts are saved per user (TableLayouts).
         Table::configureUsing(fn (Table $table) => $table
+            // The filter button opens a panel that slides in from the right, one filter per row.
+            ->filtersLayout(FiltersLayout::Modal)
+            ->filtersTriggerAction(fn (Action $action) => $action->slideOver()->label('Φίλτρα'))
+            ->filtersFormWidth(Width::Medium)
+            ->filtersFormColumns(1)
             ->reorderableColumns()
             ->persistColumnsInSession()
             ->modifyQueryUsing(fn (Builder $query, $livewire, bool $isResolvingRecord = false): Builder => $livewire instanceof Component
