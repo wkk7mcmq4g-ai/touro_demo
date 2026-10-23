@@ -21,6 +21,14 @@ class ListTransfers extends ListRecords
     #[Session]
     public bool $inlineEditing = false;
 
+    /** At most 50 editable rows per page, whatever was chosen before switching editing on. */
+    public function getTableRecordsPerPage(): int|string|null
+    {
+        $perPage = parent::getTableRecordsPerPage();
+
+        return $this->inlineEditing && ($perPage === 'all' || (int) $perPage > 50) ? 50 : $perPage;
+    }
+
     protected function getHeaderActions(): array
     {
         return [

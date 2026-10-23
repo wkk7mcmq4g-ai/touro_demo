@@ -20,6 +20,13 @@ class InlineEditColumns
 {
     private const REQUIRED = ['TransferType', 'TransferDate', 'TransferTime', 'From', 'CarTypeID', 'Status'];
 
+    /**
+     * Long lookups (hundreds of places, coaches, assistants): a dropdown in every row
+     * would repeat the whole list per cell. These are type-ahead inputs instead, fed by one
+     * shared <datalist> per column (see resources/views/filament/transfers/inline-lookups).
+     */
+    public const TYPE_AHEAD = ['From', 'To', 'CoachCompanyID', 'Assistant'];
+
     private const MONEY = ['Assistant_Price', 'PlatformPrice', 'PurchasePrice', 'SalePrice', 'PricePaid', 'PriceRcvd', 'Expense'];
 
     /**
@@ -45,6 +52,9 @@ class InlineEditColumns
             $name === 'OLP' => CheckboxColumn::make($name)
                 ->getStateUsing(fn (Transfer $record): bool => (int) $record->OLP === 1)
                 ->updateStateUsing(fn (Transfer $record, $state) => self::save($record, $name, $state ? 1 : 0)),
+            in_array($name, self::TYPE_AHEAD, true) => TextInputColumn::make($name)
+                ->extraInputAttributes(['list' => self::datalistId($name), 'autocomplete' => 'off'])
+                ->rules([self::inListRule($name)]),
             $options !== null => SelectColumn::make($name)
                 // Keep a value PHPRunner stored that is no longer in the list.
                 ->options(fn (?Transfer $record): array => $options() + (filled($record?->{$name}) ? [$record->{$name} => $record->{$name}] : []))
@@ -92,8 +102,23 @@ class InlineEditColumns
         };
     }
 
+    public static function datalistId(string $name): string
+    {
+        return 'transfer-lookup-'.strtolower($name);
+    }
+
+    /** Only values from the lookup are accepted, as with a dropdown. */
+    private static function inListRule(string $name): Closure
+    {
+        return function (string $attribute, $value, Closure $fail) use ($name): void {
+            if (filled($value) && ! array_key_exists((string) $value, (self::options($name))())) {
+                $fail("\"{$value}\" is not in the list.");
+            }
+        };
+    }
+
     /** @return (Closure(): array<string, string>)|null */
-    private static function options(string $name): ?Closure
+    public static function options(string $name): ?Closure
     {
         return match ($name) {
             'TransferType' => fn (): array => Lookups::optionValues('TransferType'),
@@ -114,7 +139,7 @@ class InlineEditColumns
     {
         return match (true) {
             in_array($name, ['Notes', 'DriverNotes', 'PassengerName', 'From', 'To', 'Flight_Ship_Num_From', 'LesseeName', 'LeadName'], true) => '14rem',
-            self::options($name) !== null => '11rem',
+            self::options($name) !== null => '12rem',
             in_array($name, self::MONEY, true) || in_array($name, ['Pax', 'TransferTime', 'Voucher_StartTime', 'Voucher_EndTime'], true) => '6.5rem',
             default => '9rem',
         };

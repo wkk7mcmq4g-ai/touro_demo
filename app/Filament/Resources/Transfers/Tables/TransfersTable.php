@@ -45,8 +45,9 @@ class TransfersTable
                 ->orderBy('TransferDate')
                 ->orderBy('TransferTime_sort'))
             ->striped()
-            ->paginated([25, 50, 100, 200])
-            ->defaultPaginationPageOption(50)
+            // Editable cells are heavy (a few KB each), so editing pages are kept short.
+            ->paginated($editing ? [25, 50] : [25, 50, 100, 200])
+            ->defaultPaginationPageOption($editing ? 25 : 50)
             ->persistColumnsInSession()
             ->persistFiltersInSession()
             ->persistSortInSession()

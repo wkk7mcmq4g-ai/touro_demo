@@ -163,6 +163,39 @@ class TransfersTest extends TestCase
         $this->assertTrue($transfer->fresh()->TransferDate->isToday());
     }
 
+    public function test_edit_in_list_stays_light_with_long_lookups(): void
+    {
+        $this->actingAs($this->makeLegacyUser('Entry'));
+
+        // Real-life sized lookups: many places, many transfers on screen.
+        DB::table('tours')->insert(array_map(fn (int $i): array => [
+            'TourName' => "Place {$i} with a fairly long descriptive name", 'TourDescription' => '', 'DestinationType' => 'Hotel',
+        ], range(1, 1500)));
+        foreach (range(1, 60) as $i) {
+            $this->transfer();
+        }
+
+        $page = Livewire::test(ListTransfers::class)
+            ->set('tableRecordsPerPage', 200)
+            ->callAction('toggleInlineEditing');
+
+        // Editing pages are capped at 50 rows.
+        $this->assertLessThanOrEqual(50, $page->instance()->getTableRecords()->count());
+
+        // Each place is sent once (shared suggestion list), not once per row and column.
+        $html = $page->html();
+        $this->assertLessThan(12 * 1024 * 1024, strlen($html), 'Edit-in-list page is too large');
+        $this->assertSame(2, substr_count($html, 'Place 1499 with a fairly long descriptive name'));
+
+        // Type-ahead cells still only accept known values.
+        $transfer = Transfer::query()->firstOrFail();
+        $result = $page->instance()->updateTableColumnState('To', (string) $transfer->TransferID, 'Nowhere');
+        $this->assertArrayHasKey('error', $result);
+
+        $page->instance()->updateTableColumnState('To', (string) $transfer->TransferID, 'Place 7 with a fairly long descriptive name');
+        $this->assertSame('Place 7 with a fairly long descriptive name', $transfer->fresh()->To);
+    }
+
     public function test_only_the_configured_columns_are_editable_in_the_list(): void
     {
         $this->actingAs($this->makeLegacyUser('Entry'));

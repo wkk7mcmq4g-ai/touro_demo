@@ -3,15 +3,19 @@
 namespace App\Providers;
 
 use App\Auth\PhpRunnerUserProvider;
+use App\Filament\Resources\Transfers\Pages\ListTransfers;
 use App\Listeners\LogAccess;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Support\Facades\FilamentView;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
 use Illuminate\Foundation\Console\ServeCommand;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use Livewire\Livewire;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -41,6 +45,15 @@ class AppServiceProvider extends ServiceProvider
             ->native(false)
             ->displayFormat('d/m/Y H:i')
             ->firstDayOfWeek(1));
+
+        // Suggestion lists for the type-ahead cells of "Edit in list", sent once per page.
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::PAGE_END,
+            fn () => (Livewire::current()?->inlineEditing ?? false)
+                ? view('filament.transfers.inline-lookups')
+                : '',
+            scopes: ListTransfers::class,
+        );
 
         // Same access_log rows the PHPRunner login/logout events wrote.
         Event::listen(Login::class, [LogAccess::class, 'login']);
