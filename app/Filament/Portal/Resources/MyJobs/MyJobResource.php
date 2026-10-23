@@ -64,6 +64,25 @@ class MyJobResource extends Resource
         return parent::getEloquentQuery()->where('username', (string) auth()->user()?->username);
     }
 
+    /** Today's next job of the signed-in user (the first not yet started), shown large at the top. */
+    public static function nextJobId(): ?int
+    {
+        // Once per request: every card asks.
+        static $cache = [];
+        $user = (string) auth()->user()?->username;
+        $key = $user.'@'.now()->format('Y-m-d H:i');
+
+        if (! array_key_exists($key, $cache)) {
+            $cache[$key] = VTransfer::query()->where('username', $user)
+                ->whereDate('TransferDate', today())
+                ->where('TransferTime', '>=', now()->format('H:i'))
+                ->where(fn (Builder $q) => $q->where('Status', '<>', 'Cancelled')->orWhereNull('Status'))
+                ->orderBy('TransferTime_sort')->value('TransferID');
+        }
+
+        return $cache[$key] !== null ? (int) $cache[$key] : null;
+    }
+
     /** Files of the job the office marked for drivers (PHPRunner myat_drivers_files datasource). */
     public static function driverFiles(VTransfer $job): Collection
     {
@@ -85,7 +104,10 @@ class MyJobResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->defaultSort(fn (Builder $query) => $query->orderBy('TransferDate')->orderBy('TransferTime_sort'))
+            // Today's next job first (the large card), then the rest in time order.
+            ->defaultSort(fn (Builder $query) => $query
+                ->when(self::nextJobId(), fn (Builder $q, int $next) => $q->orderByRaw('TransferID = ? DESC', [$next]))
+                ->orderBy('TransferDate')->orderBy('TransferTime_sort'))
             ->paginated(false)
             ->poll('60s')
             ->columnManager(false)
