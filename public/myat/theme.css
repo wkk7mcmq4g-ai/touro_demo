@@ -83,6 +83,7 @@
 /* ---------- Sidebar: full height, navy ---------- */
 
 .fi-sidebar {
+    overflow-x: hidden;
     background: linear-gradient(180deg, #0a3d68 0%, var(--myat-navy) 35%, var(--myat-navy-deep) 100%);
     color: rgb(255 255 255 / 0.78);
 }
@@ -125,7 +126,9 @@
 }
 
 .fi-sidebar-nav {
-    padding-inline: 0.85rem;
+    /* the groups have -0.5rem margins: items line up with the search box */
+    padding-inline: 1.5rem 1.25rem;
+    overflow-x: hidden;
     scrollbar-width: thin;
     scrollbar-color: rgb(255 255 255 / 0.15) transparent;
 }
