@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\TransferFileController;
+use App\Http\Controllers\VoucherController;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/admin');
@@ -9,3 +10,8 @@ Route::redirect('/', '/admin');
 Route::get('/files/transfers/{id}', [TransferFileController::class, 'download'])
     ->whereNumber('id')
     ->name('transfer-files.download');
+
+// Daily dispatch vouchers (PDF of the PHPRunner v_transfers voucher pages).
+Route::get('/documents/vouchers/{page}/{transfer}', [VoucherController::class, 'show'])
+    ->whereNumber('transfer')
+    ->name('vouchers.show');

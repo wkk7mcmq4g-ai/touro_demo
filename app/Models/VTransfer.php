@@ -114,4 +114,40 @@ class VTransfer extends Model
             'TelegramID' => 'integer',
         ];
     }
+
+    /** PHPRunner (v_transfers datasource): the job as a text message for the driver. */
+    public function smsText(): string
+    {
+        $lines = [
+            '*Ημερομηνία:* '.$this->TransferDate?->format('d/m/Y'),
+            '*Ωρα Pickup:* '.$this->TransferTime,
+            '*Άτομα:* '.$this->Pax,
+            '*Τύπος:* '.$this->TransferType,
+            '*Σημείο Παραλαβής:* '.$this->From,
+            '*Σημείο Αποβίβασης:* '.$this->To,
+            '*Πληροφορίες:* '.$this->Flight_Ship_Num_From,
+            '*Όνομα επιβάτη:* '.$this->LeadName,
+            '*Τηλέφωνο επιβάτη:* '.$this->LeadPhone,
+            '*Συνοδός - Ξεναγός:* '.$this->Assistant,
+            '*Οδηγός:* '.$this->Fullname.'-'.$this->DriverPhone,
+            '*Παρατηρήσεις:* '.$this->Notes,
+        ];
+        if (filled($this->ReviewLink)) {
+            $lines[] = '*Review Link:* '.$this->ReviewLink;
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /** Piraeus port jobs need the OLP entry request (not for taxis). */
+    public function needsOlpRequest(): bool
+    {
+        return $this->VehicleLicence !== 'Taxi'
+            && ($this->From === 'Piraeus Port' || $this->To === 'Piraeus Port' || (int) $this->OLP === 1);
+    }
+
+    public function hasAssistant(): bool
+    {
+        return filled($this->cID_Assistant) && $this->cID_Assistant !== 'xxx';
+    }
 }
