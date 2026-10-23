@@ -102,6 +102,7 @@ class MyFuelResource extends Resource
     {
         return $table
             ->stackedOnMobile()
+            ->columnManager(false)
             ->defaultSort('FuelDate', 'desc')
             ->emptyStateHeading('Δεν υπάρχουν αποδείξεις')
             ->columns([

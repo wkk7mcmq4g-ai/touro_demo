@@ -87,7 +87,11 @@ class MyJobResource extends Resource
         return $table
             ->defaultSort(fn (Builder $query) => $query->orderBy('TransferDate')->orderBy('TransferTime_sort'))
             ->paginated(false)
+            ->poll('60s')
+            ->columnManager(false)
             ->emptyStateHeading('Δεν υπάρχουν δρομολόγια')
+            ->emptyStateDescription('Όταν σας ανατεθεί δρομολόγιο θα εμφανιστεί εδώ.')
+            ->emptyStateIcon(Heroicon::OutlinedSun)
             // One card per job (big time, route, tap-to-call), two or three across on wide screens.
             ->contentGrid(['md' => 2, 'xl' => 3])
             ->columns([

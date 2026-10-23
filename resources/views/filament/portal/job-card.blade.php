@@ -7,8 +7,25 @@
     static $perDay = [];
     $day = $job->TransferDate?->toDateString();
     $perDay[$day] ??= \App\Models\VTransfer::query()->where('username', $job->username)->whereDate('TransferDate', $day)->count();
+    // Today: the next job to drive stands out, the ones already started step back.
+    static $nextToday = false;
+    $isToday = $job->TransferDate?->isToday();
+    $time = substr((string) $job->TransferTime, 0, 5);
+    if ($isToday && $nextToday === false) {
+        $nextToday = \App\Models\VTransfer::query()->where('username', $job->username)->whereDate('TransferDate', today())
+            ->where('TransferTime', '>=', now()->format('H:i'))->orderBy('TransferTime_sort')->value('TransferID');
+    }
+    $isNext = $isToday && $nextToday && (int) $nextToday === (int) $job->TransferID;
+    $isPast = $isToday && ! $isNext && $time < now()->format('H:i');
+    $minutes = $isNext ? (int) now()->diffInMinutes(\Illuminate\Support\Carbon::parse(today()->toDateString().' '.$time)) : null;
 @endphp
-<div class="myat-job">
+<div @class(['myat-job', 'is-next' => $isNext, 'is-past' => $isPast])>
+    @if ($isNext)
+        <div class="myat-job-nextbar">
+            <span>Επόμενο δρομολόγιο</span>
+            <b>σε {{ $minutes >= 60 ? intdiv($minutes, 60).'ώ '.($minutes % 60).'΄' : $minutes.'΄' }}</b>
+        </div>
+    @endif
     <div class="myat-job-top">
         <span class="myat-job-vehicle">{{ $job->VehicleName ?: '—' }}</span>
         <span class="myat-job-id">#{{ $job->TransferID }}</span>
@@ -28,6 +45,9 @@
             @if ($tickets)
                 <span class="myat-job-tag myat-job-tag-warn">{{ $tickets }}</span>
             @endif
+            @if ($job->Status === 'Completed')
+                <span class="myat-job-tag myat-job-tag-done">Ολοκληρώθηκε</span>
+            @endif
         </div>
     </div>
 
@@ -40,10 +60,15 @@
         <div class="myat-job-line"><span>Πληροφορίες</span>{{ $job->Flight_Ship_Num_From }}</div>
     @endif
 
-    <div class="myat-job-line">
-        <span>Επιβάτης</span>{{ $job->LeadName ?: '—' }}
+    <div class="myat-job-line myat-job-pax">
+        <div>
+            <span>Επιβάτης</span>{{ $job->LeadName ?: '—' }}
+        </div>
         @if ($phone)
-            <a class="myat-job-call" href="tel:{{ $phone }}" x-on:click.stop>📞 {{ $job->LeadPhone }}</a>
+            <a class="myat-job-call" href="tel:{{ $phone }}" x-on:click.stop aria-label="Κλήση {{ $job->LeadName }} {{ $job->LeadPhone }}">
+                <x-filament::icon icon="heroicon-s-phone" class="myat-job-call-icon" />
+                <span>Κλήση</span>
+            </a>
         @endif
     </div>
 
