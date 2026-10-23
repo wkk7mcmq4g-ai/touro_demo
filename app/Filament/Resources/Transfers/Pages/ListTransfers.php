@@ -58,7 +58,7 @@ class ListTransfers extends ListRecords
                 ->icon(Heroicon::OutlinedBanknotes)
                 ->color('gray')
                 ->button(),
-            CreateAction::make()->label('New transfer'),
+            CreateAction::make()->label('New transfer')->icon(Heroicon::OutlinedPlus),
         ];
     }
 

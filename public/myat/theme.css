@@ -1730,3 +1730,159 @@ body.myat-busy .fi-ta-content-grid {
         padding-bottom: calc(4.75rem + env(safe-area-inset-bottom));
     }
 }
+
+/* ---------- Full screen (immersive) tables + zoom ---------- */
+
+/* the app shell uses the visible height (iPhone Safari's toolbar no longer hides the end of the list) */
+.fi-layout {
+    min-height: 100vh;
+    min-height: 100dvh;
+}
+
+.myat-zoombar {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.myat-zb-group {
+    display: none;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+html.myat-immersive .myat-zb-group {
+    display: inline-flex;
+}
+
+html.myat-immersive .myat-zb-enter {
+    display: none;
+}
+
+.myat-zb-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    height: 2rem;
+    padding: 0 0.5rem;
+    border-radius: 0.5rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: #334155;
+    background: #fff;
+    box-shadow: 0 0 0 1px rgb(15 23 42 / 0.14);
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.myat-zb-btn:hover {
+    color: var(--myat-azure);
+    background: rgb(0 150 255 / 0.06);
+}
+
+.myat-zb-btn:focus-visible {
+    outline: 2px solid var(--myat-azure);
+    outline-offset: 2px;
+}
+
+.dark .myat-zb-btn {
+    color: #e2e8f0;
+    background: rgb(255 255 255 / 0.05);
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.14);
+}
+
+.myat-zb-icon {
+    width: 1rem;
+    height: 1rem;
+}
+
+.myat-zb-pct {
+    min-width: 3.1rem;
+}
+
+/* while in full screen: no menus, the page uses the whole screen */
+html.myat-immersive .fi-sidebar,
+html.myat-immersive .fi-sidebar-close-overlay,
+html.myat-immersive .fi-layout-sidebar-toggle-btn-ctn,
+html.myat-immersive .fi-topbar,
+html.myat-immersive .fi-topbar-ctn,
+html.myat-immersive .myat-tabbar,
+html.myat-immersive .fi-breadcrumbs {
+    display: none !important;
+}
+
+html.myat-immersive .fi-main-ctn {
+    margin-inline-start: 0 !important;
+    padding-inline-start: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+html.myat-immersive .fi-main {
+    max-width: none !important;
+    padding: 0.4rem max(0.4rem, env(safe-area-inset-right)) 0.4rem max(0.4rem, env(safe-area-inset-left)) !important;
+}
+
+html.myat-immersive .fi-page-header-main-ctn {
+    padding-block: 0.25rem 0.5rem !important;
+}
+
+html.myat-immersive .fi-header-heading {
+    font-size: 1.15rem !important;
+}
+
+html.myat-immersive body {
+    overscroll-behavior: none;
+}
+
+/* phones held sideways: no breadcrumbs, respect the notch */
+@media (max-height: 500px) and (orientation: landscape) {
+    .fi-breadcrumbs {
+        display: none !important;
+    }
+
+    .fi-main {
+        padding-left: max(0.75rem, env(safe-area-inset-left));
+        padding-right: max(0.75rem, env(safe-area-inset-right));
+    }
+}
+
+/* Pages with a full-screen table: on phones (and in full screen) the page buttons are icon-only, one slim row */
+@media (max-width: 639px) {
+    body:has(.myat-zoombar) .fi-header-actions-ctn .fi-ac {
+        flex-wrap: nowrap;
+        gap: 0.35rem;
+    }
+
+    body:has(.myat-zoombar) .fi-header-actions-ctn .fi-btn {
+        height: 2rem;
+        min-height: 2rem !important;
+        padding: 0 0.5rem;
+        font-size: 0;
+        gap: 0;
+    }
+
+    body:has(.myat-zoombar) .fi-header-actions-ctn .fi-btn .fi-icon {
+        width: 1.1rem;
+        height: 1.1rem;
+    }
+}
+
+html.myat-immersive .fi-header-actions-ctn .fi-btn {
+    height: 2rem;
+    padding: 0 0.5rem;
+    font-size: 0;
+    gap: 0;
+}
+
+html.myat-immersive .fi-header-actions-ctn .fi-btn .fi-icon {
+    width: 1.1rem;
+    height: 1.1rem;
+}
+
+html.myat-immersive .fi-header {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+}

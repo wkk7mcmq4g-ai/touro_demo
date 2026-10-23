@@ -6,6 +6,7 @@ use App\Auth\PhpRunnerUserProvider;
 use App\Filament\Resources\Transfers\Pages\ListTransfers;
 use App\Listeners\LogAccess;
 use App\Support\ExcelFilters;
+use App\Support\ImmersiveTables;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
@@ -104,7 +105,10 @@ class AppServiceProvider extends ServiceProvider
             };
         });
 
-        FilamentView::registerRenderHook(PanelsRenderHook::BODY_END, fn () => auth()->check() ? view('filament.tables.excel-and-widths') : '');
+        FilamentView::registerRenderHook(PanelsRenderHook::BODY_END, fn () => auth()->check() ? view('filament.tables.excel-and-widths').view('filament.tables.immersive') : '');
+
+        // Wide tables that get Full screen + zoom (phones sideways, tablets, computers).
+        ImmersiveTables::register([ListTransfers::class]);
 
         // Same access_log rows the PHPRunner login/logout events wrote.
         Event::listen(Login::class, [LogAccess::class, 'login']);
