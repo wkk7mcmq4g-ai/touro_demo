@@ -3,12 +3,19 @@
 namespace App\Filament\Portal\Resources\MyJobs\Pages;
 
 use App\Filament\Portal\Resources\MyJobs\MyJobResource;
+use App\Models\VTransfer;
+use Filament\Actions\Action;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Support\Enums\Width;
+use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
 
 class ListMyJobs extends ListRecords
@@ -16,6 +23,58 @@ class ListMyJobs extends ListRecords
     protected static string $resource = MyJobResource::class;
 
     protected Width|string|null $maxContentWidth = Width::Full;
+
+    /** The day's jobs of the signed-in driver: [count, their ID in the daily sends (aid)]. */
+    private static function myDay(Carbon $day): array
+    {
+        $row = VTransfer::query()->where('username', (string) auth()->user()?->username)->whereDate('TransferDate', $day)
+            ->toBase()->selectRaw('COUNT(*) AS jobs, MAX(aid) AS aid')->first();
+
+        return [(int) ($row->jobs ?? 0), $row->aid ?? null];
+    }
+
+    private static function alreadyRead(Carbon $day, mixed $aid): bool
+    {
+        return $aid !== null && DB::table('emails_sent')->whereDate('TransferDate', $day)->where('aID', (int) $aid)->exists();
+    }
+
+    /**
+     * PHPRunner "Διαβάστηκαν" (ReadReceipt): the driver confirms they have read a day's schedule
+     * (tomorrow by default) by typing how many jobs it has; the office sees it as Read in
+     * Αποστολή Transfers.
+     */
+    protected function getHeaderActions(): array
+    {
+        $tomorrow = today()->addDay();
+
+        return [
+            Action::make('readReceipt')
+                ->label(fn (): string => self::alreadyRead($tomorrow, self::myDay($tomorrow)[1]) ? 'Διαβάστηκαν (αύριο)' : 'Διαβάστηκαν')
+                ->icon(fn (): Heroicon => self::alreadyRead($tomorrow, self::myDay($tomorrow)[1]) ? Heroicon::OutlinedCheckCircle : Heroicon::OutlinedEye)
+                ->color(fn (): string => self::alreadyRead($tomorrow, self::myDay($tomorrow)[1]) ? 'success' : 'primary')
+                ->modalHeading('Αποστολή ανάγνωσης')
+                ->modalDescription('Επιβεβαιώστε ότι διαβάσατε το πρόγραμμα: γράψτε πόσα δρομολόγια έχετε εκείνη την ημέρα.')
+                ->modalSubmitActionLabel('Αποστολή')
+                ->schema([
+                    DatePicker::make('day')->label('Ημερομηνία')->native(false)->displayFormat('d/m/Y')->default($tomorrow)->required(),
+                    TextInput::make('transfers')->label('Δρομολόγια')->integer()->minValue(0)->required()->default(0),
+                ])
+                ->action(function (array $data, Action $action): void {
+                    $day = Carbon::parse($data['day'])->startOfDay();
+                    [$jobs, $aid] = self::myDay($day);
+
+                    if ($jobs === 0 || $aid === null || (int) $data['transfers'] !== $jobs) {
+                        Notification::make()->danger()->title('Λάθος αριθμός δρομολογίων')->send();
+                        $action->halt();
+                    }
+
+                    if (! self::alreadyRead($day, $aid)) {
+                        DB::table('emails_sent')->insert(['TransferDate' => $day->toDateString(), 'aID' => (int) $aid]);
+                    }
+                    Notification::make()->success()->title('Ευχαριστούμε, καταχωρήθηκε')->send();
+                }),
+        ];
+    }
 
     /** PHPRunner's Σήμερα / Αύριο buttons; the view itself covers the next five days. */
     public function getTabs(): array

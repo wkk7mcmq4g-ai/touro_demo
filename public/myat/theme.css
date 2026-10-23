@@ -1700,3 +1700,10 @@ a.myat-tl-link:hover {
     width: 1.1rem;
     height: 1.1rem;
 }
+
+.myat-job-phone {
+    margin-top: 0.1rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    user-select: all;
+}

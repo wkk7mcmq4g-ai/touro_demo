@@ -11,6 +11,7 @@ use App\Filament\Portal\Resources\MyFuel\Pages\ListMyFuel;
 use App\Filament\Portal\Resources\MyJobs\Pages\ListMyJobs;
 use App\Filament\Portal\Resources\MyTransfers\Pages\EditMyTransfer;
 use App\Filament\Portal\Resources\MyTransfers\Pages\ListMyTransfers;
+use App\Models\DailyRecipient;
 use App\Models\Transfer;
 use App\Models\TransfersLoad;
 use App\Models\User;
@@ -96,6 +97,26 @@ class PortalTest extends TestCase
         $file = DB::table('myat_transfers_files')->insertGetId(['TransferID' => $theirs, 'Flnm' => 'x.pdf', 'Attachment' => '%PDF x']);
         $this->get(route('transfer-files.download', $file))->assertNotFound();
         $this->get('/portal/transfers')->assertForbidden();
+    }
+
+    public function test_drivers_confirm_they_read_the_day_by_its_number_of_jobs(): void
+    {
+        $this->emptyTables(['vehicles', 'drivers', 'vehicle_assignments', 'emails_sent']);
+        $me = $this->makeLegacyUser('Drivers');
+        $this->driverJob($me, 'Mine');
+        $this->actingAs($me);
+        $today = Carbon::today()->toDateString();
+
+        Livewire::test(ListMyJobs::class)
+            ->callAction('readReceipt', ['day' => $today, 'transfers' => 3])
+            ->assertNotified('Λάθος αριθμός δρομολογίων');
+        $this->assertSame(0, DB::table('emails_sent')->count());
+
+        Livewire::test(ListMyJobs::class)
+            ->callAction('readReceipt', ['day' => $today, 'transfers' => 1])
+            ->assertNotified('Ευχαριστούμε, καταχωρήθηκε');
+        $this->assertSame(1, DB::table('emails_sent')->whereDate('TransferDate', $today)->count());
+        $this->assertSame('Read', DailyRecipient::source()->whereDate('TransferDate', $today)->value('SendStatus'));
     }
 
     public function test_drivers_enter_fuel_within_phprunner_dates(): void

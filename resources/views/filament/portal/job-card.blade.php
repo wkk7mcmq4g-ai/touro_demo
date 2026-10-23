@@ -63,6 +63,9 @@
     <div class="myat-job-line myat-job-pax">
         <div>
             <span>Επιβάτης</span>{{ $job->LeadName ?: '—' }}
+            @if (filled($job->LeadPhone))
+                <div class="myat-job-phone">{{ $job->LeadPhone }}</div>
+            @endif
         </div>
         @if ($phone)
             <a class="myat-job-call" href="tel:{{ $phone }}" x-on:click.stop aria-label="Κλήση {{ $job->LeadName }} {{ $job->LeadPhone }}">
