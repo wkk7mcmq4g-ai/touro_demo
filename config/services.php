@@ -36,6 +36,13 @@ return [
     ],
 
     // The old PHPRunner app, for links in notifications until a page is ported.
+    // Telegram messages to drivers (PHPRunner "Αποστολή Transfers"). Off unless TELEGRAM_ENABLED=true,
+    // so a copy of the app never messages real drivers.
+    'telegram' => [
+        'enabled' => (bool) env('TELEGRAM_ENABLED', false),
+        'token' => env('TELEGRAM_BOT_TOKEN'),
+    ],
+
     'phprunner' => [
         'url' => env('PHPRUNNER_URL', 'https://myat.touro.gr'),
         // Folder of the PHPRunner app on this server (contains `files/`), for uploads of
