@@ -5,7 +5,6 @@ namespace App\Filament\Resources\Transfers\Tables;
 use App\Filament\Resources\Transfers\Actions\InvoicingActions;
 use App\Filament\Resources\Transfers\Actions\TransferActions;
 use App\Models\Transfer;
-use App\Support\ColorDot;
 use App\Support\Lookups;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
@@ -54,7 +53,11 @@ class TransfersTable
             ->persistColumnsInSession()
             ->persistFiltersInSession()
             ->persistSortInSession()
-            ->columns($columns)
+            ->columns(array_map(
+                // PHPRunner's list events paint cells (TransferCellColors).
+                fn (Column $column): Column => $column->extraCellAttributes(fn (Transfer $record): array => TransferCellColors::attributes($record, $column->getName()), merge: true),
+                $columns,
+            ))
             ->filters(self::filters())
             ->recordActions([
                 EditAction::make(),
@@ -92,9 +95,9 @@ class TransfersTable
                 ->limit($limit)
                 ->tooltip(fn ($state): ?string => mb_strlen((string) $state) > $limit ? (string) $state : null));
 
+        // PHPRunner painted these cells in the option's colour (TransferCellColors), so plain text here.
         $dot = fn (string $name, string $label, string $option): TextColumn => TextColumn::make($name)
             ->label($label)
-            ->formatStateUsing(fn (?string $state) => ColorDot::render($state, Lookups::color($option, $state)))
             ->sortable()
             ->toggleable();
 
@@ -182,10 +185,10 @@ class TransfersTable
             $text('Assistant', 'Assistant', 30),
             $text('Platform', 'Πλατφ.'),
             $text('PaymentType', 'Τρόπος πληρ.'),
-            TextColumn::make('Voucher_StartDt')->label('Ημερομηνία έναρξης')->date('d/m/Y')->toggleable(),
-            TextColumn::make('Voucher_StartTime')->label('Ώρα έναρξης')->time('H:i')->toggleable(),
-            TextColumn::make('Voucher_EndDt')->label('Ημερομηνία λήξης')->date('d/m/Y')->toggleable(),
-            TextColumn::make('Voucher_EndTime')->label('Ώρα λήξης')->time('H:i')->toggleable(),
+            TextColumn::make('Voucher_StartDt')->label('Ημερομηνία έναρξης')->getStateUsing(fn (Transfer $record) => TransferCellColors::voucherValue($record, 'Voucher_StartDt'))->date('d/m/Y')->toggleable(),
+            TextColumn::make('Voucher_StartTime')->label('Ώρα έναρξης')->getStateUsing(fn (Transfer $record) => TransferCellColors::voucherValue($record, 'Voucher_StartTime'))->time('H:i')->toggleable(),
+            TextColumn::make('Voucher_EndDt')->label('Ημερομηνία λήξης')->getStateUsing(fn (Transfer $record) => TransferCellColors::voucherValue($record, 'Voucher_EndDt'))->date('d/m/Y')->toggleable(),
+            TextColumn::make('Voucher_EndTime')->label('Ώρα λήξης')->getStateUsing(fn (Transfer $record) => TransferCellColors::voucherValue($record, 'Voucher_EndTime'))->time('H:i')->toggleable(),
             TextColumn::make('ImportDate')->label('Date in')->date('d/m/Y')->sortable()->toggleable(),
             $money('ExtraIncome', 'Add charges'),
             $text('DriverReceiptType', 'Driver Receipt Type'),
