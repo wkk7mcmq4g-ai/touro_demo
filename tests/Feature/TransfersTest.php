@@ -604,6 +604,18 @@ class TransfersTest extends TestCase
         $income = TransferCharge::query()->where('ChargeValue', 15)->firstOrFail();
         $this->assertSame([$transfer->TransferID, 'Parking'], [$expense->TransferID, $expense->ExpenseReason]);
         $this->assertNotNull($expense->CreatedBy);
+        // The open form shows the totals the triggers recalculated, without leaving the page.
+        $page = Livewire::test(EditTransfer::class, ['record' => $transfer->getKey()])->assertFormSet(['Expense' => 12.5]);
+        DB::table('transfer_charges')->insert(['TransferID' => $transfer->TransferID, 'TransferCharge' => 'Waiting', 'ChargeValue' => 5, 'Expense' => 0, 'PaymentStatus' => 'Paid']);
+        $page->dispatch('transfer-prices-changed')->assertFormSet(['ExtraIncome' => (float) $transfer->fresh()->ExtraIncome]);
+        $this->assertSame(5.0, (float) $transfer->fresh()->ExtraIncome);
+        // Saving the form afterwards keeps the new total (it used to write the old one back).
+        $page->call('save')->assertHasNoFormErrors();
+        $this->assertSame(5.0, (float) $transfer->fresh()->ExtraIncome);
+        $rm(ChargesRelationManager::class)
+            ->callAction(TestAction::make('delete')->table(TransferCharge::query()->where('ChargeValue', 5)->firstOrFail()))
+            ->assertDispatched('transfer-prices-changed');
+
         $rm(ExpensesRelationManager::class)->assertCanSeeTableRecords([$expense])->assertCanNotSeeTableRecords([$income]);
         $rm(ChargesRelationManager::class)->assertCanSeeTableRecords([$income])->assertCanNotSeeTableRecords([$expense]);
 

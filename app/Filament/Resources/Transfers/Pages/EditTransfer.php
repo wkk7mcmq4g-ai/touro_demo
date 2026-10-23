@@ -60,12 +60,20 @@ class EditTransfer extends EditRecord
             })->all());
     }
 
-    /** A price line changed: the trigger recalculated the Sale price, show it. */
+    /**
+     * A price line, charge, expense or note was added, changed or deleted: the database triggers
+     * recalculated the transfer (sale price, extra income, expenses, open charges, issue flags).
+     * Show the new values at once, without touching anything else typed on the form; saving the form
+     * afterwards then keeps them instead of writing the old values back.
+     */
     #[On('transfer-prices-changed')]
-    public function refreshSalePrice(): void
+    public function refreshCalculatedFields(): void
     {
-        $this->data['SalePrice'] = $this->getRecord()->newQuery()
-            ->whereKey($this->getRecord()->getKey())
-            ->value('SalePrice');
+        $fields = ['SalePrice', 'ExtraIncome', 'Expense', 'OperationalIssuesFlag', 'FinancialIssuesFlag'];
+        $fresh = $this->getRecord()->newQuery()->whereKey($this->getRecord()->getKey())->first($fields);
+
+        foreach ($fields as $field) {
+            $this->data[$field] = $fresh?->getAttribute($field);
+        }
     }
 }

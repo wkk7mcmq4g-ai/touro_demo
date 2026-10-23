@@ -95,13 +95,16 @@ class ChargesRelationManager extends RelationManager
             ->headerActions([
                 CreateAction::make()
                     ->label('New charge')
-                    ->visible(fn (): bool => Permissions::allows(auth()->user(), self::TABLE, 'create')),
+                    ->visible(fn (): bool => Permissions::allows(auth()->user(), self::TABLE, 'create'))
+                    ->after(fn () => $this->dispatch('transfer-prices-changed')),
             ])
             ->recordActions([
                 EditAction::make()
-                    ->visible(fn (): bool => Permissions::allows(auth()->user(), self::TABLE, 'update')),
+                    ->visible(fn (): bool => Permissions::allows(auth()->user(), self::TABLE, 'update'))
+                    ->after(fn () => $this->dispatch('transfer-prices-changed')),
                 DeleteAction::make()
-                    ->visible(fn (): bool => Permissions::allows(auth()->user(), self::TABLE, 'delete')),
+                    ->visible(fn (): bool => Permissions::allows(auth()->user(), self::TABLE, 'delete'))
+                    ->after(fn () => $this->dispatch('transfer-prices-changed')),
             ])
             ->toolbarActions([
                 InvoicingActions::chargeReceipts(),
