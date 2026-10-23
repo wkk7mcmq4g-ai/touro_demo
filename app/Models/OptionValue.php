@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Lookups;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -37,5 +38,12 @@ class OptionValue extends Model
             'DriverView' => 'integer',
             'PartnerView' => 'integer',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        // Lists and colours across the app come from here.
+        static::saved(fn () => Lookups::flush());
+        static::deleted(fn () => Lookups::flush());
     }
 }

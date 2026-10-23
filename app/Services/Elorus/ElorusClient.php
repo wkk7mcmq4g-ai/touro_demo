@@ -34,6 +34,24 @@ class ElorusClient
         return $this->created($this->request()->post('contacts/', $contact));
     }
 
+    /**
+     * One page of the Elorus contacts (PHPRunner "Elorus Contacts New", a REST datasource).
+     *
+     * @return array{count: int, results: list<array<string, mixed>>}
+     */
+    public function contacts(int $page = 1, int $perPage = 50, ?string $search = null): array
+    {
+        $response = $this->request()->get('contacts/', array_filter([
+            'page' => $page, 'page_size' => $perPage, 'search' => $search,
+        ]));
+
+        if ($response->failed()) {
+            throw new ElorusException('Elorus did not return the contacts: '.$this->error($response));
+        }
+
+        return ['count' => (int) $response->json('count'), 'results' => (array) $response->json('results')];
+    }
+
     /** The PDF of an invoice ('invoices') or credit note ('creditnotes'). */
     public function pdf(string $id, string $kind = 'invoices'): string
     {

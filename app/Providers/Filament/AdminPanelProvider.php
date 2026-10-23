@@ -63,7 +63,7 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make('Finance'),
                 NavigationGroup::make('Reports'),
                 NavigationGroup::make('Fleet & drivers'),
-                NavigationGroup::make('Settings')->collapsed(),
+                NavigationGroup::make('Settings'),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
