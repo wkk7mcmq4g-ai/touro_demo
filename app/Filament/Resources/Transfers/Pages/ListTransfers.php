@@ -8,6 +8,7 @@ use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
@@ -16,6 +17,9 @@ use Livewire\Attributes\Session;
 class ListTransfers extends ListRecords
 {
     protected static string $resource = TransferResource::class;
+
+    /** Use the whole screen: the list has PHPRunner's 57 columns. */
+    protected Width|string|null $maxContentWidth = Width::Full;
 
     /** PHPRunner's inline edit: the configured columns become editable cells. */
     #[Session]
@@ -41,6 +45,12 @@ class ListTransfers extends ListRecords
                     $this->inlineEditing = ! $this->inlineEditing;
                     $this->resetTable();
                 }),
+            Action::make('resetColumnWidths')
+                ->label('Reset column widths')
+                ->icon(Heroicon::OutlinedArrowsRightLeft)
+                ->color('gray')
+                ->tooltip('Drag the edge of a column title to resize it; double-click the edge to reset that column.')
+                ->alpineClickHandler('window.myatResetColumnWidths?.()'),
             CreateAction::make()->label('New transfer'),
         ];
     }

@@ -55,6 +55,13 @@ class AppServiceProvider extends ServiceProvider
             scopes: ListTransfers::class,
         );
 
+        // Resizable columns on the transfers list (outside the Livewire component, so it isn't re-rendered).
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::BODY_END,
+            fn () => view('filament.transfers.column-resize'),
+            scopes: ListTransfers::class,
+        );
+
         // Same access_log rows the PHPRunner login/logout events wrote.
         Event::listen(Login::class, [LogAccess::class, 'login']);
         Event::listen(Logout::class, [LogAccess::class, 'logout']);

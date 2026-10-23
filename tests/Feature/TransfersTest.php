@@ -163,6 +163,20 @@ class TransfersTest extends TestCase
         $this->assertTrue($transfer->fresh()->TransferDate->isToday());
     }
 
+    public function test_transfers_list_is_full_width_with_resizable_columns(): void
+    {
+        $this->actingAs($this->makeLegacyUser('Entry'));
+
+        $this->get('/admin/transfers')
+            ->assertOk()
+            ->assertSee('fi-width-full', false)
+            ->assertSee('myat-column-widths', false)
+            ->assertSee('Reset column widths');
+
+        // Other pages keep the normal width and no resize script.
+        $this->get('/admin')->assertOk()->assertDontSee('myat-column-widths', false);
+    }
+
     public function test_edit_in_list_stays_light_with_long_lookups(): void
     {
         $this->actingAs($this->makeLegacyUser('Entry'));
