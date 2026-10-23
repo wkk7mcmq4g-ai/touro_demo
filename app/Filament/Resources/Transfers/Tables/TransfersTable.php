@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Transfers\Tables;
 
+use App\Filament\Resources\Transfers\Actions\InvoicingActions;
 use App\Filament\Resources\Transfers\Actions\TransferActions;
 use App\Models\Transfer;
 use App\Support\ColorDot;
@@ -9,6 +10,7 @@ use App\Support\Lookups;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
+use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\Column;
 use Filament\Tables\Columns\IconColumn;
@@ -64,9 +66,12 @@ class TransfersTable
             // PHPRunner's "Τιμολόγηση" menu: buttons that work on the ticked transfers.
             ->toolbarActions([
                 BulkActionGroup::make([
-                    TransferActions::closeSales(),
-                    TransferActions::closePurchases(),
-                ])->label('Τιμολόγηση')->button(),
+                    BulkActionGroup::make(InvoicingActions::forTransfers())->dropdown(false),
+                    BulkActionGroup::make([
+                        TransferActions::closeSales(),
+                        TransferActions::closePurchases(),
+                    ])->dropdown(false),
+                ])->label('Τιμολόγηση')->button()->dropdownWidth(Width::Medium),
             ]);
     }
 

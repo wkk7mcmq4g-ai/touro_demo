@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Transfers\RelationManagers;
 
+use App\Filament\Resources\Transfers\Actions\InvoicingActions;
 use App\Models\TransferCharge;
 use App\Support\Permissions;
 use Filament\Actions\CreateAction;
@@ -98,6 +99,9 @@ class ChargesRelationManager extends RelationManager
                     ->visible(fn (): bool => Permissions::allows(auth()->user(), self::TABLE, 'update')),
                 DeleteAction::make()
                     ->visible(fn (): bool => Permissions::allows(auth()->user(), self::TABLE, 'delete')),
+            ])
+            ->toolbarActions([
+                InvoicingActions::chargeReceipts(),
             ]);
     }
 }
