@@ -41,6 +41,27 @@
     const sessKey = (name) => name.replaceAll('.', '_');
     const wire = (c) => window.Livewire?.find(c.getAttribute('wire:id'));
 
+    /* ---------------- table box fits the screen (computers) ----------------
+       The table scrolls inside a box that ends at the bottom of the window, so its horizontal
+       scrollbar is in view without scrolling the page. The box height is what is left of the
+       window below the box's top, minus the table footer (pagination). */
+    const fitBoxes = () => {
+        const wide = innerWidth >= 1024;
+        document.querySelectorAll('.fi-ta-ctn .fi-ta-content-ctn').forEach((box) => {
+            if (! wide || ! box.querySelector(':scope > .fi-ta-table')) { box.style.maxHeight = ''; return; }
+            const top = box.getBoundingClientRect().top + scrollY;
+            const footer = box.closest('.fi-ta-ctn')?.querySelector('.fi-ta-footer, .fi-pagination')?.getBoundingClientRect().height ?? 0;
+            const h = Math.max(320, Math.floor(innerHeight - top - footer - 24));
+            box.style.maxHeight = h + 'px';
+        });
+    };
+    let fitQueued = false;
+    const queueFit = () => { if (fitQueued) return; fitQueued = true; requestAnimationFrame(() => { fitQueued = false; fitBoxes(); }); };
+    addEventListener('resize', queueFit);
+    document.addEventListener('DOMContentLoaded', queueFit);
+    document.addEventListener('livewire:init', () => window.Livewire.hook('morph.updated', queueFit));
+    new ResizeObserver(queueFit).observe(document.documentElement);
+
     /* ---------------- widths ---------------- */
     const css = () => {
         const out = [];
