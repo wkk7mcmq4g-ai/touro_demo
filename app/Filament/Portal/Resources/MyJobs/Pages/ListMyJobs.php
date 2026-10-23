@@ -22,7 +22,7 @@ class ListMyJobs extends ListRecords
 {
     protected static string $resource = MyJobResource::class;
 
-    protected Width|string|null $maxContentWidth = Width::Full;
+    protected Width|string|null $maxContentWidth = Width::SevenExtraLarge;
 
     /** The day's jobs of the signed-in driver: [count, their ID in the daily sends (aid)]. */
     private static function myDay(Carbon $day): array

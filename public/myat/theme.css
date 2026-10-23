@@ -1652,13 +1652,14 @@ a.myat-tl-link:hover {
     box-shadow: 0 0 0 2px var(--myat-azure), 0 14px 30px -14px rgb(0 150 255 / 0.55) !important;
 }
 
-.fi-ta-record:has(.myat-job.is-past) {
-    opacity: 0.72;
+/* jobs already started today: only the number and the time step back, the rest stays readable */
+.myat-job.is-past .myat-job-count {
+    background: #94a3b8;
+    box-shadow: none;
 }
 
-.fi-ta-record:has(.myat-job.is-past):focus-within,
-.fi-ta-record:has(.myat-job.is-past):hover {
-    opacity: 1;
+.myat-job.is-past .myat-job-time {
+    color: #64748b;
 }
 
 .myat-job-tag-done {

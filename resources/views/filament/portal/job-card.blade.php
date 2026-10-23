@@ -70,7 +70,7 @@
         @if ($phone)
             <a class="myat-job-call" href="tel:{{ $phone }}" x-on:click.stop aria-label="Κλήση {{ $job->LeadName }} {{ $job->LeadPhone }}">
                 <x-filament::icon icon="heroicon-s-phone" class="myat-job-call-icon" />
-                <span>Κλήση</span>
+                <b>Κλήση</b>
             </a>
         @endif
     </div>
