@@ -11,6 +11,7 @@ use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Panel;
 use Filament\PanelProvider;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -32,6 +33,9 @@ class PortalPanelProvider extends PanelProvider
             ->path('portal')
             ->login(Login::class)
             ->globalSearch(false)
+            // Phone friendly: installable, and a tab bar at the bottom on small screens.
+            ->renderHook(PanelsRenderHook::HEAD_END, fn () => view('filament.portal.head'))
+            ->renderHook(PanelsRenderHook::BODY_END, fn () => auth()->check() ? view('filament.portal.bottom-nav') : '')
             ->discoverResources(in: app_path('Filament/Portal/Resources'), for: 'App\Filament\Portal\Resources')
             ->discoverPages(in: app_path('Filament/Portal/Pages'), for: 'App\Filament\Portal\Pages')
             // Hotels have PHPRunner's Van Taxi Report too.

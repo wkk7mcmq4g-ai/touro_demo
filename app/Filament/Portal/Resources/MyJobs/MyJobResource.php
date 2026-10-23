@@ -13,7 +13,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
-use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\Layout\View;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -85,42 +85,26 @@ class MyJobResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->stackedOnMobile()
             ->defaultSort(fn (Builder $query) => $query->orderBy('TransferDate')->orderBy('TransferTime_sort'))
             ->paginated(false)
             ->emptyStateHeading('Δεν υπάρχουν δρομολόγια')
+            // One card per job (big time, route, tap-to-call), two or three across on wide screens.
+            ->contentGrid(['md' => 2, 'xl' => 3])
             ->columns([
-                TextColumn::make('TransferDate')->label('Ημερομηνία')->date('D d/m'),
-                TextColumn::make('TransferTime')->label('Ώρα παραλαβής')->weight('bold'),
-                TextColumn::make('Pax')->label('Άτομα'),
-                TextColumn::make('TransferType')->label('Κατηγορία'),
-                TextColumn::make('From')->label('Σημείο Παραλαβής')->wrap(),
-                TextColumn::make('Flight_Ship_Num_From')->label('Πληροφορίες')->wrap(),
-                TextColumn::make('To')->label('Σημείο Αποβίβασης')->wrap(),
-                TextColumn::make('LeadName')->label('Όνομα επιβάτη')->wrap(),
-                TextColumn::make('LeadPhone')->label('Τηλέφωνο')
-                    ->url(fn (VTransfer $record): ?string => filled($record->LeadPhone) ? 'tel:'.preg_replace('/[^0-9+]/', '', (string) $record->LeadPhone) : null),
-                TextColumn::make('Notes')->label('Παρατηρήσεις')->wrap(),
-                TextColumn::make('Assistant')->label('Συνοδός')->wrap()->placeholder('—'),
-                TextColumn::make('Tickets_Flag')->label('Tickets')->badge()->color('warning')
-                    ->getStateUsing(fn (VTransfer $record): ?string => $record->Tickets_Flag === 'No' ? null : $record->Tickets_Flag),
-                TextColumn::make('VehicleName')->label('Όχημα')->toggleable(),
-                TextColumn::make('ReviewLink')->label('Review')->formatStateUsing(fn (): string => 'Link')
-                    ->url(fn (VTransfer $record): ?string => filled($record->ReviewLink) ? (string) $record->ReviewLink : null)->openUrlInNewTab()
-                    ->placeholder('—')->toggleable(isToggledHiddenByDefault: true),
+                View::make('filament.portal.job-card'),
             ])
             ->recordActions([
-                Action::make('voucher')->label('Voucher')->icon(Heroicon::OutlinedDocumentText)
+                Action::make('voucher')->label('Voucher')->icon(Heroicon::OutlinedDocumentText)->button()->size('sm')
                     ->visible(fn (VTransfer $record): bool => Vouchers::forLicence($record->VehicleLicence) !== null)
                     ->url(fn (VTransfer $record): string => route('vouchers.show', [Vouchers::forLicence($record->VehicleLicence), $record->TransferID]))
                     ->openUrlInNewTab(),
-                Action::make('files')->label('Αρχεία')->icon(Heroicon::OutlinedPaperClip)->color('gray')
+                Action::make('files')->button()->outlined()->size('sm')->label('Αρχεία')->icon(Heroicon::OutlinedPaperClip)->color('gray')
                     ->badge(fn (VTransfer $record): ?int => self::driverFiles($record)->count() ?: null)
                     ->visible(fn (VTransfer $record): bool => self::driverFiles($record)->isNotEmpty())
                     ->modalHeading('Αρχεία')
                     ->modalContent(fn (VTransfer $record) => new HtmlString(self::driverFiles($record)->map(fn (array $f): string => '<p><a class="text-primary-600 underline" target="_blank" href="'.e($f['url']).'">'.e($f['name'] ?: 'file').'</a> <span class="text-gray-500 text-sm">'.e((string) $f['type']).'</span></p>')->implode('')))
                     ->modalSubmitAction(false)->modalCancelActionLabel('Close'),
-                Action::make('comments')->label('Σχόλια')->icon(Heroicon::OutlinedChatBubbleLeftEllipsis)->color('gray')
+                Action::make('comments')->button()->outlined()->size('sm')->label('Σχόλια')->icon(Heroicon::OutlinedChatBubbleLeftEllipsis)->color('gray')
                     ->badge(fn (VTransfer $record): ?int => DB::table('transfers_comms')->where('TransferID', $record->TransferID)->count() ?: null)
                     ->visible(fn (): bool => Permissions::allows(auth()->user(), 'transfers_comms', 'view'))
                     ->modalHeading('Σχόλια')
@@ -138,7 +122,7 @@ class MyJobResource extends Resource
                         ]);
                         Notification::make()->success()->title('Saved')->send();
                     }),
-                Action::make('taxi')->label('Taxi')->icon(Heroicon::OutlinedReceiptPercent)->color('gray')
+                Action::make('taxi')->button()->outlined()->size('sm')->label('Taxi')->icon(Heroicon::OutlinedReceiptPercent)->color('gray')
                     ->tooltip('Upload the taxi receipt')
                     ->visible(fn (): bool => Permissions::allows(auth()->user(), 'myat_transfers_files1_taxi', 'add'))
                     ->modalHeading('Taxi receipt')
@@ -151,7 +135,7 @@ class MyJobResource extends Resource
                         ]);
                         Notification::make()->success()->title('Receipt uploaded')->send();
                     }),
-                Action::make('tour')->label('Περιγραφή')->icon(Heroicon::OutlinedMagnifyingGlass)->color('gray')
+                Action::make('tour')->button()->outlined()->size('sm')->label('Περιγραφή')->icon(Heroicon::OutlinedMagnifyingGlass)->color('gray')
                     ->visible(fn (VTransfer $record): bool => filled($record->TourDescription))
                     ->modalHeading(fn (VTransfer $record): string => (string) $record->To)
                     ->modalContent(fn (VTransfer $record) => str(e((string) $record->TourDescription))->replace("\n", '<br>')->toHtmlString())

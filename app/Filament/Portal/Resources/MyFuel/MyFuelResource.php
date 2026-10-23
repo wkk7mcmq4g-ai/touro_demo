@@ -93,7 +93,8 @@ class MyFuelResource extends Resource
                 DatePicker::make('FuelDate')->label('Ημερομηνία')->default(now())->required()->rule(fn (): Closure => self::fuelDateRule()),
                 TextInput::make('FuelAmount')->label('Αξία')->numeric()->minValue(0)->prefix('€')->required(),
             ]),
-            Section::make('Απόδειξη')->columnSpanFull()->schema(self::legacyFilesComponents('Files', 'receipt')),
+            Section::make('Απόδειξη')->columnSpanFull()->schema(self::legacyFilesComponents('Files', 'receipt'))
+                ->visible(fn (?FuelRegister $record): bool => LegacyFiles::canUpload() || filled($record?->Files)),
         ]);
     }
 
@@ -102,6 +103,7 @@ class MyFuelResource extends Resource
         return $table
             ->stackedOnMobile()
             ->defaultSort('FuelDate', 'desc')
+            ->emptyStateHeading('Δεν υπάρχουν αποδείξεις')
             ->columns([
                 TextColumn::make('FuelDate')->label('Ημερομηνία')->date('d/m/Y')->sortable(),
                 TextColumn::make('VehicleID')->label('Όχημα')->formatStateUsing(fn ($state): ?string => Lookups::vehicles()[$state] ?? null),

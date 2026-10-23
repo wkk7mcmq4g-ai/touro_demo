@@ -13,6 +13,10 @@ class CreateMyFuel extends CreateRecord
 
     protected static string $resource = MyFuelResource::class;
 
+    protected static bool $canCreateAnother = false;
+
+    protected static ?string $title = 'Νέα απόδειξη καυσίμου';
+
     protected function mutateFormDataBeforeCreate(array $data): array
     {
         // The driver is the one linked to this login (drivers.UserID).

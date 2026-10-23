@@ -580,3 +580,255 @@
     text-align: center;
     color: #64748b;
 }
+
+/* ---------- Portal on phones (drivers, partners) ---------- */
+
+.myat-tabbar {
+    display: none;
+}
+
+@media (max-width: 63.99rem) {
+    .fi-panel-portal .myat-tabbar {
+        position: fixed;
+        inset-inline: 0;
+        bottom: 0;
+        z-index: 40;
+        display: flex;
+        justify-content: space-around;
+        padding: 0.35rem 0.25rem calc(0.35rem + env(safe-area-inset-bottom));
+        background: var(--myat-navy-deep);
+        box-shadow: 0 -6px 20px -8px rgb(0 0 0 / 0.35);
+    }
+
+    .fi-panel-portal .myat-tabbar-item {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.15rem;
+        padding: 0.35rem 0.25rem;
+        border-radius: 0.75rem;
+        color: rgb(255 255 255 / 0.65);
+        font-size: 0.68rem;
+        font-weight: 600;
+        text-align: center;
+        line-height: 1.15;
+    }
+
+    .fi-panel-portal .myat-tabbar-icon {
+        width: 1.45rem;
+        height: 1.45rem;
+    }
+
+    .fi-panel-portal .myat-tabbar-active {
+        color: #fff;
+        background: rgb(0 150 255 / 0.22);
+    }
+
+    .fi-panel-portal .myat-tabbar-active .myat-tabbar-icon {
+        color: var(--myat-mint);
+    }
+
+    /* room for the tab bar */
+    .fi-panel-portal .fi-main {
+        padding-bottom: 6rem;
+        padding-inline: 0.75rem;
+    }
+
+    .fi-panel-portal .fi-header-heading {
+        font-size: 1.5rem;
+    }
+
+    .fi-panel-portal .fi-page-header-main-ctn {
+        padding-block: 0.75rem 1rem;
+    }
+
+    /* bigger touch targets */
+    .fi-panel-portal .fi-btn,
+    .fi-panel-portal .fi-ac-btn-action,
+    .fi-panel-portal .fi-ta-actions .fi-link {
+        min-height: 2.75rem;
+    }
+
+    .fi-panel-portal .fi-input,
+    .fi-panel-portal .fi-select-input {
+        font-size: 1rem; /* no zoom-in on iPhone */
+        min-height: 2.75rem;
+    }
+
+    .fi-panel-portal .fi-tabs:not(.fi-contained) {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .fi-panel-portal .fi-tabs:not(.fi-contained) .fi-tabs-item {
+        flex: 1;
+        justify-content: center;
+    }
+}
+
+/* ---------- Driver job cards ---------- */
+
+.myat-job {
+    display: grid;
+    gap: 0.6rem;
+}
+
+.myat-job-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.myat-job-time {
+    font-size: 1.9rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    color: var(--myat-navy);
+}
+
+.dark .myat-job-time {
+    color: #fff;
+}
+
+.myat-job-date {
+    margin-top: 0.2rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: capitalize;
+}
+
+.myat-job-tags {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.3rem;
+}
+
+.myat-job-tag {
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #fff;
+    background: var(--myat-azure);
+}
+
+.myat-job-tag-soft {
+    color: var(--myat-navy);
+    background: #e6f2ff;
+}
+
+.myat-job-tag-warn {
+    color: #7c2d12;
+    background: #fde68a;
+}
+
+.myat-job-route {
+    position: relative;
+    display: grid;
+    gap: 0.55rem;
+    margin: 0;
+    padding: 0 0 0 1.1rem;
+    list-style: none;
+}
+
+.myat-job-route::before {
+    content: '';
+    position: absolute;
+    left: 0.3rem;
+    top: 0.55rem;
+    bottom: 0.55rem;
+    border-left: 2px dashed #cbd5e1;
+}
+
+.myat-job-route li {
+    position: relative;
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.myat-job-route li::before {
+    content: '';
+    position: absolute;
+    left: -1.1rem;
+    top: 0.3rem;
+    width: 0.65rem;
+    height: 0.65rem;
+    border-radius: 999px;
+    background: var(--myat-mint);
+    box-shadow: 0 0 0 3px #fff;
+}
+
+.myat-job-route li:last-child::before {
+    background: var(--myat-azure);
+}
+
+.myat-job-route-label,
+.myat-job-line span {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: #94a3b8;
+}
+
+.myat-job-line {
+    font-size: 0.9rem;
+}
+
+.myat-job-call {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-top: 0.3rem;
+    padding: 0.45rem 0.8rem;
+    border-radius: 999px;
+    font-weight: 700;
+    color: #fff;
+    background: #16a34a;
+    white-space: nowrap;
+}
+
+.myat-job-notes {
+    padding: 0.6rem 0.75rem;
+    border-radius: 0.6rem;
+    font-size: 0.875rem;
+    background: #fff7ed;
+    color: #7c2d12;
+    border: 1px solid #fed7aa;
+}
+
+.dark .myat-job-notes {
+    background: rgb(251 146 60 / 0.12);
+    color: #fed7aa;
+    border-color: rgb(251 146 60 / 0.3);
+}
+
+.myat-job-vehicle {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
+}
+
+/* job cards: the action buttons wrap in rows, the outer table box steps back */
+.fi-panel-portal .fi-ta-content-grid .fi-ta-actions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 0.4rem;
+}
+
+@media (max-width: 63.99rem) {
+    .fi-panel-portal .fi-ta-ctn:has(.fi-ta-content-grid) {
+        background: transparent;
+        box-shadow: none;
+    }
+
+    .fi-panel-portal .fi-ta-ctn:has(.fi-ta-content-grid) .fi-ta-content-grid {
+        padding: 0;
+    }
+}
