@@ -482,3 +482,101 @@
 .myat-neg {
     color: #e11d48;
 }
+
+/* ---------- Crosstab reports ---------- */
+
+.myat-pivot-ctn {
+    overflow: auto;
+    max-height: 75vh;
+    border-radius: 1rem;
+    background: #fff;
+    box-shadow: var(--myat-shadow), 0 0 0 1px var(--myat-line);
+    transition: opacity 0.15s;
+}
+
+.dark .myat-pivot-ctn {
+    background: #111c2d;
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.06);
+}
+
+.myat-pivot {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.875rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.myat-pivot th,
+.myat-pivot td {
+    padding: 0.55rem 0.9rem;
+    border-bottom: 1px solid var(--myat-line);
+    white-space: nowrap;
+    text-align: end;
+}
+
+.myat-pivot thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #f8fafc;
+    color: #64748b;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.myat-pivot .myat-pivot-rowhead {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    text-align: start;
+    background: #fff;
+    font-weight: 600;
+}
+
+.myat-pivot thead .myat-pivot-rowhead {
+    z-index: 3;
+    background: #f8fafc;
+}
+
+.myat-pivot tbody tr:hover td,
+.myat-pivot tbody tr:hover th {
+    background: rgb(0 150 255 / 0.05);
+}
+
+.myat-pivot .myat-pivot-total,
+.myat-pivot tfoot td,
+.myat-pivot tfoot th {
+    font-weight: 800;
+    background: #f1f5f9;
+}
+
+.myat-pivot tfoot .myat-pivot-rowhead {
+    background: #f1f5f9;
+}
+
+.myat-pivot tfoot td,
+.myat-pivot tfoot th {
+    position: sticky;
+    bottom: 0;
+    border-bottom: 0;
+}
+
+.dark .myat-pivot thead th,
+.dark .myat-pivot .myat-pivot-rowhead,
+.dark .myat-pivot thead .myat-pivot-rowhead {
+    background: #111c2d;
+    color: #cbd5e1;
+}
+
+.dark .myat-pivot .myat-pivot-total,
+.dark .myat-pivot tfoot td,
+.dark .myat-pivot tfoot th {
+    background: #17253a;
+}
+
+.myat-pivot-empty {
+    padding: 3rem 1rem;
+    text-align: center;
+    color: #64748b;
+}
