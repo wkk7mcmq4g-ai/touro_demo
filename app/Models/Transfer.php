@@ -278,6 +278,11 @@ class Transfer extends Model
         return $this->hasMany(PriceListTransfer::class, 'TransferID', 'TransferID');
     }
 
+    public function comms(): HasMany
+    {
+        return $this->hasMany(TransfersComm::class, 'TransferID', 'TransferID');
+    }
+
     public function files(): HasMany
     {
         return $this->hasMany(MyatTransfersFile::class, 'TransferID', 'TransferID');

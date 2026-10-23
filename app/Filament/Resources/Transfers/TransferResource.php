@@ -7,9 +7,12 @@ use App\Filament\Resources\Transfers\Pages\CreateTransfer;
 use App\Filament\Resources\Transfers\Pages\EditTransfer;
 use App\Filament\Resources\Transfers\Pages\ListTransfers;
 use App\Filament\Resources\Transfers\RelationManagers\ChargesRelationManager;
+use App\Filament\Resources\Transfers\RelationManagers\CommsRelationManager;
+use App\Filament\Resources\Transfers\RelationManagers\ExpensesRelationManager;
 use App\Filament\Resources\Transfers\RelationManagers\FilesRelationManager;
 use App\Filament\Resources\Transfers\RelationManagers\NotesRelationManager;
 use App\Filament\Resources\Transfers\RelationManagers\PriceLinesRelationManager;
+use App\Filament\Resources\Transfers\RelationManagers\TaxiFilesRelationManager;
 use App\Filament\Resources\Transfers\Schemas\TransferForm;
 use App\Filament\Resources\Transfers\Tables\TransfersTable;
 use App\Models\Transfer;
@@ -68,7 +71,10 @@ class TransferResource extends Resource
             NotesRelationManager::class,
             PriceLinesRelationManager::class,
             ChargesRelationManager::class,
+            ExpensesRelationManager::class,
             FilesRelationManager::class,
+            TaxiFilesRelationManager::class,
+            CommsRelationManager::class,
         ];
     }
 

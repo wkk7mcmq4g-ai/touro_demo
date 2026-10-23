@@ -5,11 +5,16 @@ namespace Tests\Feature;
 use App\Filament\Resources\Transfers\Pages\CreateTransfer;
 use App\Filament\Resources\Transfers\Pages\EditTransfer;
 use App\Filament\Resources\Transfers\Pages\ListTransfers;
+use App\Filament\Resources\Transfers\RelationManagers\ChargesRelationManager;
+use App\Filament\Resources\Transfers\RelationManagers\CommsRelationManager;
+use App\Filament\Resources\Transfers\RelationManagers\ExpensesRelationManager;
 use App\Filament\Resources\Transfers\RelationManagers\FilesRelationManager;
 use App\Filament\Resources\Transfers\RelationManagers\NotesRelationManager;
 use App\Filament\Resources\Transfers\RelationManagers\PriceLinesRelationManager;
+use App\Filament\Resources\Transfers\RelationManagers\TaxiFilesRelationManager;
 use App\Models\MyatTransfersFile;
 use App\Models\Transfer;
+use App\Models\TransferCharge;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
@@ -27,7 +32,7 @@ class TransfersTest extends TestCase
 
         $this->emptyTables([
             'transfers', 'transfer_notes', 'transfer_charges', 'myat_transfers_files', 'price_list_transfers',
-            'price_list', 'counterparties', 'vehicles', 'tours', 'optionvalues', 'status_values', 'touro_noti',
+            'price_list', 'counterparties', 'vehicles', 'tours', 'optionvalues', 'status_values', 'touro_noti', 'transfers_comms',
         ]);
 
         $this->customerId = DB::table('counterparties')->insertGetId([
@@ -559,6 +564,46 @@ class TransfersTest extends TestCase
             ->assertOk()
             ->assertHeader('Content-Type', 'application/pdf')
             ->assertSee('test voucher', false);
+    }
+
+    public function test_expenses_taxi_receipts_and_communications_tabs(): void
+    {
+        $this->actingAs($this->makeLegacyUser('Entry'));
+        $transfer = $this->transfer();
+        $rm = fn (string $class) => Livewire::test($class, ['ownerRecord' => $transfer, 'pageClass' => EditTransfer::class]);
+
+        // Income and expense lines live in one table; each tab shows its own.
+        DB::table('transfer_charges')->insert([
+            ['TransferID' => $transfer->TransferID, 'TransferCharge' => 'Extra stop', 'ChargeValue' => 15, 'Expense' => 0],
+        ]);
+        $rm(ExpensesRelationManager::class)
+            ->callAction(TestAction::make('create')->table(), data: ['Expense' => 12.5, 'ExpenseReason' => 'Parking', 'ExpensePaid' => 'Ναι'])
+            ->assertHasNoFormErrors();
+        $expense = TransferCharge::query()->where('Expense', 12.5)->firstOrFail();
+        $income = TransferCharge::query()->where('ChargeValue', 15)->firstOrFail();
+        $this->assertSame([$transfer->TransferID, 'Parking'], [$expense->TransferID, $expense->ExpenseReason]);
+        $this->assertNotNull($expense->CreatedBy);
+        $rm(ExpensesRelationManager::class)->assertCanSeeTableRecords([$expense])->assertCanNotSeeTableRecords([$income]);
+        $rm(ChargesRelationManager::class)->assertCanSeeTableRecords([$income])->assertCanNotSeeTableRecords([$expense]);
+
+        // Taxi receipts are files of type 1363; like in PHPRunner, Entry users don't have that tab.
+        $this->assertFalse(TaxiFilesRelationManager::canViewForRecord($transfer, EditTransfer::class));
+        $this->actingAs($this->makeLegacyUser('Admin'));
+        $rm(TaxiFilesRelationManager::class)
+            ->callAction(TestAction::make('create')->table(), data: ['upload' => UploadedFile::fake()->createWithContent('receipt.jpg', 'jpeg')])
+            ->assertHasNoFormErrors();
+        $taxi = MyatTransfersFile::query()->withoutBlob()->where('Flnm', 'receipt.jpg')->firstOrFail();
+        $this->assertSame(1363, (int) $taxi->Type);
+        $other = MyatTransfersFile::query()->create(['TransferID' => $transfer->TransferID, 'Flnm' => 'contract.pdf', 'Attachment' => 'x', 'Type' => null]);
+        $rm(TaxiFilesRelationManager::class)->assertCanSeeTableRecords([$taxi])->assertCanNotSeeTableRecords([$other]);
+
+        // Communications log: stamped with who and when.
+        $rm(CommsRelationManager::class)
+            ->callAction(TestAction::make('create')->table(), data: ['Notes' => 'Called the hotel, pickup moved to 10:15'])
+            ->assertHasNoFormErrors();
+        $comm = $transfer->comms()->firstOrFail();
+        $this->assertSame(auth()->user()->username, $comm->CreatedBy);
+        $this->assertNotNull($comm->CreatedDate);
     }
 
     public function test_file_downloads_need_a_back_office_login(): void

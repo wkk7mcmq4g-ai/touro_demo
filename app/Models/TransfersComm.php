@@ -37,4 +37,13 @@ class TransfersComm extends Model
             'CreatedDate' => 'datetime',
         ];
     }
+
+    protected static function booted(): void
+    {
+        // PHPRunner's add event: created now, by the logged-in user.
+        static::creating(function (TransfersComm $comm): void {
+            $comm->CreatedDate = now();
+            $comm->CreatedBy = (string) auth()->user()?->username;
+        });
+    }
 }

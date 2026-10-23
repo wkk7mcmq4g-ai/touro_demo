@@ -20,6 +20,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -70,6 +71,8 @@ class ChargesRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         return $table
+            // PHPRunner's charges tab: income lines only; expenses have their own tab.
+            ->modifyQueryUsing(fn (Builder $query) => $query->where('ChargeValue', '<>', 0))
             ->recordTitleAttribute('TransferCharge')
             ->defaultSort('ID', 'desc')
             ->columns([

@@ -30,14 +30,18 @@ class FilesRelationManager extends RelationManager
 
     protected static ?string $title = 'Files';
 
-    private const TABLE = 'myat_transfers_files';
+    /** PHPRunner table whose permissions apply. */
+    protected const TABLE = 'myat_transfers_files';
+
+    /** Only files of this optionvalues type (null: all), set on upload. */
+    protected const FILE_TYPE = null;
 
     /** mediumblob holds 16 MB; keep well under the server's packet limit. */
     private const MAX_KILOBYTES = 10 * 1024;
 
     public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
     {
-        return Permissions::allows(auth()->user(), self::TABLE, 'view');
+        return Permissions::allows(auth()->user(), static::TABLE, 'view');
     }
 
     public function form(Schema $schema): Schema
@@ -50,14 +54,16 @@ class FilesRelationManager extends RelationManager
                     ->maxSize(self::MAX_KILOBYTES)
                     ->required(),
                 Select::make('Type')
-                    ->options(fn (): array => Lookups::optionIds('TransferFile')),
+                    ->options(fn (): array => Lookups::optionIds('TransferFile'))
+                    ->visible(static::FILE_TYPE === null),
             ]);
     }
 
     public function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query): Builder => $query->withoutBlob())
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->withoutBlob()
+                ->when(static::FILE_TYPE !== null, fn (Builder $query) => $query->where('Type', static::FILE_TYPE)))
             ->recordTitleAttribute('Flnm')
             ->defaultSort('ID', 'desc')
             ->columns([
@@ -77,7 +83,7 @@ class FilesRelationManager extends RelationManager
                 CreateAction::make()
                     ->label('Upload file')
                     ->modalHeading('Upload a file')
-                    ->visible(fn (): bool => Permissions::allows(auth()->user(), self::TABLE, 'create'))
+                    ->visible(fn (): bool => Permissions::allows(auth()->user(), static::TABLE, 'create'))
                     ->using(function (array $data): Model {
                         /** @var TemporaryUploadedFile $upload */
                         $upload = $data['upload'];
@@ -85,7 +91,7 @@ class FilesRelationManager extends RelationManager
                         return $this->getOwnerRecord()->files()->create([
                             'Flnm' => $upload->getClientOriginalName(),
                             'Attachment' => $upload->get(),
-                            'Type' => $data['Type'] ?? null,
+                            'Type' => static::FILE_TYPE ?? $data['Type'] ?? null,
                         ]);
                     }),
             ])
@@ -95,7 +101,7 @@ class FilesRelationManager extends RelationManager
                     ->url(fn (MyatTransfersFile $record): string => route('transfer-files.download', $record->ID))
                     ->openUrlInNewTab(),
                 DeleteAction::make()
-                    ->visible(fn (): bool => Permissions::allows(auth()->user(), self::TABLE, 'delete')),
+                    ->visible(fn (): bool => Permissions::allows(auth()->user(), static::TABLE, 'delete')),
             ]);
     }
 }
