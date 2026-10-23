@@ -17,6 +17,7 @@ use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Text;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Carbon;
 
@@ -106,7 +107,16 @@ class TransferForm
             ->columns(2)
             ->components([
                 Textarea::make('PassengerName')->label('Passenger name(s)')->rows(2),
-                Textarea::make('LeadName')->label('Lead name')->rows(2),
+                Textarea::make('LeadName')
+                    ->label('Lead name')
+                    ->rows(2)
+                    // PHPRunner (add page): for some customers the lessee is the lead passenger.
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(function (string $operation, ?string $state, Get $get, Set $set): void {
+                        if ($operation === 'create' && in_array((int) $get('cID_Customer'), config('transfers.lessee_is_lead_for_customers', []), true)) {
+                            $set('LesseeName', $state);
+                        }
+                    }),
                 Textarea::make('LeadPhone')->label('Lead phone')->rows(1),
                 Textarea::make('LesseeName')
                     ->label('Lessee')
@@ -192,9 +202,13 @@ class TransferForm
                 $money('PricePaid', 'Paid'),
                 $money('PriceRcvd', 'Received'),
                 $money('ExtraIncome', 'Extra income'),
-                $money('Expense', 'Expenses'),
-                Select::make('Platform')->options(['Όχι' => 'Όχι', 'Ναι' => 'Ναι']),
-                $money('PlatformPrice', 'Platform price'),
+                // As in PHPRunner: not typed on the form (it is edited in the list / comes from charges).
+                $money('Expense', 'Expenses')->disabled()->dehydrated(false),
+                Select::make('Platform')->options(['Όχι' => 'Όχι', 'Ναι' => 'Ναι'])->live(),
+                // Only when the booking came through a platform; a stored price is kept as it is.
+                $money('PlatformPrice', 'Platform price')
+                    ->disabled(fn (Get $get): bool => $get('Platform') !== 'Ναι')
+                    ->dehydrated(),
                 ToggleButtons::make('TobeInvoiced')
                     ->label('To be invoiced')
                     ->options(['Όχι' => 'Όχι', 'Τιμολόγιο' => 'Τιμολόγιο', 'Απόδειξη' => 'Απόδειξη'])

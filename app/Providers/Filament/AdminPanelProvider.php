@@ -37,6 +37,8 @@ class AdminPanelProvider extends PanelProvider
             // No ->font(): Filament's bundled Inter is used, nothing loads from a font CDN.
             ->defaultAvatarProvider(InitialsAvatarProvider::class)
             ->sidebarCollapsibleOnDesktop()
+            // PHPRunner asked before leaving the add page; warn before losing unsaved changes.
+            ->unsavedChangesAlerts()
             ->navigationGroups([
                 NavigationGroup::make('Operations'),
                 NavigationGroup::make('Partner jobs'),

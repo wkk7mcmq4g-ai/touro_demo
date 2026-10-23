@@ -163,6 +163,40 @@ class TransfersTest extends TestCase
         $this->assertTrue($transfer->fresh()->TransferDate->isToday());
     }
 
+    public function test_form_events_from_the_phprunner_add_and_edit_pages(): void
+    {
+        $this->actingAs($this->makeLegacyUser('Entry'));
+        config(['transfers.lessee_is_lead_for_customers' => [$this->customerId]]);
+
+        // Add page: the lead name is copied to the lessee for the configured customers.
+        Livewire::test(CreateTransfer::class)
+            ->fillForm(['cID_Customer' => $this->customerId, 'LesseeName' => ''])
+            ->fillForm(['LeadName' => 'Maria Papadopoulou'])
+            ->assertSchemaStateSet(['LesseeName' => 'Maria Papadopoulou']);
+
+        config(['transfers.lessee_is_lead_for_customers' => []]);
+        Livewire::test(CreateTransfer::class)
+            ->fillForm(['cID_Customer' => $this->customerId, 'LesseeName' => ''])
+            ->fillForm(['LeadName' => 'Maria Papadopoulou'])
+            ->assertSchemaStateSet(['LesseeName' => '']);
+
+        // Platform price only with a platform booking; expenses are never typed on the form.
+        $transfer = $this->transfer(['Platform' => 'Όχι', 'PlatformPrice' => 12, 'Expense' => 7]);
+        Livewire::test(EditTransfer::class, ['record' => $transfer->getKey()])
+            ->assertFormFieldDisabled('PlatformPrice')
+            ->assertFormFieldDisabled('Expense')
+            ->fillForm(['Platform' => 'Ναι'])
+            ->assertFormFieldEnabled('PlatformPrice')
+            ->fillForm(['PlatformPrice' => 20, 'Notes' => 'x'])
+            ->call('save')
+            ->assertHasNoFormErrors();
+
+        $transfer->refresh();
+        $this->assertSame('Ναι', $transfer->Platform);
+        $this->assertEquals(20, $transfer->PlatformPrice);
+        $this->assertEquals(7, $transfer->Expense);
+    }
+
     public function test_transfers_list_is_full_width_with_resizable_columns(): void
     {
         $this->actingAs($this->makeLegacyUser('Entry'));
