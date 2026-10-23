@@ -55,6 +55,14 @@ class Lookups
         return ($color !== null && preg_match('/^[#a-zA-Z0-9(),.% ]{1,40}$/', $color)) ? trim($color) : null;
     }
 
+    /** The colour of an optionvalues row picked by its OptionID (e.g. ExpenseCategoryID), or null. */
+    public static function colorById(string $option, $id): ?string
+    {
+        $value = self::optionIds($option)[$id] ?? null;
+
+        return self::color($option, $value);
+    }
+
     /**
      * @return array<string, string> Statuses the user's group may set
      *                               (PHPRunner: `Status_Group = ':session.GroupID'`).

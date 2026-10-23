@@ -56,4 +56,17 @@ class Expense extends Model
             'ExpenseCategoryID' => 'integer',
         ];
     }
+
+    /** PHPRunner BeforeAdd / BeforeEdit stamps (the column really is spelt `MofifiedBy`). */
+    protected static function booted(): void
+    {
+        static::creating(function (Expense $expense): void {
+            $expense->CreatedDate = now();
+            $expense->CreatedBy = auth()->user()?->username;
+        });
+        static::updating(function (Expense $expense): void {
+            $expense->ModifiedDate = now();
+            $expense->MofifiedBy = auth()->user()?->username;
+        });
+    }
 }

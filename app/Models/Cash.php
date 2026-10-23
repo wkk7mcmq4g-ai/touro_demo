@@ -55,4 +55,26 @@ class Cash extends Model
             'Total' => 'float',
         ];
     }
+
+    /** Columns MariaDB calculates itself (GENERATED ALWAYS); never written from PHP. */
+    public const GENERATED = ['Total'];
+
+    /** The cash boxes, in PHPRunner's order, with their labels. */
+    public const BOXES = [
+        'ERB' => 'ERB', 'PrepaidERB' => 'Prepaid ERB', 'PrepaidAlpha' => 'Prepaid Alpha', 'Viva' => 'Viva', 'Cash' => 'Cash',
+        'Paypal' => 'Paypal', 'Ziraat' => 'Ziraat', 'BoxGR' => 'Κουτί Ελλάδα', 'Box_Out' => 'Κουτί εκτός', 'LittleBox' => 'Κασελάκια',
+    ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (Cash $cash): void {
+            foreach (self::GENERATED as $column) {
+                unset($cash->{$column});
+            }
+            // The boxes are NOT NULL DEFAULT 0.
+            foreach (array_keys(self::BOXES) as $column) {
+                $cash->{$column} = (float) ($cash->{$column} ?? 0);
+            }
+        });
+    }
 }
