@@ -28,6 +28,12 @@ class ElorusClient
         return $this->created($this->request()->post('creditnotes/', $document));
     }
 
+    /** @return array{id: string, number: string} */
+    public function createContact(array $contact): array
+    {
+        return $this->created($this->request()->post('contacts/', $contact));
+    }
+
     /** The PDF of an invoice ('invoices') or credit note ('creditnotes'). */
     public function pdf(string $id, string $kind = 'invoices'): string
     {

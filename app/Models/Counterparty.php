@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Support\Lookups;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -75,5 +77,44 @@ class Counterparty extends Model
             'LeadName' => 'integer',
             'GetReview' => 'integer',
         ];
+    }
+
+    /** NOT NULL columns whose database default means "not set". */
+    public const NOT_REGISTERED = ['ElorusID', 'MydataDocumentType', 'MydataClassCategory', 'MydataClassType', 'DocumentType', 'CoachName', 'SupplierName'];
+
+    protected static function booted(): void
+    {
+        // PHPRunner's add/edit events.
+        static::creating(function (Counterparty $c): void {
+            $c->CreatedDate = now();
+            $c->CreatedBy = auth()->user()?->username;
+        });
+        static::updating(function (Counterparty $c): void {
+            $c->LastUpdatedDate = now();
+            $c->LastUpdatedBy = auth()->user()?->username;
+        });
+        static::saving(function (Counterparty $c): void {
+            foreach (self::NOT_REGISTERED as $column) {
+                if ($c->isDirty($column) || ! $c->exists) {
+                    if (blank($c->getAttribute($column))) {
+                        $c->setAttribute($column, 'NotRegistered');
+                    }
+                }
+            }
+        });
+        // Customers, coaches and guides feed the dropdowns everywhere.
+        static::saved(fn () => Lookups::flush());
+        static::deleted(fn () => Lookups::flush());
+    }
+
+    /** `Active` is text; PHPRunner's checkbox treats any non-empty value but 0/No as ticked. */
+    public static function isActiveValue(mixed $value): bool
+    {
+        return ! in_array(strtolower(trim((string) $value)), ['', '0', 'no', 'off', 'false'], true);
+    }
+
+    public function files(): HasMany
+    {
+        return $this->hasMany(MyatPartnerFile::class, 'cid', 'CID');
     }
 }

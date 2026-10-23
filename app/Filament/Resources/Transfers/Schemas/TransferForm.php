@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Transfers\Schemas;
 
+use App\Models\Counterparty;
 use App\Models\Transfer;
 use App\Support\Lookups;
 use App\Support\TransferRules;
@@ -59,6 +60,17 @@ class TransferForm
                     ->options(fn (): array => Lookups::customers())
                     ->searchable()
                     ->required()
+                    // PHPRunner's "Add new" on the customer lookup.
+                    ->createOptionForm([
+                        TextInput::make('CounterShortName')->label('Επωνυμία')->required()->maxLength(500),
+                        TextInput::make('SupplierName')->label('Name in customer lists')->required()->maxLength(150),
+                        TextInput::make('LesseName')->label('Lessee name')->maxLength(150),
+                        TextInput::make('Email')->email()->maxLength(500),
+                        TextInput::make('Phones')->label('Τηλέφωνα')->maxLength(500),
+                        TextInput::make('VAT')->label('ΑΦΜ')->maxLength(150),
+                    ])
+                    ->createOptionUsing(fn (array $data): int => Counterparty::query()->create($data + ['IsSupplier' => 1, 'Active' => '1'])->getKey())
+                    ->createOptionAction(fn ($action) => $action->modalHeading('New customer')->visible(fn (): bool => (bool) auth()->user()?->may('counterparties', 'add')))
                     // PHPRunner autofill (add page only): picking the customer fills in its lessee.
                     ->live()
                     ->afterStateUpdated(function (string $operation, $state, Set $set): void {
@@ -124,7 +136,10 @@ class TransferForm
                     // PHPRunner (add page): for some customers the lessee is the lead passenger.
                     ->live(onBlur: true)
                     ->afterStateUpdated(function (string $operation, ?string $state, Get $get, Set $set): void {
-                        if ($operation === 'create' && in_array((int) $get('cID_Customer'), config('transfers.lessee_is_lead_for_customers', []), true)) {
+                        // The customer's "Lessee = lead passenger" flag (counterparties.LeadName), as the
+                        // database trigger uses it; PHPRunner's page had customers 11, 37, 117 hard-coded.
+                        if ($operation === 'create' && filled($get('cID_Customer'))
+                            && (int) DB::table('counterparties')->where('CID', $get('cID_Customer'))->value('LeadName') === 1) {
                             $set('LesseeName', $state);
                         }
                     }),

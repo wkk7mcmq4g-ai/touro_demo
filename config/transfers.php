@@ -16,10 +16,4 @@ return [
         'Voucher_EndTime', 'OLP',
     ],
 
-    /*
-    | Customers (cID_Customer) for whom the lessee is the lead passenger: on a new
-    | transfer, typing the lead name fills the lessee too. From the PHPRunner add page.
-    */
-    'lessee_is_lead_for_customers' => [11, 37, 117],
-
 ];

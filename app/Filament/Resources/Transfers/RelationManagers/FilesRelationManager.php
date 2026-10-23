@@ -65,6 +65,8 @@ class FilesRelationManager extends RelationManager
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->withoutBlob()
                 ->when(static::FILE_TYPE !== null, fn (Builder $query) => $query->where('Type', static::FILE_TYPE)))
             ->recordTitleAttribute('Flnm')
+            ->modelLabel('file')
+            ->emptyStateHeading('No files yet')
             ->defaultSort('ID', 'desc')
             ->columns([
                 TextColumn::make('Flnm')

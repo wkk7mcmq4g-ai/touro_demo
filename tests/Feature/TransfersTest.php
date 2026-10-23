@@ -171,7 +171,7 @@ class TransfersTest extends TestCase
     public function test_form_events_from_the_phprunner_add_and_edit_pages(): void
     {
         $this->actingAs($this->makeLegacyUser('Entry'));
-        config(['transfers.lessee_is_lead_for_customers' => [$this->customerId]]);
+        DB::table('counterparties')->where('CID', $this->customerId)->update(['LeadName' => 1]);
 
         // Add page: picking the customer fills in its lessee (PHPRunner autofill); not on edit.
         DB::table('counterparties')->where('CID', $this->customerId)->update(['LesseName' => 'ACME Leasing']);
@@ -190,7 +190,7 @@ class TransfersTest extends TestCase
             ->fillForm(['LeadName' => 'Maria Papadopoulou'])
             ->assertSchemaStateSet(['LesseeName' => 'Maria Papadopoulou']);
 
-        config(['transfers.lessee_is_lead_for_customers' => []]);
+        DB::table('counterparties')->where('CID', $this->customerId)->update(['LeadName' => 0]);
         Livewire::test(CreateTransfer::class)
             ->fillForm(['cID_Customer' => $this->customerId, 'LesseeName' => ''])
             ->fillForm(['LeadName' => 'Maria Papadopoulou'])

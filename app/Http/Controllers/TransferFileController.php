@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\MyatPartnerFile;
 use App\Models\MyatTransfersFile;
 use App\Support\Permissions;
 use Illuminate\Http\Request;
@@ -10,12 +11,21 @@ use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Streams a transfer file out of its database blob.
+ * Streams a file out of its database blob (transfer files, partner files).
  */
 class TransferFileController extends Controller
 {
-    public function download(Request $request, int $id): Response
+    /** Blob file tables: route kind => [model, PHPRunner permission table]. */
+    private const KINDS = [
+        'transfers' => [MyatTransfersFile::class, 'myat_transfers_files'],
+        'partners' => [MyatPartnerFile::class, 'myat_partner_files'],
+    ];
+
+    public function download(Request $request, int $id, string $kind = 'transfers'): Response
     {
+        abort_unless(isset(self::KINDS[$kind]), 404);
+        [$model, $table] = self::KINDS[$kind];
+
         $user = $request->user();
 
         if (! $user) {
@@ -23,9 +33,9 @@ class TransferFileController extends Controller
         }
 
         abort_unless($user->canAccessPanel(filament()->getPanel('admin')), 403);
-        abort_unless(Permissions::allows($user, 'myat_transfers_files', 'view'), 403);
+        abort_unless(Permissions::allows($user, $table, 'view'), 403);
 
-        $file = MyatTransfersFile::query()->findOrFail($id);
+        $file = $model::query()->findOrFail($id);
         $name = str_replace(['/', '\\'], '_', $file->Flnm ?: "file-{$file->ID}");
         $asciiName = preg_replace('/[^A-Za-z0-9._ ()-]/', '_', Str::ascii($name)) ?: "file-{$file->ID}";
         $content = (string) $file->getRawOriginal('Attachment');

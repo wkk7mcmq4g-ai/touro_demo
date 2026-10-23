@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -35,5 +36,15 @@ class MyatPartnerFile extends Model
             'cid' => 'integer',
             'Type' => 'integer',
         ];
+    }
+
+    /** The file itself is a blob in `Attachment`, as PHPRunner stores it. */
+    protected $hidden = ['Attachment'];
+
+    /** List columns without loading the blob, plus its size in bytes. */
+    public function scopeWithoutBlob(Builder $query): Builder
+    {
+        return $query->select(['ID', 'cid', 'Flnm', 'Type'])
+            ->selectRaw('OCTET_LENGTH(`Attachment`) as size_bytes');
     }
 }
