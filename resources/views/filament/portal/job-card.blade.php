@@ -5,6 +5,11 @@
     $tickets = $job->Tickets_Flag !== 'No' ? $job->Tickets_Flag : null;
 @endphp
 <div class="myat-job">
+    <div class="myat-job-top">
+        <span class="myat-job-vehicle">{{ $job->VehicleName ?: '—' }}</span>
+        <span class="myat-job-id">#{{ $job->TransferID }}</span>
+    </div>
+
     <div class="myat-job-head">
         <div>
             <div class="myat-job-time">{{ $job->TransferTime }}</div>
@@ -41,9 +46,5 @@
 
     @if (filled($job->Notes))
         <div class="myat-job-notes">{!! nl2br(e($job->Notes)) !!}</div>
-    @endif
-
-    @if (filled($job->VehicleName))
-        <div class="myat-job-vehicle">{{ $job->VehicleName }}</div>
     @endif
 </div>
