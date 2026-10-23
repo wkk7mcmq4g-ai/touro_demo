@@ -14,9 +14,10 @@ screen.
 
 1. **Laravel Herd** (free): <https://herd.laravel.com/windows>. It installs PHP and Composer.
    Afterwards, `php -v` in a new terminal should show PHP 8.3 or newer.
-2. **MariaDB** for a local copy of the database: <https://mariadb.org/download/> (11.4, MSI
-   installer). Remember the root password you choose. The installer also adds **HeidiSQL**, which
-   you can use to import the database.
+2. **A local database server.** If you have **XAMPP**, use its MySQL (it is MariaDB): start it in the
+   XAMPP Control Panel; root has no password, which matches `.env.example`. Otherwise install
+   MariaDB 11.4 from <https://mariadb.org/download/> and put its root password in `.env`.
+   Don't let XAMPP's PHP 8.2 be the `php` on your PATH; Herd's must come first (`php -v` ≥ 8.3).
 3. **Git**: <https://git-scm.com/download/win>, if you don't have it yet.
 
 ### 2. Get the app running
@@ -43,9 +44,9 @@ Use a copy so you're never testing against the live data. Do it in three steps:
    php artisan app:load-schema --without-triggers
    ```
 2. **Data.** In phpMyAdmin on the server, select `kwi14599_myat`, open **Export**, choose
-   **Custom** and set *Format-specific options* to **data** (not structure). Export it. Then in
-   HeidiSQL, connect to your local MariaDB, select `kwi14599_myat` and use
-   *File → Run SQL file…* on the export.
+   **Custom** and set *Format-specific options* to **data** (not structure). Export it. Then import
+   it into the local `kwi14599_myat`: with XAMPP, open <http://localhost/phpmyadmin>, select
+   `kwi14599_myat` → **Import**; with MariaDB's HeidiSQL, *File → Run SQL file…*.
 3. **Triggers and the daily event.**
    ```powershell
    php artisan app:load-schema --triggers-only

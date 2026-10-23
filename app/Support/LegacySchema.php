@@ -33,6 +33,8 @@ class LegacySchema
             throw new RuntimeException('Cannot read '.self::path());
         }
 
+        $sql = self::adaptToServer($sql, (string) $connection->selectOne('select version() as v')->v);
+
         $statements = array_values(array_filter(
             self::split($sql),
             fn (string $statement): bool => match ($part) {
@@ -47,6 +49,21 @@ class LegacySchema
         }
 
         return count($statements);
+    }
+
+    /**
+     * MariaDB before 10.6 (e.g. XAMPP's 10.4) only knows `utf8`, not the `utf8mb3` name
+     * that newer servers export. They are the same character set.
+     */
+    public static function adaptToServer(string $sql, string $serverVersion): string
+    {
+        if (preg_match('/^(\d+)\.(\d+)/', $serverVersion, $match)
+            && str_contains(strtolower($serverVersion), 'mariadb')
+            && version_compare("{$match[1]}.{$match[2]}", '10.6', '<')) {
+            return str_replace('utf8mb3', 'utf8', $sql);
+        }
+
+        return $sql;
     }
 
     public static function isTriggerOrEvent(string $statement): bool

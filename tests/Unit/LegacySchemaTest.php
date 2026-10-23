@@ -44,4 +44,16 @@ class LegacySchemaTest extends TestCase
         $this->assertSame(0, $count('/^CREATE TABLE `[^`]+` \(\s*\)$/'));
         $this->assertSame(0, $count('/\d(union|select|from|where)\b/i'));
     }
+
+    public function test_older_mariadb_gets_utf8_instead_of_utf8mb3(): void
+    {
+        $sql = 'CREATE TABLE t (a varchar(5)) DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci';
+
+        $this->assertSame(
+            'CREATE TABLE t (a varchar(5)) DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci',
+            LegacySchema::adaptToServer($sql, '10.4.32-MariaDB'),
+        );
+        $this->assertSame($sql, LegacySchema::adaptToServer($sql, '11.4.13-MariaDB-cll-lve'));
+        $this->assertSame($sql, LegacySchema::adaptToServer($sql, '10.11.6-MariaDB'));
+    }
 }
