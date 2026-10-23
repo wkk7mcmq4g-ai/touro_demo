@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use Illuminate\Database\Connection;
+use Illuminate\Database\QueryException;
 use RuntimeException;
 
 /**
@@ -44,11 +45,69 @@ class LegacySchema
             },
         ));
 
-        foreach ($statements as $statement) {
-            $connection->unprepared($statement);
+        // Windows/macOS servers ignore table-name case: drop the case-only duplicates there.
+        if ((int) $connection->selectOne('select @@lower_case_table_names as l')->l > 0) {
+            $statements = self::withoutCaseDuplicates($statements);
         }
 
-        return count($statements);
+        $loaded = 0;
+
+        foreach ($statements as $statement) {
+            if (preg_match('/^CREATE\s+EVENT\b/i', $statement)) {
+                // Copies must never run the live jobs (e.g. Daily_Notifications): create them disabled.
+                $statement = preg_replace('/\bENABLE(\s+DO)\b/i', 'DISABLE$1', $statement);
+
+                try {
+                    $connection->unprepared($statement);
+                    $loaded++;
+                } catch (QueryException $exception) {
+                    // 1577: the server has the event scheduler disabled; the event is optional here.
+                    if (($exception->errorInfo[1] ?? null) !== 1577) {
+                        throw $exception;
+                    }
+                }
+
+                continue;
+            }
+
+            $connection->unprepared($statement);
+            $loaded++;
+        }
+
+        return $loaded;
+    }
+
+    /**
+     * The live (Linux) database has tables whose names differ only in case, e.g.
+     * `MyAthensTransfersAPP6ugmembers` and `myathenstransfersapp6ugmembers` (unused
+     * PHPRunner leftovers). Keeps the first spelling of each and drops the statements
+     * that create or alter a later one.
+     *
+     * @param  list<string>  $statements
+     * @return list<string>
+     */
+    public static function withoutCaseDuplicates(array $statements): array
+    {
+        $firstSpelling = [];
+        $duplicates = [];
+
+        foreach ($statements as $statement) {
+            if (preg_match('/^CREATE TABLE `([^`]+)`/i', $statement, $match)) {
+                $lower = strtolower($match[1]);
+
+                if (isset($firstSpelling[$lower]) && $firstSpelling[$lower] !== $match[1]) {
+                    $duplicates[$match[1]] = true;
+                } else {
+                    $firstSpelling[$lower] ??= $match[1];
+                }
+            }
+        }
+
+        return array_values(array_filter(
+            $statements,
+            fn (string $statement): bool => ! (preg_match('/^(?:CREATE|ALTER) TABLE `([^`]+)`/i', $statement, $match)
+                && isset($duplicates[$match[1]])),
+        ));
     }
 
     /**

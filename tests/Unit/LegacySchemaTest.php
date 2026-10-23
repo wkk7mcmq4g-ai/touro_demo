@@ -56,4 +56,24 @@ class LegacySchemaTest extends TestCase
         $this->assertSame($sql, LegacySchema::adaptToServer($sql, '11.4.13-MariaDB-cll-lve'));
         $this->assertSame($sql, LegacySchema::adaptToServer($sql, '10.11.6-MariaDB'));
     }
+
+    public function test_case_only_duplicate_tables_are_dropped_for_windows(): void
+    {
+        $statements = [
+            'CREATE TABLE `AppUgMembers` (a int)',
+            'CREATE TABLE `appugmembers` (a int)',
+            'CREATE TABLE `transfers` (a int)',
+            'ALTER TABLE `AppUgMembers` ADD PRIMARY KEY (a)',
+            'ALTER TABLE `appugmembers` ADD PRIMARY KEY (a)',
+        ];
+
+        $this->assertSame([
+            'CREATE TABLE `AppUgMembers` (a int)',
+            'CREATE TABLE `transfers` (a int)',
+            'ALTER TABLE `AppUgMembers` ADD PRIMARY KEY (a)',
+        ], LegacySchema::withoutCaseDuplicates($statements));
+
+        $real = LegacySchema::split(file_get_contents(__DIR__.'/../../database/legacy/schema.sql'));
+        $this->assertCount(count($real) - 4, LegacySchema::withoutCaseDuplicates($real));
+    }
 }

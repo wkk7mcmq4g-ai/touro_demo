@@ -44,7 +44,9 @@ Use a copy so you're never testing against the live data. Do it in three steps:
    php artisan app:load-schema --without-triggers
    ```
 2. **Data.** In phpMyAdmin on the server, select `kwi14599_myat`, open **Export**, choose
-   **Custom** and set *Format-specific options* to **data** (not structure). Export it. Then import
+   **Custom** and set *Format-specific options* to **data** (not structure). In the table list,
+   untick the five unused PHPRunner tables with `6ug` in their name (Windows can't hold both
+   spellings of them). Export it. Then import
    it into the local `kwi14599_myat`: with XAMPP, open <http://localhost/phpmyadmin>, select
    `kwi14599_myat` → **Import**; with MariaDB's HeidiSQL, *File → Run SQL file…*.
 3. **Triggers and the daily event.**
@@ -53,6 +55,8 @@ Use a copy so you're never testing against the live data. Do it in three steps:
    ```
 
 The copy contains real customer data and password hashes, so keep it on your machine only.
+The `Daily_Notifications` job is created **disabled** in copies, so your PC never sends the
+real daily notifications.
 
 ### 4. Start it
 
