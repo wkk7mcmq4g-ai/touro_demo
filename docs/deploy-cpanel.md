@@ -34,21 +34,28 @@ A copy of the new back office on your hosting, next to PHPRunner, using the
 
 ## Updating automatically (every push to main)
 
-GitHub can upload each new version straight to the server over FTPS, so there is nothing
-to download or extract. Set it up once:
+Each push builds the package, uploads it as **one zip** over FTPS and asks the server to unpack
+it (`public/deploy.php`). A deploy takes a minute or two. Set it up once:
 
 1. cPanel → *FTP Accounts* → *Add FTP Account*: login e.g. `deploy`, a long random password,
    **Directory** = `touro_myat` (the app folder only, so this login can reach nothing else).
-2. GitHub → the repo → *Settings* → *Secrets and variables* → *Actions* → *New repository
-   secret*, three times:
-   - `FTP_SERVER` = your FTP host (cPanel → *FTP Accounts* → *Configure FTP Client*, e.g. `ftp.touro.gr`)
-   - `FTP_USERNAME` = the full login shown there, e.g. `deploy@touro.gr`
+2. Make a deploy token, a long random string (e.g. `openssl rand -hex 32`, or any password
+   generator, 40+ letters and digits). Put it in the server's `touro_myat/.env`:
+   ```
+   DEPLOY_TOKEN=the-long-random-string
+   ```
+3. GitHub → the repo → *Settings* → *Secrets and variables* → *Actions* → *New repository
+   secret*, four times:
+   - `FTP_SERVER` = the FTP host whose certificate matches, e.g. `ns335.ipdns.gr`
+   - `FTP_USERNAME` = the full login, e.g. `deploy@touro.gr`
    - `FTP_PASSWORD` = its password
-3. GitHub → *Actions* → **Package** → *Run workflow*. The first run uploads everything
-   (vendor included, so it takes a while); later runs upload only changed files.
+   - `DEPLOY_TOKEN` = the same string as in the server's `.env`
+4. The first time only, `public/deploy.php` is not on the server yet: extract the newest
+   package by hand once (*Updating by hand* below). After that every push deploys by itself.
 
-From then on every push to `main` builds and deploys. Your `.env` and `storage/` (logs,
-sessions) on the server are never touched. To stop deploying, delete the `FTP_SERVER` secret.
+Your `.env` and `storage/` (logs, sessions) on the server are never touched. Files deleted from
+the app are not removed from the server (harmless). To stop deploying, delete the `DEPLOY_TOKEN`
+secret; without a token in `.env`, `deploy.php` answers 404.
 
 ## Updating by hand
 

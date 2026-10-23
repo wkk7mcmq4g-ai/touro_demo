@@ -60,22 +60,20 @@ jobs:
           path: ${{ runner.temp }}/package/touro_myat.zip
           retention-days: 14
 
-      # Uploads only what changed since the last deploy (it keeps a state file on the server,
-      # outside the web root). The server's .env and storage/ are never touched.
+      # One zip over FTPS, then the server unpacks it (public/deploy.php, protected by
+      # DEPLOY_TOKEN in the server's .env). Much faster than sending ~20,000 files one by one.
+      # The server's .env and storage/ are never touched.
       - name: Deploy to the test site
         if: env.FTP_SERVER != '' && github.ref == 'refs/heads/main'
-        uses: SamKirkland/FTP-Deploy-Action@3a9c65ae0fc12ac924ccef8afc26941cc43aad0b # v4.4.0
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps
-          security: strict
-          local-dir: ${{ runner.temp }}/package/touro_myat/
-          server-dir: ./
-          exclude: |
-            **/.git*
-            **/.git*/**
-            .env
-            storage/**
-            public/storage/**
+        env:
+          FTP_USERNAME: ${{ secrets.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+          DEPLOY_URL: ${{ vars.DEPLOY_URL || 'https://new.myat.touro.gr/deploy.php' }}
+        run: |
+          if [ -z "$DEPLOY_TOKEN" ]; then echo "::warning::DEPLOY_TOKEN secret not set; skipping deploy"; exit 0; fi
+          curl --fail --show-error --silent --ssl-reqd --retry 3 \
+            --user "$FTP_USERNAME:$FTP_PASSWORD" \
+            -T "$RUNNER_TEMP/package/touro_myat.zip" "ftp://$FTP_SERVER/deploy-package.zip"
+          curl --fail --show-error --silent --max-time 600 -X POST \
+            -H "X-Deploy-Token: $DEPLOY_TOKEN" "$DEPLOY_URL"
