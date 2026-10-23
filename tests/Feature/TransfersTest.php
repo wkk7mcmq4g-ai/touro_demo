@@ -208,6 +208,89 @@ class TransfersTest extends TestCase
         $this->assertEquals(7, $transfer->Expense);
     }
 
+    public function test_copy_transfer_button(): void
+    {
+        $this->actingAs($this->makeLegacyUser('Entry'));
+        $transfer = $this->transfer(['LeadName' => 'Maria', 'Notes' => 'Child seat']);
+
+        Livewire::test(ListTransfers::class)
+            ->callTableAction('copy', $transfer)
+            ->assertRedirect();
+
+        $copy = Transfer::query()->whereKeyNot($transfer->getKey())->latest('TransferID')->firstOrFail();
+        $this->assertSame(['Maria', 'Child seat'], [$copy->LeadName, $copy->Notes]);
+    }
+
+    public function test_closing_sales_and_purchases_on_selected_transfers(): void
+    {
+        $user = $this->makeLegacyUser('Entry');
+        $this->actingAs($user);
+        $a = $this->transfer(['SalePrice' => 80, 'PriceRcvd' => 0, 'PurchasePrice' => 50, 'PricePaid' => 0]);
+        $b = $this->transfer(['SalePrice' => 60, 'PriceRcvd' => 0, 'PurchasePrice' => 40, 'PricePaid' => 0]);
+        $untouched = $this->transfer(['SalePrice' => 99, 'PriceRcvd' => 0]);
+
+        // The user has to type their own username, as in PHPRunner.
+        Livewire::test(ListTransfers::class)
+            ->callTableBulkAction('closeSales', [$a, $b], data: ['usr' => 'someone-else'])
+            ->assertHasTableBulkActionErrors(['usr']);
+        $this->assertEquals(0, $a->fresh()->PriceRcvd);
+
+        Livewire::test(ListTransfers::class)
+            ->callTableBulkAction('closeSales', [$a, $b], data: ['usr' => $user->username])
+            ->assertHasNoTableBulkActionErrors();
+        $this->assertEquals([80, 60, 0], [$a->fresh()->PriceRcvd, $b->fresh()->PriceRcvd, $untouched->fresh()->PriceRcvd]);
+
+        Livewire::test(ListTransfers::class)
+            ->callTableBulkAction('closePurchases', [$a], data: ['usr' => $user->username, 'invnum' => 'ΤΔΑ 123'])
+            ->assertHasNoTableBulkActionErrors();
+        $a->refresh();
+        $this->assertEquals(50, $a->PricePaid);
+        $this->assertSame(['ΤΔΑ 123', 'Έχω λάβει'], [$a->PurchaseInvoiceNum, $a->InvoicedRcvd]);
+    }
+
+    public function test_incoming_payment_button(): void
+    {
+        $user = $this->makeLegacyUser('Admin');
+        $this->actingAs($user);
+
+        Livewire::test(ListTransfers::class)
+            ->callAction('incomingPayment', ['customer' => $this->customerId, 'amount' => 150.5, 'date' => '2026-10-20'])
+            ->assertHasNoActionErrors();
+
+        $payment = DB::table('PaymentsReceived')->where('CID_Customer', $this->customerId)->first();
+        $this->assertEquals(150.5, $payment->PaymentAmount);
+        $this->assertSame(['2026-10-20', $user->username], [$payment->PaymentDate, $payment->CreatedBy]);
+    }
+
+    public function test_issues_tab_and_period_filter(): void
+    {
+        $this->actingAs($this->makeLegacyUser('Entry'));
+        $tbd = $this->transfer(['TransferDate' => Carbon::today()->addDays(2), 'LeadPhone' => 'TBD']);
+        $flagged = $this->transfer(['TransferDate' => Carbon::today()->addDays(3), 'OperationalIssues' => 1]);
+        $fine = $this->transfer(['TransferDate' => Carbon::today()->addDays(2)]);
+        $cancelled = $this->transfer(['TransferDate' => Carbon::today()->addDays(2), 'LeadPhone' => 'TBD', 'Status' => 'Cancelled']);
+        $later = $this->transfer(['TransferDate' => Carbon::today()->addDays(20), 'LeadPhone' => 'TBD']);
+
+        $page = Livewire::test(ListTransfers::class)->set('activeTab', 'issues');
+        $page->assertCanSeeTableRecords([$tbd, $flagged])->assertCanNotSeeTableRecords([$fine, $cancelled, $later]);
+
+        $lastMonth = $this->transfer(['TransferDate' => Carbon::today()->subMonthNoOverflow()->startOfMonth()->addDays(3), 'ImportDate' => Carbon::today()->subYear()]);
+        Livewire::test(ListTransfers::class)->set('activeTab', 'all')
+            ->filterTable('period', 'last_month')
+            ->assertCanSeeTableRecords([$lastMonth])
+            ->assertCanNotSeeTableRecords([$fine]);
+    }
+
+    public function test_copy_notes_to_driver_notes(): void
+    {
+        $this->actingAs($this->makeLegacyUser('Entry'));
+        $transfer = $this->transfer(['Notes' => 'Meet at gate B', 'DriverNotes' => '']);
+
+        Livewire::test(EditTransfer::class, ['record' => $transfer->getKey()])
+            ->callAction(TestAction::make('copyNotes')->schemaComponent('DriverNotes'))
+            ->assertSchemaStateSet(['DriverNotes' => 'Meet at gate B']);
+    }
+
     public function test_transfers_list_is_full_width_with_resizable_columns(): void
     {
         $this->actingAs($this->makeLegacyUser('Entry'));

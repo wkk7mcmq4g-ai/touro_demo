@@ -181,6 +181,28 @@ class Transfer extends Model
         'OperationalIssuesFlag', 'FinancialIssuesFlag', 'OpenChargesFlag', 'AssetsFlag', 'LiabilitiesFlag',
     ];
 
+    /**
+     * PHPRunner's `issues` column (transfers datasource): a non-cancelled transfer with a
+     * TBD/TBA placeholder, a missing From/To, or an operational/financial issue flag.
+     */
+    public function scopeWithOpenIssues(Builder $query): Builder
+    {
+        return $query->where('Status', '<>', 'Cancelled')->where(fn (Builder $q) => $q
+            ->where('Pax', 'like', 'TBD%')
+            ->orWhere('Flight_Ship_Num_From', 'like', 'TBD%')
+            ->orWhereRaw("ifnull(`From`, '') = ''")->orWhere('From', 'like', 'TBD%')
+            ->orWhereRaw("ifnull(`To`, '') = ''")->orWhere('To', 'like', 'TBD%')
+            ->orWhere('Notes', 'like', 'TBD%')
+            ->orWhere('LeadName', 'like', 'TBD%')
+            ->orWhere('LeadPhone', 'like', 'TBD%')
+            ->orWhere('LesseeName', 'like', 'TBD%')
+            ->orWhere('PassengerName', 'like', 'TBD%')
+            ->orWhere('Assistant', 'TBA')
+            ->orWhere('TransferTime', 'like', 'TBD%')
+            ->orWhere('OperationalIssuesFlag', 'Yes')
+            ->orWhere('FinancialIssuesFlag', 'Yes'));
+    }
+
     /** Fields where a value starting with "TBD"/"TBA" is flagged in the list, as in PHPRunner. */
     public const TBD_FIELDS = [
         'Pax' => 'Pax', 'Flight_Ship_Num_From' => 'Flight/ship', 'From' => 'From', 'To' => 'To',

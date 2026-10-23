@@ -2,9 +2,11 @@
 
 namespace App\Filament\Resources\Transfers\Tables;
 
+use App\Filament\Resources\Transfers\Actions\TransferActions;
 use App\Models\Transfer;
 use App\Support\ColorDot;
 use App\Support\Lookups;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Support\Icons\Heroicon;
@@ -57,6 +59,14 @@ class TransfersTable
             ->filtersFormColumns(['sm' => 2, 'lg' => 4, 'xl' => 6])
             ->recordActions([
                 EditAction::make(),
+                TransferActions::copy()->iconButton(),
+            ])
+            // PHPRunner's "Τιμολόγηση" menu: buttons that work on the ticked transfers.
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    TransferActions::closeSales(),
+                    TransferActions::closePurchases(),
+                ])->label('Τιμολόγηση')->button(),
             ]);
     }
 
@@ -230,6 +240,26 @@ class TransfersTable
         return [
             // Search panel
             $dateRange('transfer_dates', 'TransferDate', 'Transfer date'),
+            // PHPRunner's "Φίλτρα" menu buttons (Yesterday, This month, ...).
+            SelectFilter::make('period')
+                ->label('Period')
+                ->options([
+                    'yesterday' => 'Yesterday', 'this_month' => 'This month', 'last_month' => 'Last month',
+                    'this_year' => 'This year', 'last_year' => 'Last year',
+                ])
+                ->query(function (Builder $query, array $data): Builder {
+                    $today = Carbon::today();
+                    $range = match ($data['value'] ?? null) {
+                        'yesterday' => [$today->copy()->subDay(), $today->copy()->subDay()],
+                        'this_month' => [$today->copy()->startOfMonth(), $today->copy()->endOfMonth()],
+                        'last_month' => [$today->copy()->subMonthNoOverflow()->startOfMonth(), $today->copy()->subMonthNoOverflow()->endOfMonth()],
+                        'this_year' => [$today->copy()->startOfYear(), $today->copy()->endOfYear()],
+                        'last_year' => [$today->copy()->subYear()->startOfYear(), $today->copy()->subYear()->endOfYear()],
+                        default => null,
+                    };
+
+                    return $range ? $query->whereDate('TransferDate', '>=', $range[0])->whereDate('TransferDate', '<=', $range[1]) : $query;
+                }),
             $dateRange('import_dates', 'ImportDate', 'Date in'),
             SelectFilter::make('cID_Customer')->label('Supplier')->multiple()->searchable()
                 ->options(fn (): array => Lookups::customers()),

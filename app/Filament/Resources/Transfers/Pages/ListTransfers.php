@@ -2,9 +2,11 @@
 
 namespace App\Filament\Resources\Transfers\Pages;
 
+use App\Filament\Resources\Transfers\Actions\TransferActions;
 use App\Filament\Resources\Transfers\TransferResource;
 use App\Models\Transfer;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -51,6 +53,11 @@ class ListTransfers extends ListRecords
                 ->color('gray')
                 ->tooltip('Drag the edge of a column title to resize it; double-click the edge to reset that column.')
                 ->alpineClickHandler('window.myatResetColumnWidths?.()'),
+            ActionGroup::make([TransferActions::incomingPayment()])
+                ->label('Τιμολόγηση')
+                ->icon(Heroicon::OutlinedBanknotes)
+                ->color('gray')
+                ->button(),
             CreateAction::make()->label('New transfer'),
         ];
     }
@@ -72,6 +79,11 @@ class ListTransfers extends ListRecords
                     ->whereDate('TransferDate', '>=', $today))
                 ->badge(fn (): int => Transfer::query()->where('Status', 'Pending')->whereDate('TransferDate', '>=', $today)->count())
                 ->badgeColor('warning'),
+            // "Εκκρεμότητες 7 ημερών": open issues (TBD details, issue flags) in the coming week.
+            'issues' => Tab::make('Issues (7 days)')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->withOpenIssues()->whereDate('TransferDate', '>=', $today)->whereDate('TransferDate', '<=', $today->copy()->addDays(7)))
+                ->badge(fn (): int => Transfer::query()->withOpenIssues()->whereDate('TransferDate', '>=', $today)->whereDate('TransferDate', '<=', $today->copy()->addDays(7))->count())
+                ->badgeColor('danger'),
             // PHPRunner's list starts at 2025; older transfers are in the archive.
             'all' => Tab::make('All')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query->whereDate('TransferDate', '>=', '2025-01-01')),

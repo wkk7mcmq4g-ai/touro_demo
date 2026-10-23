@@ -6,6 +6,7 @@ use App\Models\Transfer;
 use App\Support\Lookups;
 use App\Support\TransferRules;
 use Closure;
+use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -19,6 +20,7 @@ use Filament\Schemas\Components\Text;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -132,7 +134,15 @@ class TransferForm
                     ->rows(1)
                     ->helperText('Filled from the customer when you pick it; if left empty, it is filled when saved.'),
                 Textarea::make('Notes')->rows(3)->columnSpanFull(),
-                Textarea::make('DriverNotes')->label('Driver notes')->rows(2)->columnSpanFull(),
+                Textarea::make('DriverNotes')
+                    ->label('Driver notes')
+                    ->rows(2)
+                    ->columnSpanFull()
+                    // PHPRunner's ">>" button next to Notes.
+                    ->hintAction(Action::make('copyNotes')
+                        ->label('Copy from Notes')
+                        ->icon(Heroicon::OutlinedArrowDown)
+                        ->action(fn (Get $get, Set $set) => $set('DriverNotes', $get('Notes')))),
             ]);
     }
 
