@@ -8,142 +8,280 @@ use App\Support\Lookups;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\Column;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\Summarizers\Count;
+use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Filters\BaseFilter;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
-use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
 
+/**
+ * The PHPRunner transfers list: the same 57 columns in the same order with the same
+ * labels, the same totals and the same filter panel. Every column can be hidden per user
+ * (column button); choices are remembered for the session.
+ */
 class TransfersTable
 {
     public static function configure(Table $table): Table
     {
         return $table
-            // Upcoming tabs read like a run sheet (earliest first); "All" shows the newest first.
-            ->defaultSort(function (Builder $query, $livewire): Builder {
-                $direction = ($livewire->activeTab ?? null) === 'all' ? 'desc' : 'asc';
-
-                return $query->orderBy('TransferDate', $direction)->orderBy('TransferTime_sort', $direction);
-            })
+            // PHPRunner: upcoming first (date, time), then the past.
+            ->defaultSort(fn (Builder $query): Builder => $query
+                ->orderByRaw('`TransferDate` >= CURRENT_DATE DESC')
+                ->orderBy('TransferDate')
+                ->orderBy('TransferTime_sort'))
             ->striped()
-            ->paginated([25, 50, 100])
+            ->paginated([25, 50, 100, 200])
             ->defaultPaginationPageOption(50)
-            ->columns([
-                TextColumn::make('TransferID')
-                    ->label('#')
-                    ->searchable()
-                    ->sortable()
-                    ->weight('semibold')
-                    ->icon(fn (Transfer $record) => $record->placeholderFields() ? Heroicon::ExclamationTriangle : null)
-                    ->iconColor('warning')
-                    ->tooltip(fn (Transfer $record): ?string => ($fields = $record->placeholderFields())
-                        ? 'Still to be confirmed: '.implode(', ', $fields)
-                        : null),
-                TextColumn::make('TransferDate')
-                    ->label('Date')
-                    ->date('D d/m/Y')
-                    ->sortable()
-                    ->description(fn (Transfer $record): ?string => $record->TransferTime ?: null),
-                TextColumn::make('TransferType')
-                    ->label('Type')
-                    ->formatStateUsing(fn (?string $state) => ColorDot::render($state, Lookups::color('TransferType', $state)))
-                    ->sortable(),
-                TextColumn::make('From')
-                    ->label('Route')
-                    ->formatStateUsing(fn (Transfer $record): string => trim(($record->From ?: '?').' → '.($record->To ?: '?')))
-                    ->description(fn (Transfer $record): ?string => $record->Flight_Ship_Num_From ?: null)
-                    ->searchable(['From', 'To', 'Flight_Ship_Num_From'])
-                    ->limit(48)
-                    ->tooltip(fn (Transfer $record): string => trim(($record->From ?: '?').' → '.($record->To ?: '?'))),
-                TextColumn::make('Pax')
-                    ->alignEnd(),
-                TextColumn::make('customer.SupplierName')
-                    ->label('Customer')
-                    ->description(fn (Transfer $record): ?string => $record->SupplierCode ?: null)
-                    ->searchable(query: fn (Builder $query, string $search): Builder => $query
-                        ->orWhere('SupplierCode', 'like', "%{$search}%")
-                        ->orWhereHas('customer', fn (Builder $customer) => $customer->where('SupplierName', 'like', "%{$search}%"))),
-                TextColumn::make('CoachCompanyID')
-                    ->label('Vehicle')
-                    ->placeholder('Not assigned')
-                    ->description(fn (Transfer $record) => ColorDot::render($record->CarTypeID, Lookups::color('CarType', $record->CarTypeID)))
-                    ->sortable(),
-                TextColumn::make('LeadName')
-                    ->label('Lead passenger')
-                    ->description(fn (Transfer $record): ?string => $record->LeadPhone ?: null)
-                    ->searchable(['LeadName', 'LeadPhone', 'PassengerName'])
-                    ->limit(40)
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('Status')
-                    ->formatStateUsing(fn (?string $state) => ColorDot::render($state, Lookups::color('Status', $state)))
-                    ->sortable(),
-                TextColumn::make('SalePrice')
-                    ->label('Sale')
-                    ->money('EUR', locale: 'el')
-                    ->alignEnd()
-                    ->sortable(),
-                TextColumn::make('TobeInvoiced')
-                    ->label('Invoice')
-                    ->badge()
-                    ->getStateUsing(fn (Transfer $record): string => $record->TobeInvoiced ?: 'Missing')
-                    ->color(fn (string $state): string => $state === 'Missing' ? 'danger' : 'gray')
-                    ->toggleable(),
-                TextColumn::make('PaymentType')
-                    ->label('Payment')
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('TicketsRequested')
-                    ->label('Tickets')
-                    ->formatStateUsing(fn (?string $state) => ColorDot::render($state, Lookups::color('TicketsRequested', $state)))
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('AssistantStatus')
-                    ->label('Assistant')
-                    ->formatStateUsing(fn (?string $state) => ColorDot::render($state, Lookups::color('AssistantStatus', $state)))
-                    ->toggleable(isToggledHiddenByDefault: true),
-            ])
-            ->filters([
-                SelectFilter::make('Status')
-                    ->multiple()
-                    ->options(fn (): array => Lookups::statusesFor('Admin')),
-                SelectFilter::make('cID_Customer')
-                    ->label('Customer')
-                    ->options(fn (): array => Lookups::customers())
-                    ->searchable(),
-                SelectFilter::make('TransferType')
-                    ->label('Type')
-                    ->options(fn (): array => Lookups::optionValues('TransferType')),
-                SelectFilter::make('CoachCompanyID')
-                    ->label('Vehicle')
-                    ->options(fn (): array => Lookups::coaches())
-                    ->searchable(),
-                Filter::make('dates')
-                    ->schema([
-                        DatePicker::make('from')->label('Date from'),
-                        DatePicker::make('until')->label('Date until'),
-                    ])
-                    ->query(fn (Builder $query, array $data): Builder => $query
-                        ->when($data['from'] ?? null, fn (Builder $query, $date) => $query->whereDate('TransferDate', '>=', $date))
-                        ->when($data['until'] ?? null, fn (Builder $query, $date) => $query->whereDate('TransferDate', '<=', $date))),
-                TernaryFilter::make('issues')
-                    ->label('Open issues')
-                    ->queries(
-                        true: fn (Builder $query): Builder => $query->where(fn (Builder $query) => $query
-                            ->where('OperationalIssuesFlag', 'Yes')->orWhere('FinancialIssuesFlag', 'Yes')),
-                        false: fn (Builder $query): Builder => $query->where(fn (Builder $query) => $query
-                            ->where('OperationalIssuesFlag', '<>', 'Yes')->orWhereNull('OperationalIssuesFlag'))
-                            ->where(fn (Builder $query) => $query
-                                ->where('FinancialIssuesFlag', '<>', 'Yes')->orWhereNull('FinancialIssuesFlag')),
-                    ),
-                TernaryFilter::make('invoice_missing')
-                    ->label('Invoice type missing')
-                    ->queries(
-                        true: fn (Builder $query): Builder => $query->where(fn (Builder $query) => $query
-                            ->where('TobeInvoiced', '')->orWhereNull('TobeInvoiced')),
-                        false: fn (Builder $query): Builder => $query->where('TobeInvoiced', '<>', ''),
-                    ),
-            ])
+            ->persistColumnsInSession()
+            ->persistFiltersInSession()
+            ->persistSortInSession()
+            ->columns(self::columns())
+            ->filters(self::filters())
+            ->filtersLayout(FiltersLayout::AboveContentCollapsible)
+            ->filtersFormColumns(['sm' => 2, 'lg' => 4, 'xl' => 6])
             ->recordActions([
                 EditAction::make(),
             ]);
+    }
+
+    /**
+     * @return list<Column>
+     */
+    private static function columns(): array
+    {
+        $money = fn (string $name, string $label, bool $total = false): TextColumn => TextColumn::make($name)
+            ->label($label)
+            ->money('EUR', locale: 'el')
+            ->alignEnd()
+            ->sortable()
+            ->toggleable()
+            ->when($total, fn (TextColumn $column) => $column->summarize(Sum::make()->money('EUR', locale: 'el')->label('')));
+
+        $text = fn (string $name, string $label, int $limit = 0): TextColumn => TextColumn::make($name)
+            ->label($label)
+            ->toggleable()
+            ->when($limit > 0, fn (TextColumn $column) => $column
+                ->limit($limit)
+                ->tooltip(fn ($state): ?string => mb_strlen((string) $state) > $limit ? (string) $state : null));
+
+        $dot = fn (string $name, string $label, string $option): TextColumn => TextColumn::make($name)
+            ->label($label)
+            ->formatStateUsing(fn (?string $state) => ColorDot::render($state, Lookups::color($option, $state)))
+            ->sortable()
+            ->toggleable();
+
+        // Issue counters PHPRunner shows only when there is something to see.
+        $counter = fn (string $name, string $label, string $color): TextColumn => TextColumn::make($name)
+            ->label($label)
+            ->badge()
+            ->color($color)
+            ->formatStateUsing(fn ($state): ?string => (int) $state > 0 ? (string) (int) $state : null)
+            ->placeholder('')
+            ->alignCenter()
+            ->toggleable();
+
+        return [
+            IconColumn::make('OpenExpensesFlag')
+                ->label('Exp.')
+                ->getStateUsing(fn (Transfer $record): bool => (int) $record->OpenExpensesFlag === 1)
+                ->icon(fn (bool $state) => $state ? Heroicon::ExclamationCircle : null)
+                ->color('danger')
+                ->toggleable(),
+            $counter('OpenCharges', 'Chg.', 'warning'),
+            $counter('OperationalIssues', 'Ops', 'danger'),
+            $counter('FinancialIssues', 'Fin.', 'warning'),
+            TextColumn::make('TransferID')
+                ->label('ID')
+                ->searchable()
+                ->sortable()
+                ->weight('semibold')
+                ->icon(fn (Transfer $record) => $record->placeholderFields() ? Heroicon::ExclamationTriangle : null)
+                ->iconColor('warning')
+                ->tooltip(fn (Transfer $record): ?string => ($fields = $record->placeholderFields())
+                    ? 'Still to be confirmed: '.implode(', ', $fields)
+                    : null)
+                ->summarize(Count::make()->label('')),
+            TextColumn::make('customer.SupplierName')
+                ->label('Supplier')
+                ->toggleable()
+                ->searchable(query: fn (Builder $query, string $search): Builder => $query
+                    ->orWhereHas('customer', fn (Builder $customer) => $customer->where('SupplierName', 'like', "%{$search}%"))),
+            $text('SupplierCode', 'Sup Code')->searchable(),
+            $text('Pax', 'Pax'),
+            $dot('TransferType', 'Type', 'TransferType'),
+            TextColumn::make('TransferDate')->label('Transfer Date')->date('D d/m/Y')->sortable()->toggleable(),
+            $text('TransferTime', 'Transfer Time')->sortable(query: fn (Builder $query, string $direction) => $query->orderBy('TransferTime_sort', $direction)),
+            $text('From', 'From', 40)->searchable()->sortable(),
+            $text('To', 'To', 40)->searchable()->sortable(),
+            $text('Flight_Ship_Num_From', 'Flight / Ship', 30)->searchable(),
+            IconColumn::make('OLP')->label('ΟΛΠ')->boolean()
+                ->getStateUsing(fn (Transfer $record): bool => (int) $record->OLP === 1)
+                ->toggleable(),
+            $dot('TicketsRequested', 'Tickets', 'TicketsRequested'),
+            $dot('AssistantStatus', 'Guide status', 'AssistantStatus'),
+            $money('Assistant_Price', 'Guide Rate'),
+            $dot('CarTypeID', 'Car Type', 'CarType'),
+            $text('CoachCompanyID', 'Coach')->sortable(),
+            $text('Notes', 'Transfer Notes', 50),
+            $text('LesseeName', 'Lessee Name', 30),
+            $text('LeadName', 'Lead Name', 30)->searchable(),
+            $text('LeadPhone', 'Lead Phone')->searchable(),
+            $text('PassengerName', 'Passenger List', 40)->searchable(),
+            $dot('Status', 'Status', 'Status'),
+            $money('PlatformPrice', 'Τιμή Πλατφ.', total: true),
+            $money('Assets', 'Απαιτ.', total: true),
+            $money('Liabilities', 'Υποχρ.', total: true),
+            $money('CashRegister', 'Ταμείο'),
+            $money('Income', 'Έσοδο'),
+            $money('PurchasePrice', 'Τιμή Αγορ.', total: true),
+            $money('SalePrice', 'Τιμή Πώλ.', total: true),
+            $money('PricePaid', 'Πληρωθ.', total: true),
+            $money('PriceRcvd', 'Εισπραχθ.', total: true),
+            $money('Expense', 'Έξοδα'),
+            TextColumn::make('TobeInvoiced')
+                ->label('Τύπος παραστ.')
+                ->badge()
+                ->getStateUsing(fn (Transfer $record): string => $record->TobeInvoiced ?: 'Missing')
+                ->color(fn (string $state): string => $state === 'Missing' ? 'danger' : 'gray')
+                ->toggleable(),
+            $text('InvoicedIssued', 'Εκδόθηκε παραστ.'),
+            $text('InvoicedRcvd', 'Έλαβα Τιμ.'),
+            $text('VPOS', 'Kωδ. πληρ.'),
+            $text('SalesInvoiceNum', 'ΑΑ Εσόδων')->searchable(),
+            $text('PurchaseInvoiceNum', 'ΑΑ Εξόδων')->searchable(),
+            $text('DriverNotes', 'Driver Notes', 40),
+            $text('PaymentOnHoldFlag', 'Αναμ. Έκδ.'),
+            $text('Assistant', 'Assistant', 30),
+            $text('Platform', 'Πλατφ.'),
+            $text('PaymentType', 'Τρόπος πληρ.'),
+            TextColumn::make('Voucher_StartDt')->label('Ημερομηνία έναρξης')->date('d/m/Y')->toggleable(),
+            TextColumn::make('Voucher_StartTime')->label('Ώρα έναρξης')->time('H:i')->toggleable(),
+            TextColumn::make('Voucher_EndDt')->label('Ημερομηνία λήξης')->date('d/m/Y')->toggleable(),
+            TextColumn::make('Voucher_EndTime')->label('Ώρα λήξης')->time('H:i')->toggleable(),
+            TextColumn::make('ImportDate')->label('Date in')->date('d/m/Y')->sortable()->toggleable(),
+            $money('ExtraIncome', 'Add charges'),
+            $text('DriverReceiptType', 'Driver Receipt Type'),
+            $money('TicketsValue', 'Tickets Value', total: true),
+            $text('FLNM', 'FLNM', 30),
+            $text('TaxiReceipt_Issued', 'TaxiReceipt Issued'),
+        ];
+    }
+
+    /**
+     * PHPRunner's filter panel and search panel.
+     *
+     * @return list<BaseFilter>
+     */
+    private static function filters(): array
+    {
+        $values = fn (string $name, string $label, ?callable $options = null): SelectFilter => SelectFilter::make($name)
+            ->label($label)
+            ->multiple()
+            ->options($options ?? fn (): array => Lookups::distinctValues('transfers', $name));
+
+        $yesNo = fn (string $name, string $label, string $yes = 'Yes', string $no = 'No'): SelectFilter => SelectFilter::make($name)
+            ->label($label)
+            ->options([$yes => $yes, $no => $no]);
+
+        // PHPRunner's *_Flag fields show an empty value as "Όχι".
+        $emptyMeansNo = fn (string $name, string $column, string $label): SelectFilter => SelectFilter::make($name)
+            ->label($label)
+            ->multiple()
+            ->options(fn (): array => ['Όχι' => 'Όχι'] + array_diff_key(Lookups::distinctValues('transfers', $column), ['' => true]))
+            ->query(fn (Builder $query, array $data): Builder => blank($data['values'] ?? null) ? $query : $query->where(
+                fn (Builder $query) => $query
+                    ->whereIn($column, $data['values'])
+                    ->when(in_array('Όχι', $data['values'], true), fn (Builder $query) => $query->orWhere($column, '')->orWhereNull($column)),
+            ));
+
+        $dateRange = fn (string $name, string $column, string $label): Filter => Filter::make($name)
+            ->schema([
+                DatePicker::make('from')->label("{$label} from"),
+                DatePicker::make('until')->label("{$label} until"),
+            ])
+            ->columns(2)
+            ->query(fn (Builder $query, array $data): Builder => $query
+                ->when($data['from'] ?? null, fn (Builder $query, $date) => $query->whereDate($column, '>=', $date))
+                ->when($data['until'] ?? null, fn (Builder $query, $date) => $query->whereDate($column, '<=', $date)))
+            ->indicateUsing(fn (array $data): ?string => match (true) {
+                filled($data['from'] ?? null) && filled($data['until'] ?? null) => "{$label}: ".Carbon::parse($data['from'])->format('d/m/Y').' – '.Carbon::parse($data['until'])->format('d/m/Y'),
+                filled($data['from'] ?? null) => "{$label} from ".Carbon::parse($data['from'])->format('d/m/Y'),
+                filled($data['until'] ?? null) => "{$label} until ".Carbon::parse($data['until'])->format('d/m/Y'),
+                default => null,
+            })
+            ->columnSpan(2);
+
+        return [
+            // Search panel
+            $dateRange('transfer_dates', 'TransferDate', 'Transfer date'),
+            $dateRange('import_dates', 'ImportDate', 'Date in'),
+            SelectFilter::make('cID_Customer')->label('Supplier')->multiple()->searchable()
+                ->options(fn (): array => Lookups::customers()),
+            $values('CoachCompanyID', 'Coach', fn (): array => Lookups::coaches())->searchable(),
+
+            // Filter panel
+            $values('Status', 'Status'),
+            $values('TransferType', 'Type'),
+            SelectFilter::make('ReferencePeriod')
+                ->label('Month')
+                ->multiple()
+                ->options(fn (): array => collect(Lookups::distinctValues('transfers', 'ReferencePeriod'))
+                    ->filter()
+                    ->sortKeysDesc()
+                    ->mapWithKeys(fn ($value, $key): array => [$key => Carbon::parse($key)->translatedFormat('F Y')])
+                    ->all()),
+            $values('CarTypeID', 'Car Type'),
+            $yesNo('OperationalIssuesFlag', 'Operational issues'),
+            $yesNo('FinancialIssuesFlag', 'Financial issues'),
+            $yesNo('OpenChargesFlag', 'Open charges'),
+            $values('TobeInvoiced', 'Τύπος παραστ.'),
+            $emptyMeansNo('InvoicedRcvd_Flag', 'InvoicedRcvd', 'Έλαβα Τιμ.'),
+            $emptyMeansNo('InvoicedIssued_Flag', 'InvoicedIssued', 'Εκδόθηκε παραστ.'),
+            $values('Platform', 'Πλατφ.'),
+            $values('PaymentOnHoldFlag', 'Αναμ. Έκδ.'),
+            $values('ExpensePaid', 'Απ. Εξ.'),
+            $values('ExpenseRcvd', 'Παρ. εξ.'),
+            $yesNo('AssetsFlag', 'Απαιτ.', 'Ναί', 'Όχι'),
+            $yesNo('LiabilitiesFlag', 'Υποχρ.', 'Ναί', 'Όχι'),
+            $values('PaymentType', 'Τρόπος πληρ.'),
+            SelectFilter::make('PastDate')
+                ->label('Past date')
+                ->options(['Ναι' => 'Ναι', 'Όχι' => 'Όχι'])
+                ->query(fn (Builder $query, array $data): Builder => match ($data['value'] ?? null) {
+                    'Ναι' => $query->whereDate('TransferDate', '<=', Carbon::today()),
+                    'Όχι' => $query->whereDate('TransferDate', '>', Carbon::today()),
+                    default => $query,
+                }),
+            SelectFilter::make('SupplierModified')
+                ->label('Supplier modified')
+                ->options(['Yes' => 'Yes', 'No' => 'No'])
+                ->query(fn (Builder $query, array $data): Builder => match ($data['value'] ?? null) {
+                    'Yes' => $query->where('SupplierModified', 1),
+                    'No' => $query->where(fn (Builder $query) => $query->where('SupplierModified', '<>', 1)->orWhereNull('SupplierModified')),
+                    default => $query,
+                }),
+            $values('pricecheck', 'Price check'),
+            SelectFilter::make('TaxiReceipt_flag')
+                ->label('Taxi receipt')
+                ->options(['Yes' => 'Yes', 'No' => 'No'])
+                ->query(function (Builder $query, array $data): Builder {
+                    $hasReceipt = "if(`CoachCompanyID` in ('VITO 2022','E CLASS 2015'), Get_Taxi_flnm(`TransferID`), 0) > 0";
+
+                    return match ($data['value'] ?? null) {
+                        'Yes' => $query->whereRaw($hasReceipt),
+                        'No' => $query->whereRaw("not ({$hasReceipt})"),
+                        default => $query,
+                    };
+                }),
+            $values('CreatedBy', 'Created by'),
+            $values('ModifiedBy', 'Modified by'),
+        ];
     }
 }

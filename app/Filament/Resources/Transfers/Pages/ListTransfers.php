@@ -38,7 +38,9 @@ class ListTransfers extends ListRecords
                     ->whereDate('TransferDate', '>=', $today))
                 ->badge(fn (): int => Transfer::query()->where('Status', 'Pending')->whereDate('TransferDate', '>=', $today)->count())
                 ->badgeColor('warning'),
-            'all' => Tab::make('All'),
+            // PHPRunner's list starts at 2025; older transfers are in the archive.
+            'all' => Tab::make('All')
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->whereDate('TransferDate', '>=', '2025-01-01')),
         ];
     }
 

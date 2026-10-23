@@ -129,6 +129,22 @@ class Lookups
             ->all());
     }
 
+    /**
+     * @return array<string, string> Distinct values of a column (for filters); empty shown as "(empty)".
+     */
+    public static function distinctValues(string $table, string $column): array
+    {
+        return self::remember("distinct:{$table}.{$column}", fn () => DB::table($table)
+            ->select($column)
+            ->distinct()
+            ->whereNotNull($column)
+            ->orderBy($column)
+            ->limit(500)
+            ->pluck($column)
+            ->mapWithKeys(fn ($value): array => [(string) $value => $value === '' ? '(empty)' : (string) $value])
+            ->all());
+    }
+
     public static function flush(): void
     {
         self::$cache = [];

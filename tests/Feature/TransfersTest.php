@@ -92,6 +92,52 @@ class TransfersTest extends TestCase
             ->assertCanSeeTableRecords([$today, $tomorrow, $nextWeek]);
     }
 
+    public function test_list_has_every_column_of_the_phprunner_list(): void
+    {
+        $this->actingAs($this->makeLegacyUser('Entry'));
+
+        $phprunnerColumns = [
+            'OpenExpensesFlag', 'OpenCharges', 'OperationalIssues', 'FinancialIssues', 'TransferID', 'customer.SupplierName',
+            'SupplierCode', 'Pax', 'TransferType', 'TransferDate', 'TransferTime', 'From', 'To', 'Flight_Ship_Num_From', 'OLP',
+            'TicketsRequested', 'AssistantStatus', 'Assistant_Price', 'CarTypeID', 'CoachCompanyID', 'Notes', 'LesseeName',
+            'LeadName', 'LeadPhone', 'PassengerName', 'Status', 'PlatformPrice', 'Assets', 'Liabilities', 'CashRegister',
+            'Income', 'PurchasePrice', 'SalePrice', 'PricePaid', 'PriceRcvd', 'Expense', 'TobeInvoiced', 'InvoicedIssued',
+            'InvoicedRcvd', 'VPOS', 'SalesInvoiceNum', 'PurchaseInvoiceNum', 'DriverNotes', 'PaymentOnHoldFlag', 'Assistant',
+            'Platform', 'PaymentType', 'Voucher_StartDt', 'Voucher_StartTime', 'Voucher_EndDt', 'Voucher_EndTime',
+            'ImportDate', 'ExtraIncome', 'DriverReceiptType', 'TicketsValue', 'FLNM', 'TaxiReceipt_Issued',
+        ];
+
+        $page = Livewire::test(ListTransfers::class);
+
+        foreach ($phprunnerColumns as $column) {
+            $page->assertTableColumnVisible($column);
+        }
+    }
+
+    public function test_invoice_received_filter_treats_empty_as_no_like_phprunner(): void
+    {
+        $this->actingAs($this->makeLegacyUser('Entry'));
+        $empty = $this->transfer(['InvoicedRcvd' => '']);
+        $received = $this->transfer(['InvoicedRcvd' => 'Έχω λάβει']);
+
+        Livewire::test(ListTransfers::class)
+            ->filterTable('InvoicedRcvd_Flag', ['Όχι'])
+            ->assertCanSeeTableRecords([$empty])
+            ->assertCanNotSeeTableRecords([$received]);
+    }
+
+    public function test_all_tab_starts_at_2025_like_phprunner(): void
+    {
+        $this->actingAs($this->makeLegacyUser('Entry'));
+        $old = $this->transfer(['TransferDate' => '2024-12-30', 'ImportDate' => '2024-12-01']);
+        $recent = $this->transfer(['TransferDate' => '2025-01-02', 'ImportDate' => '2024-12-01']);
+
+        Livewire::test(ListTransfers::class)
+            ->set('activeTab', 'all')
+            ->assertCanSeeTableRecords([$recent])
+            ->assertCanNotSeeTableRecords([$old]);
+    }
+
     public function test_list_flags_fields_still_marked_tbd(): void
     {
         $this->actingAs($this->makeLegacyUser('Entry'));
