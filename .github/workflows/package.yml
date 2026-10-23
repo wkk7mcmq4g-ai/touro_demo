@@ -12,9 +12,18 @@ on:
 permissions:
   contents: read
 
+# One deploy at a time; a newer push waits for the running one.
+concurrency:
+  group: package-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   package:
     runs-on: ubuntu-latest
+    env:
+      # Set in GitHub → Settings → Secrets and variables → Actions (see docs/deploy-cpanel.md).
+      # Without them the deploy step is skipped and only the zip is built.
+      FTP_SERVER: ${{ secrets.FTP_SERVER }}
     steps:
       - name: Checkout code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -41,7 +50,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/package"
           rsync -a --exclude '.git' --exclude '.github' --exclude 'tests' --exclude 'node_modules' \
             --exclude 'storage/logs/*.log' --exclude 'storage/framework/views/*.php' \
-            --exclude 'bootstrap/cache/*.php' ./ "$RUNNER_TEMP/package/touro_myat/"
+            --exclude 'bootstrap/cache/config.php' --exclude 'bootstrap/cache/routes-*.php' --exclude 'bootstrap/cache/events.php' ./ "$RUNNER_TEMP/package/touro_myat/"
           cd "$RUNNER_TEMP/package" && zip -qr touro_myat.zip touro_myat
 
       - name: Upload
@@ -50,3 +59,23 @@ jobs:
           name: touro_myat-${{ github.sha }}
           path: ${{ runner.temp }}/package/touro_myat.zip
           retention-days: 14
+
+      # Uploads only what changed since the last deploy (it keeps a state file on the server,
+      # outside the web root). The server's .env and storage/ are never touched.
+      - name: Deploy to the test site
+        if: env.FTP_SERVER != '' && github.ref == 'refs/heads/main'
+        uses: SamKirkland/FTP-Deploy-Action@3a9c65ae0fc12ac924ccef8afc26941cc43aad0b # v4.4.0
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          security: strict
+          local-dir: ${{ runner.temp }}/package/touro_myat/
+          server-dir: ./
+          exclude: |
+            **/.git*
+            **/.git*/**
+            .env
+            storage/**
+            public/storage/**

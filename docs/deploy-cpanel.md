@@ -32,11 +32,29 @@ A copy of the new back office on your hosting, next to PHPRunner, using the
    Elorus, customers, drivers or the port; emails are written to `storage/logs` instead.
 5. **Open** `https://new.myat.touro.gr/admin` and sign in with your PHPRunner login.
 
-## Updating
+## Updating automatically (every push to main)
+
+GitHub can upload each new version straight to the server over FTPS, so there is nothing
+to download or extract. Set it up once:
+
+1. cPanel → *FTP Accounts* → *Add FTP Account*: login e.g. `deploy`, a long random password,
+   **Directory** = `touro_myat` (the app folder only, so this login can reach nothing else).
+2. GitHub → the repo → *Settings* → *Secrets and variables* → *Actions* → *New repository
+   secret*, three times:
+   - `FTP_SERVER` = your FTP host (cPanel → *FTP Accounts* → *Configure FTP Client*, e.g. `ftp.touro.gr`)
+   - `FTP_USERNAME` = the full login shown there, e.g. `deploy@touro.gr`
+   - `FTP_PASSWORD` = its password
+3. GitHub → *Actions* → **Package** → *Run workflow*. The first run uploads everything
+   (vendor included, so it takes a while); later runs upload only changed files.
+
+From then on every push to `main` builds and deploys. Your `.env` and `storage/` (logs,
+sessions) on the server are never touched. To stop deploying, delete the `FTP_SERVER` secret.
+
+## Updating by hand
 
 Download the newest package and extract it over the old folder (*Extract* → overwrite).
-Your `.env` is not in the package, so it stays. Then delete the files in
-`touro_myat/bootstrap/cache` and `touro_myat/storage/framework/views` (old caches).
+Your `.env` is not in the package, so it stays. If you ever ran `php artisan config:cache` or
+`route:cache` on the server, delete `bootstrap/cache/config.php` and `routes-*.php`.
 
 ## If something goes wrong
 
