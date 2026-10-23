@@ -889,3 +889,188 @@
         padding: 0;
     }
 }
+
+/* ---------- Excel-style column filters ---------- */
+
+.myat-xf-btn {
+    display: inline-flex;
+    flex-shrink: 0;
+    cursor: pointer;
+    vertical-align: middle;
+    margin-inline-start: 0.3rem;
+    padding: 0.15rem;
+    border-radius: 0.3rem;
+    color: #94a3b8;
+    opacity: 0.45;
+    transition: opacity 0.12s, color 0.12s;
+}
+
+.myat-xf-btn svg {
+    width: 0.8rem;
+    height: 0.8rem;
+}
+
+.fi-ta-header-cell:hover .myat-xf-btn,
+.myat-xf-btn:focus-visible {
+    opacity: 1;
+}
+
+.myat-xf-btn:hover {
+    color: var(--myat-azure);
+    background: rgb(0 150 255 / 0.1);
+}
+
+.myat-xf-btn.myat-xf-on {
+    opacity: 1;
+    color: #fff;
+    background: var(--myat-azure);
+}
+
+@media (hover: none) {
+    .myat-xf-btn {
+        opacity: 1;
+    }
+}
+
+.myat-xf-pop {
+    position: absolute;
+    z-index: 60;
+    width: 18rem;
+    padding: 0.6rem;
+    border-radius: 0.8rem;
+    background: #fff;
+    color: #0f172a;
+    font-size: 0.85rem;
+    text-transform: none;
+    letter-spacing: normal;
+    box-shadow: 0 18px 40px -12px rgb(15 23 42 / 0.35), 0 0 0 1px var(--myat-line);
+}
+
+.dark .myat-xf-pop {
+    background: #111c2d;
+    color: #e2e8f0;
+    box-shadow: 0 18px 40px -12px rgb(0 0 0 / 0.6), 0 0 0 1px rgb(255 255 255 / 0.08);
+}
+
+.myat-xf-head {
+    margin-bottom: 0.4rem;
+    font-weight: 700;
+}
+
+.myat-xf-search {
+    width: 100%;
+    margin-bottom: 0.4rem;
+    padding: 0.4rem 0.6rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgb(15 23 42 / 0.15);
+    background: transparent;
+    font-size: 0.85rem;
+    outline: none;
+}
+
+.myat-xf-search:focus {
+    border-color: var(--myat-azure);
+    box-shadow: 0 0 0 3px rgb(0 150 255 / 0.15);
+}
+
+.myat-xf-list {
+    max-height: 16rem;
+    overflow: auto;
+    padding: 0.2rem 0;
+    border-block: 1px solid var(--myat-line);
+}
+
+.myat-xf-pop label {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.2rem 0.3rem;
+    border-radius: 0.35rem;
+    cursor: pointer;
+}
+
+.myat-xf-pop label:hover {
+    background: rgb(0 150 255 / 0.06);
+}
+
+.myat-xf-pop summary {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.2rem 0.3rem;
+    cursor: pointer;
+    list-style: revert;
+}
+
+.myat-xf-month {
+    margin-inline-start: 1rem;
+}
+
+.myat-xf-day {
+    margin-inline-start: 2rem;
+}
+
+.myat-xf-allrow {
+    font-weight: 600;
+}
+
+.myat-xf-pop input[type='checkbox'] {
+    accent-color: var(--myat-azure);
+}
+
+.myat-xf-note,
+.myat-xf-loading {
+    padding: 0.5rem 0.3rem;
+    color: #64748b;
+    font-size: 0.8rem;
+}
+
+.myat-xf-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.5rem;
+}
+
+.myat-xf-actions span {
+    flex: 1;
+}
+
+.myat-xf-actions button {
+    padding: 0.35rem 0.75rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    box-shadow: 0 0 0 1px rgb(15 23 42 / 0.12);
+}
+
+.myat-xf-actions .myat-xf-ok {
+    color: #fff;
+    background: var(--myat-azure);
+    box-shadow: none;
+}
+
+.myat-xf-actions .myat-xf-clear {
+    box-shadow: none;
+    color: #e11d48;
+}
+
+
+.myat-xf-actions .myat-xf-ok:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.myat-xf-clearall {
+    display: block;
+    width: 100%;
+    margin-top: 0.4rem;
+    padding: 0.3rem;
+    border-radius: 0.4rem;
+    color: #e11d48;
+    font-size: 0.8rem;
+    text-align: start;
+}
+
+.myat-xf-clearall:hover {
+    background: rgb(225 29 72 / 0.06);
+}

@@ -306,8 +306,8 @@ class TransfersTest extends TestCase
             ->assertSee('myat-column-widths', false)
             ->assertSee('Reset column widths');
 
-        // Other pages keep the normal width and no resize script.
-        $this->get('/admin')->assertOk()->assertDontSee('myat-column-widths', false);
+        // Every table can be resized and filtered from its header now.
+        $this->get('/admin')->assertOk()->assertSee('myat-column-widths', false);
     }
 
     public function test_edit_in_list_stays_light_with_long_lookups(): void
