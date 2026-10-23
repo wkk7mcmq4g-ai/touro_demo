@@ -108,4 +108,29 @@ class LoginTest extends TestCase
 
         $this->assertGuest();
     }
+
+    public function test_refusals_say_why_once_the_password_is_right(): void
+    {
+        $driver = $this->makeLegacyUser('Drivers');
+        Livewire::test(Login::class)->set('data.username', $driver->username)->set('data.password', 'secret-pass')
+            ->call('authenticate')->assertSee('Only Admin and Entry users');
+
+        $inactive = $this->makeLegacyUser('Entry', ['active' => 0]);
+        Livewire::test(Login::class)->set('data.username', $inactive->username)->set('data.password', 'secret-pass')
+            ->call('authenticate')->assertSee('not active');
+
+        // A wrong password never reveals anything about the account.
+        Livewire::test(Login::class)->set('data.username', $driver->username)->set('data.password', 'wrong')
+            ->call('authenticate')->assertDontSee('Only Admin and Entry users');
+        $this->assertGuest();
+    }
+
+    public function test_group_names_match_like_phprunner_whatever_the_case(): void
+    {
+        $user = $this->makeLegacyUser('Entry', ['groupid' => 'entry ']);
+        Livewire::test(Login::class)->set('data.username', $user->username)->set('data.password', 'secret-pass')
+            ->call('authenticate')->assertHasNoErrors();
+        $this->assertAuthenticated();
+        $this->assertTrue($user->fresh()->may('transfers', 'edit'));
+    }
 }

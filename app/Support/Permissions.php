@@ -52,6 +52,6 @@ class Permissions
 
         $letter = self::ABILITIES[$ability] ?? strtoupper($ability);
 
-        return str_contains(self::mask($user->groupid, $table), $letter);
+        return str_contains(self::mask($user->group()?->value ?? (string) $user->groupid, $table), $letter);
     }
 }

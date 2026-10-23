@@ -65,7 +65,11 @@ class User extends Authenticatable implements FilamentUser, HasName
 
     public function group(): ?UserGroup
     {
-        return UserGroup::tryFrom((string) $this->groupid);
+        // PHPRunner matches group names loosely: tolerate case and stray spaces ("entry ", "ADMIN").
+        $id = trim((string) $this->groupid);
+
+        return UserGroup::tryFrom($id)
+            ?? collect(UserGroup::cases())->first(fn (UserGroup $g): bool => strcasecmp($g->value, $id) === 0);
     }
 
     public function isActive(): bool
