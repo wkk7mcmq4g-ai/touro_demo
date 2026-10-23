@@ -113,6 +113,10 @@ class LoginTest extends TestCase
     {
         $driver = $this->makeLegacyUser('Drivers');
         Livewire::test(Login::class)->set('data.username', $driver->username)->set('data.password', 'secret-pass')
+            ->call('authenticate')->assertSee('please sign in to the portal');
+
+        $stranger = $this->makeLegacyUser('Guest');
+        Livewire::test(Login::class)->set('data.username', $stranger->username)->set('data.password', 'secret-pass')
             ->call('authenticate')->assertSee('Only Admin and Entry users');
 
         $partner = $this->makeLegacyUser('Partner');
@@ -125,7 +129,7 @@ class LoginTest extends TestCase
 
         // A wrong password never reveals anything about the account.
         Livewire::test(Login::class)->set('data.username', $driver->username)->set('data.password', 'wrong')
-            ->call('authenticate')->assertDontSee('Only Admin and Entry users');
+            ->call('authenticate')->assertDontSee('please sign in to the portal');
         $this->assertGuest();
     }
 

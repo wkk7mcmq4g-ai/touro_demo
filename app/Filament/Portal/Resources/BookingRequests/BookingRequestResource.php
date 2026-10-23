@@ -113,6 +113,7 @@ class BookingRequestResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->stackedOnMobile()
             ->defaultSort('TransferDate')
             ->emptyStateHeading('No requests waiting')
             ->columns([

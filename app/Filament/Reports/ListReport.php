@@ -63,6 +63,7 @@ abstract class ListReport extends Page implements HasTable
 
         return $table
             ->query(fn () => ReportRow::over($this->source()))
+            ->stackedOnMobile()
             ->columns($this->columns())
             ->filters($this->filters())
             ->when($column, fn (Table $table) => $table->defaultSort($column, $direction))

@@ -54,13 +54,10 @@ enum UserGroup: string implements HasColor, HasLabel
         return in_array($this, [self::Admin, self::Entry], true);
     }
 
-    /**
-     * Groups that use the portal (/portal): partners, suppliers, hotels and coach companies.
-     * Drivers are not in it yet (they keep PHPRunner / the Drivers PWA for now).
-     */
+    /** Groups that use the portal (/portal): partners, suppliers, hotels, coach companies and drivers. */
     public function usesPortal(): bool
     {
-        return in_array($this, [self::Partner, self::Supplier, self::SupplierHotel, self::Coach], true);
+        return ! $this->usesBackOffice();
     }
 
     public function isDriver(): bool

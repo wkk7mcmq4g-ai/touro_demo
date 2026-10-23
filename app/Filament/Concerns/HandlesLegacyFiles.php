@@ -20,6 +20,7 @@ trait HandlesLegacyFiles
             Text::make(fn (?Model $record) => $record && LegacyFiles::parse($record->{$column}) !== []
                 ? LegacyFiles::links($record->{$column})
                 : 'No files.')
+                ->visible(fn (?Model $record): bool => $record !== null)
                 ->columnSpanFull(),
             FileUpload::make("{$column}__upload")
                 ->label("Add {$label}")

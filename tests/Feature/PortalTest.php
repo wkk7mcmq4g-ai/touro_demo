@@ -6,10 +6,14 @@ use App\Filament\Portal\Pages\HotelCharges;
 use App\Filament\Portal\Pages\MyAssignments;
 use App\Filament\Portal\Resources\BookingRequests\Pages\CreateBookingRequest;
 use App\Filament\Portal\Resources\BookingRequests\Pages\ListBookingRequests;
+use App\Filament\Portal\Resources\MyFuel\Pages\CreateMyFuel;
+use App\Filament\Portal\Resources\MyFuel\Pages\ListMyFuel;
+use App\Filament\Portal\Resources\MyJobs\Pages\ListMyJobs;
 use App\Filament\Portal\Resources\MyTransfers\Pages\EditMyTransfer;
 use App\Filament\Portal\Resources\MyTransfers\Pages\ListMyTransfers;
 use App\Models\Transfer;
 use App\Models\TransfersLoad;
+use App\Models\User;
 use App\Support\Portal;
 use Filament\Facades\Filament;
 use Illuminate\Support\Carbon;
@@ -66,10 +70,66 @@ class PortalTest extends TestCase
         $this->get('/portal/transfers')->assertForbidden();
     }
 
-    public function test_drivers_are_not_in_the_portal_yet(): void
+    /** A job for the driver of $user today, through the vehicle assigned to them (as v_transfers works). */
+    private function driverJob(User $user, string $lead): int
     {
-        $this->actingAs($this->makeLegacyUser('Drivers'));
+        $vehicle = DB::table('vehicles')->insertGetId(['VehicleName' => 'VITO '.$lead, 'VehicleLicence' => 'IKE'], 'VehicleID');
+        $driver = DB::table('drivers')->insertGetId(['Fullname' => 'Driver '.$lead, 'UserID' => $user->ID, 'Active' => 1], 'DriverID');
+        DB::table('vehicle_assignments')->insert(['VehicleID' => $vehicle, 'DriverID' => $driver, 'AssignmentDate' => Carbon::today()]);
+
+        return $this->transfer($this->ours, ['CoachCompanyID' => 'VITO '.$lead, 'TransferDate' => Carbon::today(), 'LeadName' => $lead])->TransferID;
+    }
+
+    public function test_drivers_see_their_own_jobs_vouchers_and_files(): void
+    {
+        $this->emptyTables(['vehicles', 'drivers', 'vehicle_assignments']);
+        $me = $this->makeLegacyUser('Drivers');
+        $other = $this->makeLegacyUser('Drivers');
+        $mine = $this->driverJob($me, 'Mine');
+        $theirs = $this->driverJob($other, 'Theirs');
+        $this->actingAs($me);
+
+        Livewire::test(ListMyJobs::class)->assertSee('Mine')->assertDontSee('Theirs');
+        $this->get(route('vouchers.show', ['Voucher', $mine]))->assertOk();
+        $this->get(route('vouchers.show', ['Voucher', $theirs]))->assertNotFound();
+
+        $file = DB::table('myat_transfers_files')->insertGetId(['TransferID' => $theirs, 'Flnm' => 'x.pdf', 'Attachment' => '%PDF x']);
+        $this->get(route('transfer-files.download', $file))->assertNotFound();
         $this->get('/portal/transfers')->assertForbidden();
+    }
+
+    public function test_drivers_enter_fuel_within_phprunner_dates(): void
+    {
+        $this->emptyTables(['fuel_register', 'vehicles', 'drivers']);
+        $vehicle = DB::table('vehicles')->insertGetId(['VehicleName' => 'VITO', 'VehicleLicence' => 'IKE'], 'VehicleID');
+        $me = $this->makeLegacyUser('Drivers');
+        $driver = DB::table('drivers')->insertGetId(['Fullname' => 'Me', 'UserID' => $me->ID, 'Active' => 1], 'DriverID');
+        $this->actingAs($me);
+
+        Livewire::test(CreateMyFuel::class)
+            ->fillForm(['VehicleID' => $vehicle, 'FuelDate' => Carbon::tomorrow()->toDateString(), 'FuelAmount' => 50])
+            ->call('create')->assertHasFormErrors(['FuelDate']);
+        Livewire::test(CreateMyFuel::class)
+            ->fillForm(['VehicleID' => $vehicle, 'FuelDate' => Carbon::today()->toDateString(), 'FuelAmount' => 50])
+            ->call('create')->assertHasNoFormErrors();
+        $this->assertSame([$driver, $me->username], [(int) DB::table('fuel_register')->value('DriverID'), DB::table('fuel_register')->value('CreatedBy')]);
+
+        DB::table('fuel_register')->insert(['VehicleID' => $vehicle, 'FuelDate' => Carbon::today(), 'FuelAmount' => 99, 'CreatedBy' => 'someone_else']);
+        Livewire::test(ListMyFuel::class)->assertCountTableRecords(1);
+    }
+
+    public function test_driver_screens_follow_the_driver_groups(): void
+    {
+        $this->actingAs($this->makeLegacyUser('Drivers_Log'));
+        $this->get('/portal/vehicle-log')->assertOk();
+        $this->get('/portal/leave')->assertForbidden();
+    }
+
+    public function test_leave_is_for_drivers_hol(): void
+    {
+        $this->actingAs($this->makeLegacyUser('Drivers_Hol'));
+        $this->get('/portal/leave')->assertOk();
+        $this->get('/portal/vehicle-log')->assertForbidden();
     }
 
     public function test_a_partner_sees_and_edits_only_its_own_transfers(): void

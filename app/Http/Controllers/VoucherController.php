@@ -20,11 +20,15 @@ class VoucherController extends Controller
             return redirect()->guest(filament()->getPanel('admin')->getLoginUrl());
         }
 
-        abort_unless($user->canAccessPanel(filament()->getPanel('admin')), 403);
+        $backOffice = $user->canAccessPanel(filament()->getPanel('admin'));
+        abort_unless($backOffice || $user->canAccessPanel(filament()->getPanel('portal')), 403);
         abort_unless(Permissions::allows($user, 'v_transfers', 'view'), 403);
         abort_unless(array_key_exists($page, Vouchers::PAGES), 404);
 
-        $job = VTransfer::query()->where('TransferID', $transfer)->firstOrFail();
+        // Drivers and coach companies get the vouchers of their own jobs only.
+        $job = VTransfer::query()->where('TransferID', $transfer)
+            ->when(! $backOffice, fn ($query) => $query->where('username', $user->username))
+            ->firstOrFail();
         $name = Vouchers::filename($page, $job->getAttributes());
 
         return response($vouchers->pdf($page, $job->getAttributes()), 200, [

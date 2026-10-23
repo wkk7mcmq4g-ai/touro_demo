@@ -119,6 +119,7 @@ class MyTransferResource extends Resource
         $hotel = self::isHotel();
 
         return $table
+            ->stackedOnMobile()
             ->defaultSort('TransferDate')
             ->paginated([25, 50, 100])
             ->defaultPaginationPageOption(50)

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\MyatPartnerFile;
 use App\Models\MyatTransfersFile;
 use App\Models\MyatTransfersLoadFile;
+use App\Models\VTransfer;
 use App\Support\Permissions;
 use App\Support\Portal;
 use Illuminate\Http\Request;
@@ -42,8 +43,17 @@ class TransferFileController extends Controller
 
         $file = $model::query()->findOrFail($id);
 
-        // Portal users only get the files of their own transfers and booking requests.
-        if (! $backOffice) {
+        // Portal users only get the files of their own transfers and booking requests;
+        // drivers those of their jobs (and the customer's files the office shares with drivers).
+        if (! $backOffice && $user->group()?->isDriver()) {
+            $mine = VTransfer::query()->where('username', $user->username);
+            $allowed = match ($kind) {
+                'transfers' => $mine->where('TransferID', $file->TransferID)->exists(),
+                'partners' => $mine->where('cID_Customer', $file->cid)->exists(),
+                default => false,
+            };
+            abort_unless($allowed, 404);
+        } elseif (! $backOffice) {
             $owner = match ($kind) {
                 'transfers' => DB::table('transfers')->where('TransferID', $file->TransferID)->value('cID_Customer'),
                 'loads' => DB::table('transfers_load')->where('LoadID', $file->TransferID)->value('cID_Customer'),
