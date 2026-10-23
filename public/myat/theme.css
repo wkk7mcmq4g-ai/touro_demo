@@ -1723,3 +1723,10 @@ body.myat-busy .fi-ta-content-grid {
         transform: scaleX(0.6);
     }
 }
+
+/* Phone: the open menu ends above the bottom tab bar, so the user menu (name, sign out) stays visible. */
+@media (max-width: 63.99rem) {
+    .fi-panel-portal .fi-sidebar {
+        padding-bottom: calc(4.75rem + env(safe-area-inset-bottom));
+    }
+}
