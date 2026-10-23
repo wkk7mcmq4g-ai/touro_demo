@@ -27,6 +27,9 @@ class InlineEditColumns
      */
     public const TYPE_AHEAD = ['From', 'To', 'CoachCompanyID', 'Assistant'];
 
+    /** PHPRunner "Allow free input": any text is accepted; the others must be in the list. */
+    private const FREE_INPUT = ['From', 'To', 'Assistant'];
+
     private const MONEY = ['Assistant_Price', 'PlatformPrice', 'PurchasePrice', 'SalePrice', 'PricePaid', 'PriceRcvd', 'Expense'];
 
     /**
@@ -54,7 +57,7 @@ class InlineEditColumns
                 ->updateStateUsing(fn (Transfer $record, $state) => self::save($record, $name, $state ? 1 : 0)),
             in_array($name, self::TYPE_AHEAD, true) => TextInputColumn::make($name)
                 ->extraInputAttributes(['list' => self::datalistId($name), 'autocomplete' => 'off'])
-                ->rules([self::inListRule($name)]),
+                ->rules(in_array($name, self::FREE_INPUT, true) ? [] : [self::inListRule($name)]),
             $options !== null => SelectColumn::make($name)
                 // Keep a value PHPRunner stored that is no longer in the list.
                 ->options(fn (?Transfer $record): array => $options() + (filled($record?->{$name}) ? [$record->{$name} => $record->{$name}] : []))

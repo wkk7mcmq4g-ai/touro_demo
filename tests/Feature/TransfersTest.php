@@ -246,13 +246,14 @@ class TransfersTest extends TestCase
         $this->assertLessThan(12 * 1024 * 1024, strlen($html), 'Edit-in-list page is too large');
         $this->assertSame(2, substr_count($html, 'Place 1499 with a fairly long descriptive name'));
 
-        // Type-ahead cells still only accept known values.
+        // Places take free text (PHPRunner "allow free input"); the coach must be in the list.
         $transfer = Transfer::query()->firstOrFail();
-        $result = $page->instance()->updateTableColumnState('To', (string) $transfer->TransferID, 'Nowhere');
-        $this->assertArrayHasKey('error', $result);
+        $page->instance()->updateTableColumnState('To', (string) $transfer->TransferID, 'Villa Kalimera, Sounio');
+        $this->assertSame('Villa Kalimera, Sounio', $transfer->fresh()->To);
 
-        $page->instance()->updateTableColumnState('To', (string) $transfer->TransferID, 'Place 7 with a fairly long descriptive name');
-        $this->assertSame('Place 7 with a fairly long descriptive name', $transfer->fresh()->To);
+        $result = $page->instance()->updateTableColumnState('CoachCompanyID', (string) $transfer->TransferID, 'Nobody');
+        $this->assertArrayHasKey('error', $result);
+        $this->assertNotSame('Nobody', $transfer->fresh()->CoachCompanyID);
     }
 
     public function test_only_the_configured_columns_are_editable_in_the_list(): void

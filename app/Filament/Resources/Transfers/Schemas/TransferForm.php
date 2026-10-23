@@ -84,13 +84,14 @@ class TransferForm
                     ->placeholder('14:30 or TBD')
                     ->maxLength(50)
                     ->required(),
-                Select::make('From')
-                    ->options(fn (): array => Lookups::pickupPlaces())
-                    ->searchable()
+                // PHPRunner allows free input here: suggestions from the list, any text accepted.
+                TextInput::make('From')
+                    ->datalist(fn (): array => array_keys(Lookups::pickupPlaces()))
+                    ->autocomplete(false)
                     ->required(),
-                Select::make('To')
-                    ->options(fn (): array => Lookups::destinations())
-                    ->searchable(),
+                TextInput::make('To')
+                    ->datalist(fn (): array => array_keys(Lookups::destinations()))
+                    ->autocomplete(false),
                 TextInput::make('Pax')
                     ->maxLength(50),
                 Textarea::make('Flight_Ship_Num_From')
@@ -142,9 +143,9 @@ class TransferForm
             ->collapsible()
             ->collapsed(fn (?Transfer $record): bool => blank($record?->Assistant))
             ->components([
-                Select::make('Assistant')
-                    ->options(fn (): array => Lookups::assistantNames())
-                    ->searchable(),
+                TextInput::make('Assistant')
+                    ->datalist(fn (): array => array_keys(Lookups::assistantNames()))
+                    ->autocomplete(false),
                 Select::make('cID_Assistant')
                     ->label('Assistant company')
                     ->options(fn (): array => Lookups::assistantCompanies())
