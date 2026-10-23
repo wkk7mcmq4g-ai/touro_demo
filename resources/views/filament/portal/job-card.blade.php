@@ -3,6 +3,10 @@
     $job = $getRecord();
     $phone = filled($job->LeadPhone) ? preg_replace('/[^0-9+]/', '', (string) $job->LeadPhone) : null;
     $tickets = $job->Tickets_Flag !== 'No' ? $job->Tickets_Flag : null;
+    // The job's number in the day, earliest first (v_transfers row_num), out of the day's total.
+    static $perDay = [];
+    $day = $job->TransferDate?->toDateString();
+    $perDay[$day] ??= \App\Models\VTransfer::query()->where('username', $job->username)->whereDate('TransferDate', $day)->count();
 @endphp
 <div class="myat-job">
     <div class="myat-job-top">
@@ -11,7 +15,10 @@
     </div>
 
     <div class="myat-job-head">
-        <div>
+        <div class="myat-job-count" title="Δρομολόγιο {{ $job->row_num }} από {{ $perDay[$day] }}">
+            <span>{{ $job->row_num }}</span><small>/{{ $perDay[$day] }}</small>
+        </div>
+        <div class="myat-job-when">
             <div class="myat-job-time">{{ $job->TransferTime }}</div>
             <div class="myat-job-date">{{ $job->TransferDate?->locale('el')->translatedFormat('D d/m') }}</div>
         </div>

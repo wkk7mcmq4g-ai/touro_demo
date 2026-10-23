@@ -681,6 +681,36 @@
     gap: 0.75rem;
 }
 
+.myat-job-count {
+    flex: none;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    width: 3.1rem;
+    height: 3.1rem;
+    padding-top: 0.55rem;
+    border-radius: 999px;
+    color: #fff;
+    background: var(--myat-azure);
+    box-shadow: 0 4px 12px -4px rgb(0 150 255 / 0.6);
+}
+
+.myat-job-count span {
+    font-size: 1.45rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.myat-job-count small {
+    font-size: 0.7rem;
+    font-weight: 700;
+    opacity: 0.8;
+}
+
+.myat-job-when {
+    flex: 1;
+}
+
 .myat-job-time {
     font-size: 1.9rem;
     font-weight: 800;
