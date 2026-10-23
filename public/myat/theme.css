@@ -83,7 +83,6 @@
 /* ---------- Sidebar: full height, navy ---------- */
 
 .fi-sidebar {
-    overflow-x: hidden;
     background: linear-gradient(180deg, #0a3d68 0%, var(--myat-navy) 35%, var(--myat-navy-deep) 100%);
     color: rgb(255 255 255 / 0.78);
 }
