@@ -99,8 +99,8 @@ class AppServiceProvider extends ServiceProvider
 
             match ($method) {
                 'excelFilterValues' => $returnEarly(ExcelFilters::values($component, (string) ($params[0] ?? ''))),
-                'applyExcelFilter' => $returnEarly(ExcelFilters::set($component, (string) ($params[0] ?? ''), is_array($params[1] ?? null) ? $params[1] : null)),
-                'clearExcelFilters' => $returnEarly(ExcelFilters::clear($component)),
+                'applyExcelFilter' => $returnEarly(self::filtered($component, fn () => ExcelFilters::set($component, (string) ($params[0] ?? ''), is_array($params[1] ?? null) ? $params[1] : null))),
+                'clearExcelFilters' => $returnEarly(self::filtered($component, fn () => ExcelFilters::clear($component))),
                 'saveColumnWidths' => $returnEarly(self::saveColumnWidths($component, $params[0] ?? [])),
             };
         });
@@ -113,6 +113,15 @@ class AppServiceProvider extends ServiceProvider
         // Same access_log rows the PHPRunner login/logout events wrote.
         Event::listen(Login::class, [LogAccess::class, 'login']);
         Event::listen(Logout::class, [LogAccess::class, 'logout']);
+    }
+
+    /** Run a column-filter change, then tell widgets over the table (e.g. transfer totals) to redraw. */
+    private static function filtered(Component $component, \Closure $change): null
+    {
+        $change();
+        $component->dispatch('myat-table-filtered');
+
+        return null;
     }
 
     /** Column widths dragged in a table's header, per user and table (saved by TableLayouts). */

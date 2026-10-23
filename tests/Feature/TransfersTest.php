@@ -12,6 +12,7 @@ use App\Filament\Resources\Transfers\RelationManagers\FilesRelationManager;
 use App\Filament\Resources\Transfers\RelationManagers\NotesRelationManager;
 use App\Filament\Resources\Transfers\RelationManagers\PriceLinesRelationManager;
 use App\Filament\Resources\Transfers\RelationManagers\TaxiFilesRelationManager;
+use App\Filament\Resources\Transfers\Widgets\TransferTotals;
 use App\Models\MyatTransfersFile;
 use App\Models\Transfer;
 use App\Models\TransferCharge;
@@ -458,6 +459,23 @@ class TransfersTest extends TestCase
             ->assertHasFormErrors(['TransferDate']);
 
         $this->assertSame(0, Transfer::query()->count());
+    }
+
+    public function test_totals_above_the_list_follow_what_the_list_shows(): void
+    {
+        $this->actingAs($this->makeLegacyUser('Admin'));
+        $this->transfer(['SalePrice' => 100, 'PurchasePrice' => 60, 'Status' => 'Completed']);
+        $this->transfer(['SalePrice' => 40, 'PurchasePrice' => 10, 'TransferDate' => Carbon::today()->addDay()]);
+
+        Livewire::test(TransferTotals::class, ['activeTab' => 'all'])
+            ->assertSeeInOrder(['Transfers', '2', 'Πωλήσεις', '140,00', 'Αγορές', '70,00', 'Απαιτήσεις', '100,00', 'Υποχρεώσεις', '60,00']);
+        Livewire::test(TransferTotals::class, ['activeTab' => 'tomorrow'])
+            ->assertSeeInOrder(['Transfers', '1', 'Πωλήσεις', '40,00']);
+
+        // Office users without the finance permission see the count only.
+        $this->actingAs($this->makeLegacyUser('Entry'));
+        Livewire::test(TransferTotals::class, ['activeTab' => 'all'])
+            ->assertSee('Transfers')->assertDontSee('Πωλήσεις');
     }
 
     public function test_the_form_marks_the_tab_with_an_error_and_accepts_both_platform_spellings(): void

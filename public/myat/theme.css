@@ -1990,3 +1990,81 @@ html.myat-immersive .fi-header {
 .fi-ta-content-ctn::-webkit-scrollbar-track {
     background: transparent;
 }
+
+/* ---------- Totals above the transfers list ---------- */
+
+.myat-totals {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+    gap: 0.6rem;
+}
+
+.myat-total {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    padding: 0.6rem 0.9rem;
+    border-radius: 0.8rem;
+    background: #fff;
+    box-shadow: var(--myat-shadow), 0 0 0 1px var(--myat-line);
+}
+
+.dark .myat-total {
+    background: #0f1b2d;
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.06);
+}
+
+.myat-total-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #64748b;
+}
+
+.myat-total-value {
+    font-size: 1.15rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: var(--myat-navy);
+}
+
+.dark .myat-total-value {
+    color: #fff;
+}
+
+.myat-total:first-child {
+    color: #fff;
+    background: linear-gradient(135deg, #0a3d68, var(--myat-navy-deep));
+    box-shadow: none;
+}
+
+.myat-total:first-child .myat-total-label {
+    color: rgb(255 255 255 / 0.7);
+}
+
+.myat-total:first-child .myat-total-value {
+    color: #fff;
+}
+
+@media (max-width: 639px) {
+    .myat-totals {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.4rem;
+    }
+
+    .myat-total:first-child {
+        grid-column: 1 / -1;
+        flex-direction: row;
+        align-items: baseline;
+        justify-content: space-between;
+    }
+
+    .myat-total-value {
+        font-size: 1rem;
+    }
+}
+
+html.myat-immersive .fi-page-header-widgets,
+html.myat-immersive .fi-wi:has(.myat-totals) {
+    display: none;
+}

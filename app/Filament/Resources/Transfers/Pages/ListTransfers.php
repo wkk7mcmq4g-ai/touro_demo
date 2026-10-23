@@ -4,10 +4,12 @@ namespace App\Filament\Resources\Transfers\Pages;
 
 use App\Filament\Resources\Transfers\Actions\TransferActions;
 use App\Filament\Resources\Transfers\TransferResource;
+use App\Filament\Resources\Transfers\Widgets\TransferTotals;
 use App\Models\Transfer;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\CreateAction;
+use Filament\Pages\Concerns\ExposesTableToWidgets;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Support\Enums\Width;
@@ -18,7 +20,20 @@ use Livewire\Attributes\Session;
 
 class ListTransfers extends ListRecords
 {
+    use ExposesTableToWidgets;
+
     protected static string $resource = TransferResource::class;
+
+    /** Totals of what the list shows (count, sale, purchase, receivables, payables) above it. */
+    protected function getHeaderWidgets(): array
+    {
+        return [TransferTotals::class];
+    }
+
+    public function getHeaderWidgetsColumns(): int|array
+    {
+        return 1;
+    }
 
     /** Use the whole screen: the list has PHPRunner's 57 columns. */
     protected Width|string|null $maxContentWidth = Width::Full;
