@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
@@ -50,5 +51,22 @@ class FuelRegister extends Model
             'ModifiedDate' => 'date',
             'ApprovedDate' => 'date',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (FuelRegister $fuel): void {
+            $fuel->CreatedDate = now();
+            $fuel->CreatedBy = auth()->user()?->username;
+        });
+        static::updating(function (FuelRegister $fuel): void {
+            $fuel->ModifiedDate = now();
+            $fuel->ModifiedBy = auth()->user()?->username;
+        });
+    }
+
+    public function vehicle(): BelongsTo
+    {
+        return $this->belongsTo(Vehicle::class, 'VehicleID', 'VehicleID');
     }
 }

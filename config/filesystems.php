@@ -30,6 +30,13 @@ return [
 
     'disks' => [
 
+        // PHPRunner's upload folder (services.phprunner.root/files), see App\Support\LegacyFiles.
+        'phprunner_files' => [
+            'driver' => 'local',
+            'root' => rtrim((string) (env('PHPRUNNER_ROOT') ?: storage_path('app/phprunner')), '/').'/files',
+            'throw' => true,
+        ],
+
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),

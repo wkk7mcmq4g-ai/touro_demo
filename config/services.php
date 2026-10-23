@@ -38,6 +38,9 @@ return [
     // The old PHPRunner app, for links in notifications until a page is ported.
     'phprunner' => [
         'url' => env('PHPRUNNER_URL', 'https://myat.touro.gr'),
+        // Folder of the PHPRunner app on this server (contains `files/`), for uploads of
+        // "document" fields such as driver files and fuel receipts. Empty: no uploads.
+        'root' => env('PHPRUNNER_ROOT'),
     ],
 
 ];

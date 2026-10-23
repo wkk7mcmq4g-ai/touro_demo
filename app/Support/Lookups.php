@@ -145,6 +145,27 @@ class Lookups
             ->all());
     }
 
+    /** @return array<int, string> Vehicles by ID; $licences limits to those licences, $exclude leaves them out. */
+    public static function vehicles(array $licences = [], array $exclude = []): array
+    {
+        return self::remember('vehicles:'.implode(',', $licences).'|'.implode(',', $exclude), fn () => DB::table('vehicles')
+            ->when($licences !== [], fn ($q) => $q->whereIn('VehicleLicence', $licences))
+            ->when($exclude !== [], fn ($q) => $q->where(fn ($q) => $q->whereNotIn('VehicleLicence', $exclude)->orWhereNull('VehicleLicence')))
+            ->orderBy('VehicleName')
+            ->pluck('VehicleName', 'VehicleID')
+            ->all());
+    }
+
+    /** @return array<int, string> Drivers by ID (all, or only active ones). */
+    public static function drivers(bool $activeOnly = false): array
+    {
+        return self::remember('drivers:'.(int) $activeOnly, fn () => DB::table('drivers')
+            ->when($activeOnly, fn ($q) => $q->where('Active', 1))
+            ->orderBy('Fullname')
+            ->pluck('Fullname', 'DriverID')
+            ->all());
+    }
+
     public static function flush(): void
     {
         self::$cache = [];

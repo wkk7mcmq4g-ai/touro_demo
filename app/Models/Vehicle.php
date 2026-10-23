@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Support\Lookups;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -60,5 +62,23 @@ class Vehicle extends Model
             'AIA_Expiry' => 'date',
             'order' => 'integer',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::saved(fn () => Lookups::flush());
+    }
+
+    /** The picture is a blob; lists never load it. */
+    protected $hidden = ['Picture'];
+
+    public function logs(): HasMany
+    {
+        return $this->hasMany(VehiclesLog::class, 'VehicleID', 'VehicleID');
+    }
+
+    public function kilometres(): HasMany
+    {
+        return $this->hasMany(VehiclesKlm::class, 'VehicleID', 'VehicleID');
     }
 }

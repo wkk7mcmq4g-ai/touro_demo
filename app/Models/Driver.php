@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Lookups;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
@@ -57,5 +58,10 @@ class Driver extends Model
             'Flag' => 'integer',
             'TelegramID' => 'integer',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::saved(fn () => Lookups::flush());
     }
 }

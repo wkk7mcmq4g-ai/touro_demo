@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
@@ -45,5 +46,30 @@ class VehiclesLog extends Model
             'Created' => 'date',
             'Modified' => 'date',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        // PHPRunner add/edit events; these columns are NOT NULL.
+        static::creating(function (VehiclesLog $log): void {
+            $log->Created = now();
+            $log->CreatedBy = (string) auth()->user()?->username;
+            $log->ModifiedBy ??= '';
+        });
+        static::updating(function (VehiclesLog $log): void {
+            $log->Modified = now();
+            $log->ModifiedBy = (string) auth()->user()?->username;
+        });
+        static::saving(function (VehiclesLog $log): void {
+            foreach (['LogType', 'Description', 'CreatedBy', 'ModifiedBy'] as $column) {
+                $log->{$column} ??= '';
+            }
+            $log->Kilometers ??= 0;
+        });
+    }
+
+    public function vehicle(): BelongsTo
+    {
+        return $this->belongsTo(Vehicle::class, 'VehicleID', 'VehicleID');
     }
 }
