@@ -4,19 +4,35 @@ namespace App\Filament\Resources\Transfers\Pages;
 
 use App\Filament\Resources\Transfers\TransferResource;
 use App\Models\Transfer;
+use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
+use Livewire\Attributes\Session;
 
 class ListTransfers extends ListRecords
 {
     protected static string $resource = TransferResource::class;
 
+    /** PHPRunner's inline edit: the configured columns become editable cells. */
+    #[Session]
+    public bool $inlineEditing = false;
+
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('toggleInlineEditing')
+                ->label(fn (): string => $this->inlineEditing ? 'Done editing' : 'Edit in list')
+                ->icon(fn () => $this->inlineEditing ? Heroicon::OutlinedCheck : Heroicon::OutlinedPencilSquare)
+                ->color(fn (): string => $this->inlineEditing ? 'success' : 'gray')
+                ->visible(fn (): bool => (bool) auth()->user()?->may('transfers', 'edit'))
+                ->action(function (): void {
+                    $this->inlineEditing = ! $this->inlineEditing;
+                    $this->resetTable();
+                }),
             CreateAction::make()->label('New transfer'),
         ];
     }

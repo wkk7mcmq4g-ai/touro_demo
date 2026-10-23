@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Transfers\Schemas;
 
 use App\Models\Transfer;
 use App\Support\Lookups;
+use App\Support\TransferRules;
 use Closure;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
@@ -252,39 +253,11 @@ class TransferForm
         })->color('gray')->size('sm');
     }
 
-    /**
-     * PHPRunner BeforeAdd / BeforeEdit date rules, with the same messages.
-     */
     private static function transferDateRule(string $operation, ?Transfer $record, Get $get): Closure
     {
         return function (string $attribute, $value, Closure $fail) use ($operation, $record, $get): void {
-            if (blank($value)) {
-                return;
-            }
-
-            $date = Carbon::parse($value)->startOfDay();
-            $importDate = filled($get('ImportDate')) ? Carbon::parse($get('ImportDate'))->startOfDay() : null;
-
-            if ($operation === 'create') {
-                if ($date->lte(Carbon::today()->subDays(7))) {
-                    $fail('Η ημερομηνία δεν μπορεί να είναι παλαιότερη των 7 ημερών');
-                } elseif ($importDate && $date->lt($importDate)) {
-                    $fail('Transfer Date cannot be before Date in date');
-                }
-
-                return;
-            }
-
-            $unchanged = $record?->TransferDate && $record->TransferDate->isSameDay($date);
-
-            if ($unchanged || $date->year < 2000) {
-                return;
-            }
-
-            if ($date->lte(Carbon::yesterday())) {
-                $fail('Η ημερομηνία δεν μπορεί να είναι παλαιότερη της σημερινής');
-            } elseif ($importDate && $date->lt($importDate)) {
-                $fail('Transfer Date cannot be before Date in date');
+            if ($error = TransferRules::transferDateError($value, $record, $get('ImportDate'), $operation === 'create')) {
+                $fail($error);
             }
         };
     }

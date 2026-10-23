@@ -30,6 +30,14 @@ class TransfersTable
 {
     public static function configure(Table $table): Table
     {
+        // "Edit in list" (PHPRunner inline edit): the columns in config/transfers.php become editable.
+        $editing = (bool) ($table->getLivewire()->inlineEditing ?? false)
+            && (bool) auth()->user()?->may('transfers', 'edit');
+
+        $columns = $editing
+            ? InlineEditColumns::apply(self::columns(), config('transfers.inline_edit', []))
+            : self::columns();
+
         return $table
             // PHPRunner: upcoming first (date, time), then the past.
             ->defaultSort(fn (Builder $query): Builder => $query
@@ -42,7 +50,7 @@ class TransfersTable
             ->persistColumnsInSession()
             ->persistFiltersInSession()
             ->persistSortInSession()
-            ->columns(self::columns())
+            ->columns($columns)
             ->filters(self::filters())
             ->filtersLayout(FiltersLayout::AboveContentCollapsible)
             ->filtersFormColumns(['sm' => 2, 'lg' => 4, 'xl' => 6])

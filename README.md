@@ -10,6 +10,8 @@ can run side by side during the switch-over.
 - **Transfers**: list with Today / Tomorrow / Next 5 days / Pending / All, PHPRunner's colours and TBD
   warnings, filters and search; the edit form with all lookups and PHPRunner's date rules; tabs for
   Notes & issues, Price lines, Charges and Files (files stay in the database, as in PHPRunner).
+- **Edit in list** on the transfers list (PHPRunner's inline edit): the columns listed in
+  `config/transfers.php` become editable cells; each change is saved at once with the same rules.
 
 ## Running it on your PC (Windows)
 

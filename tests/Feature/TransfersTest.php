@@ -138,6 +138,43 @@ class TransfersTest extends TestCase
             ->assertCanNotSeeTableRecords([$old]);
     }
 
+    public function test_edit_in_list_saves_through_the_same_rules(): void
+    {
+        $user = $this->makeLegacyUser('Entry');
+        $this->actingAs($user);
+        $transfer = $this->transfer(['PurchasePrice' => 40]);
+
+        $page = Livewire::test(ListTransfers::class)
+            ->callAction('toggleInlineEditing')
+            ->assertSet('inlineEditing', true);
+
+        // A cell change is saved at once, stamped with the user, like the edit page.
+        $page->call('updateTableColumnState', 'SalePrice', (string) $transfer->TransferID, '99.5');
+        $this->assertSame(99.5, $transfer->fresh()->SalePrice);
+        $this->assertSame($user->username, $transfer->fresh()->ModifiedBy);
+
+        // Own vehicle in the Coach cell: purchase price reset after saving, as in PHPRunner.
+        $page->call('updateTableColumnState', 'CoachCompanyID', (string) $transfer->TransferID, 'VITO 2022');
+        $this->assertSame(0.0, $transfer->fresh()->PurchasePrice);
+
+        // Moving it into the past is refused with PHPRunner's message.
+        $result = $page->instance()->updateTableColumnState('TransferDate', (string) $transfer->TransferID, Carbon::today()->subDays(3)->format('Y-m-d'));
+        $this->assertStringContainsString('παλαιότερη της σημερινής', $result['error'] ?? '');
+        $this->assertTrue($transfer->fresh()->TransferDate->isToday());
+    }
+
+    public function test_only_the_configured_columns_are_editable_in_the_list(): void
+    {
+        $this->actingAs($this->makeLegacyUser('Entry'));
+        $transfer = $this->transfer();
+
+        $page = Livewire::test(ListTransfers::class)->callAction('toggleInlineEditing');
+
+        // TicketsRequested is shown but not in PHPRunner's inline-edit list.
+        $result = $page->instance()->updateTableColumnState('TicketsRequested', (string) $transfer->TransferID, 'Contacted');
+        $this->assertArrayHasKey('error', $result);
+    }
+
     public function test_list_flags_fields_still_marked_tbd(): void
     {
         $this->actingAs($this->makeLegacyUser('Entry'));
