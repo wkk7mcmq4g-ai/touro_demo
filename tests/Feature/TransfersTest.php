@@ -168,6 +168,17 @@ class TransfersTest extends TestCase
         $this->actingAs($this->makeLegacyUser('Entry'));
         config(['transfers.lessee_is_lead_for_customers' => [$this->customerId]]);
 
+        // Add page: picking the customer fills in its lessee (PHPRunner autofill); not on edit.
+        DB::table('counterparties')->where('CID', $this->customerId)->update(['LesseName' => 'ACME Leasing']);
+        Livewire::test(CreateTransfer::class)
+            ->fillForm(['cID_Customer' => $this->customerId])
+            ->assertSchemaStateSet(['LesseeName' => 'ACME Leasing']);
+        $kept = $this->transfer(['LesseeName' => 'Kept']);
+        Livewire::test(EditTransfer::class, ['record' => $kept->getKey()])
+            ->fillForm(['cID_Customer' => $this->customerId])
+            ->assertSchemaStateSet(['LesseeName' => 'Kept']);
+        DB::table('counterparties')->where('CID', $this->customerId)->update(['LesseName' => '']);
+
         // Add page: the lead name is copied to the lessee for the configured customers.
         Livewire::test(CreateTransfer::class)
             ->fillForm(['cID_Customer' => $this->customerId, 'LesseeName' => ''])

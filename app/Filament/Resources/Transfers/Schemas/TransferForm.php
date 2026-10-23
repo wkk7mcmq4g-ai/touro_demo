@@ -20,6 +20,7 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class TransferForm
 {
@@ -55,7 +56,14 @@ class TransferForm
                     ->label('Customer')
                     ->options(fn (): array => Lookups::customers())
                     ->searchable()
-                    ->required(),
+                    ->required()
+                    // PHPRunner autofill (add page only): picking the customer fills in its lessee.
+                    ->live()
+                    ->afterStateUpdated(function (string $operation, $state, Set $set): void {
+                        if ($operation === 'create' && filled($state)) {
+                            $set('LesseeName', (string) DB::table('counterparties')->where('CID', $state)->value('LesseName'));
+                        }
+                    }),
                 Select::make('TransferType')
                     ->label('Type')
                     ->options(fn (): array => Lookups::optionValues('TransferType'))
@@ -121,7 +129,7 @@ class TransferForm
                 Textarea::make('LesseeName')
                     ->label('Lessee')
                     ->rows(1)
-                    ->helperText('Left empty, it is filled from the customer when saved.'),
+                    ->helperText('Filled from the customer when you pick it; if left empty, it is filled when saved.'),
                 Textarea::make('Notes')->rows(3)->columnSpanFull(),
                 Textarea::make('DriverNotes')->label('Driver notes')->rows(2)->columnSpanFull(),
             ]);
@@ -162,7 +170,7 @@ class TransferForm
                 Select::make('PaymentType')
                     ->label('Payment type')
                     ->options(array_combine($values = ['Viator', 'Cash', 'PayPal', 'Eurobank', 'Viva', 'Why Athens', 'GYG'], $values))
-                    ->helperText('Left empty, it is filled from the customer when saved.'),
+                    ->helperText('Filled from the customer when you pick it; if left empty, it is filled when saved.'),
                 Select::make('TicketsRequested')
                     ->label('Tickets')
                     ->options(array_combine($values = ['Contacted', 'Paid in Advance', 'Cash', "Purchased by\u{a0}client", 'No tickets needed'], $values)),
