@@ -1,0 +1,409 @@
+/*
+ * MyAthens Transfers theme for the Filament panel.
+ * Colours come from the myAthensTransfers logo: navy #08345A, azure #0096FF, mint #34ECA6.
+ * Plain CSS on Filament's fi-* classes, loaded after Filament's own styles: no build step.
+ */
+
+:root {
+    --myat-navy: #08345a;
+    --myat-navy-deep: #051f38;
+    --myat-azure: #0096ff;
+    --myat-mint: #34eca6;
+    --myat-page: #f3f6fa;
+    --myat-line: rgb(15 23 42 / 0.07);
+    --myat-shadow: 0 1px 2px rgb(16 24 40 / 0.04), 0 6px 20px -8px rgb(16 24 40 / 0.08);
+    --radius-lg: 0.625rem;
+    --radius-xl: 1rem;
+}
+
+/* ---------- Page ---------- */
+
+.fi-body {
+    background-color: var(--myat-page);
+    letter-spacing: -0.005em;
+}
+
+.fi-body:where(.dark, .dark *) {
+    background-color: #0a1220;
+}
+
+.fi-header-heading {
+    font-weight: 800;
+    letter-spacing: -0.025em;
+}
+
+.fi-page-header-main-ctn {
+    padding-block: 1.5rem 2rem;
+    row-gap: 1.5rem;
+}
+
+.fi-breadcrumbs-item {
+    font-size: 0.8rem;
+}
+
+/* ---------- Brand ---------- */
+
+.myat-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    white-space: nowrap;
+}
+
+.myat-brand-mark {
+    width: 2.1rem;
+    height: auto;
+    flex: none;
+}
+
+.myat-brand-name {
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--myat-navy);
+}
+
+.myat-brand-my {
+    font-weight: 500;
+    color: var(--myat-azure);
+}
+
+.myat-brand-light {
+    font-weight: 500;
+}
+
+.dark .myat-brand-name {
+    color: #fff;
+}
+
+.dark .myat-brand {
+    --myat-mark-left: #fff;
+}
+
+/* ---------- Sidebar: full height, navy ---------- */
+
+.fi-sidebar {
+    background: linear-gradient(180deg, #0a3d68 0%, var(--myat-navy) 35%, var(--myat-navy-deep) 100%);
+    color: rgb(255 255 255 / 0.78);
+}
+
+@media (min-width: 64rem) {
+    .fi-sidebar,
+    .fi-sidebar:where(.dark, .dark *) {
+        background: linear-gradient(180deg, #0a3d68 0%, var(--myat-navy) 35%, var(--myat-navy-deep) 100%);
+    }
+}
+
+.fi-sidebar:where(.dark, .dark *) {
+    background: linear-gradient(180deg, #0d1b2e 0%, #0a1424 100%) !important;
+    border-inline-end: 1px solid rgb(255 255 255 / 0.06);
+}
+
+.fi-sidebar .myat-brand {
+    --myat-mark-left: #fff;
+}
+
+.fi-sidebar .myat-brand-name {
+    color: #fff;
+}
+
+.fi-sidebar-header,
+.fi-body-has-topbar .fi-sidebar-header {
+    background: transparent;
+    box-shadow: none;
+    height: 4.5rem;
+    padding-inline: 1.25rem;
+}
+
+.fi-sidebar .fi-icon-btn {
+    color: rgb(255 255 255 / 0.6);
+}
+
+.fi-sidebar .fi-icon-btn:hover {
+    color: #fff;
+    background-color: rgb(255 255 255 / 0.08);
+}
+
+.fi-sidebar-nav {
+    padding-inline: 0.85rem;
+    scrollbar-width: thin;
+    scrollbar-color: rgb(255 255 255 / 0.15) transparent;
+}
+
+.fi-sidebar-group-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: rgb(255 255 255 / 0.45);
+}
+
+.fi-sidebar-group-btn .fi-icon,
+.fi-sidebar-group-collapse-btn {
+    color: rgb(255 255 255 / 0.35) !important;
+}
+
+.fi-sidebar-item-btn {
+    padding: 0.45rem 0.7rem;
+    border-radius: 0.6rem;
+}
+
+.fi-sidebar-item-btn > .fi-icon {
+    color: rgb(255 255 255 / 0.5);
+}
+
+.fi-sidebar-item-label {
+    color: rgb(255 255 255 / 0.78);
+    font-weight: 500;
+}
+
+.fi-sidebar-item-has-url > .fi-sidebar-item-btn:hover,
+.fi-sidebar-item-has-url > .fi-sidebar-item-btn:focus-visible {
+    background-color: rgb(255 255 255 / 0.07);
+}
+
+.fi-sidebar-item-has-url > .fi-sidebar-item-btn:hover .fi-sidebar-item-label {
+    color: #fff;
+}
+
+.fi-sidebar-item.fi-active > .fi-sidebar-item-btn,
+.fi-sidebar-item.fi-active > .fi-sidebar-item-btn:where(.dark, .dark *) {
+    background: linear-gradient(90deg, rgb(0 150 255 / 0.28), rgb(0 150 255 / 0.1));
+    box-shadow: inset 3px 0 0 var(--myat-mint);
+}
+
+.fi-sidebar-item.fi-active > .fi-sidebar-item-btn > .fi-icon,
+.fi-sidebar-item.fi-active > .fi-sidebar-item-btn > .fi-icon:where(.dark, .dark *) {
+    color: var(--myat-mint);
+}
+
+.fi-sidebar-item.fi-active .fi-sidebar-item-label,
+.fi-sidebar-item.fi-active .fi-sidebar-item-label:where(.dark, .dark *) {
+    color: #fff;
+    font-weight: 600;
+}
+
+.fi-sidebar-item-grouped-border-part {
+    background-color: rgb(255 255 255 / 0.15) !important;
+}
+
+/* search in the sidebar */
+.fi-sidebar-header-controls {
+    padding-inline: 1rem;
+}
+
+.fi-sidebar .fi-global-search .fi-input-wrp {
+    background-color: rgb(255 255 255 / 0.08);
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
+}
+
+.fi-sidebar .fi-global-search .fi-input {
+    color: #fff;
+}
+
+.fi-sidebar .fi-global-search .fi-input::placeholder,
+.fi-sidebar .fi-global-search .fi-icon {
+    color: rgb(255 255 255 / 0.45);
+}
+
+.fi-sidebar .fi-global-search-results-ctn {
+    color: var(--gray-950);
+}
+
+/* user menu at the bottom of the sidebar */
+.fi-sidebar-footer,
+.fi-sidebar-footer:where(.dark, .dark *) {
+    border-color: rgb(255 255 255 / 0.1);
+}
+
+.fi-sidebar-footer .fi-user-menu-trigger {
+    border-radius: 0.6rem;
+    padding: 0.35rem 0.5rem;
+    color: #fff;
+}
+
+.fi-sidebar-footer .fi-user-menu-trigger:hover {
+    background-color: rgb(255 255 255 / 0.07);
+}
+
+.fi-sidebar-footer .fi-user-menu-trigger * {
+    color: inherit;
+}
+
+.fi-sidebar-footer .fi-dropdown-panel,
+.fi-sidebar-footer .fi-dropdown-panel * {
+    color: revert-layer;
+}
+
+/* mobile: the button that opens the sidebar when there is no top bar */
+.fi-layout-sidebar-toggle-btn-ctn {
+    background-color: var(--myat-page);
+}
+
+/* ---------- Cards, sections, tables ---------- */
+
+.fi-ta-ctn,
+.fi-section:not(.fi-section-not-contained),
+.fi-wi-stats-overview-stat {
+    border-radius: 1rem;
+    box-shadow: var(--myat-shadow), 0 0 0 1px var(--myat-line);
+}
+
+.fi-ta-ctn:where(.dark, .dark *),
+.fi-section:where(.dark, .dark *) {
+    background-color: #111c2d;
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.06);
+}
+
+.fi-ta-header-cell,
+.fi-ta-header-cell button {
+    /* No uppercase: Greek capitals would keep their accents unless the page is lang="el". */
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #64748b;
+}
+
+.fi-ta-table > thead > tr {
+    background-color: #f8fafc;
+}
+
+.fi-ta-table > thead > tr:where(.dark, .dark *) {
+    background-color: rgb(255 255 255 / 0.03);
+}
+
+.fi-ta-header-cell:where(.dark, .dark *),
+.fi-ta-header-cell button:where(.dark, .dark *) {
+    color: #94a3b8;
+}
+
+.fi-ta-header-cell {
+    padding-block: 0.7rem;
+}
+
+.fi-ta-row {
+    transition: background-color 0.12s ease;
+}
+
+.fi-ta-row:hover {
+    background-color: rgb(0 150 255 / 0.04);
+}
+
+.fi-ta-row:hover:where(.dark, .dark *) {
+    background-color: rgb(0 150 255 / 0.08);
+}
+
+.fi-ta-summary-row {
+    background-color: #f8fafc;
+    font-weight: 600;
+}
+
+.fi-ta-summary-row:where(.dark, .dark *) {
+    background-color: rgb(255 255 255 / 0.03);
+}
+
+.fi-badge {
+    border-radius: 999px;
+}
+
+/* ---------- Tabs as a segmented control ---------- */
+
+.fi-tabs:not(.fi-contained) {
+    background-color: #e8eef5;
+    border-radius: 0.85rem;
+    padding: 0.25rem;
+    box-shadow: none;
+    gap: 0.15rem;
+}
+
+.fi-tabs:not(.fi-contained):where(.dark, .dark *) {
+    background-color: rgb(255 255 255 / 0.05);
+}
+
+.fi-tabs:not(.fi-contained) .fi-tabs-item {
+    border-radius: 0.65rem;
+    padding: 0.4rem 0.9rem;
+}
+
+.fi-tabs:not(.fi-contained) .fi-tabs-item-label {
+    color: #475569;
+    font-weight: 600;
+}
+
+.fi-tabs:not(.fi-contained) .fi-tabs-item.fi-active {
+    background-color: #fff;
+    box-shadow: 0 1px 2px rgb(16 24 40 / 0.08), 0 2px 8px -2px rgb(16 24 40 / 0.1);
+}
+
+.fi-tabs:not(.fi-contained) .fi-tabs-item.fi-active:where(.dark, .dark *) {
+    background-color: #1b2a40;
+}
+
+.fi-tabs:not(.fi-contained) .fi-tabs-item.fi-active .fi-tabs-item-label {
+    color: var(--myat-navy);
+}
+
+.fi-tabs:not(.fi-contained) .fi-tabs-item.fi-active .fi-tabs-item-label:where(.dark, .dark *) {
+    color: #fff;
+}
+
+/* ---------- Buttons and inputs ---------- */
+
+.fi-btn {
+    font-weight: 600;
+}
+
+.fi-btn.fi-color-primary:not(.fi-outlined) {
+    background-image: linear-gradient(135deg, #0aa2ff 0%, #0077d9 100%);
+    box-shadow: 0 1px 2px rgb(0 80 160 / 0.25), 0 4px 12px -4px rgb(0 120 230 / 0.45);
+    border: 0;
+}
+
+.fi-btn.fi-color-primary:not(.fi-outlined):hover {
+    filter: brightness(1.06);
+}
+
+.fi-input-wrp {
+    box-shadow: 0 0 0 1px rgb(15 23 42 / 0.1);
+}
+
+.fi-input-wrp:focus-within {
+    box-shadow: 0 0 0 2px var(--primary-500);
+}
+
+/* ---------- Login and other simple pages ---------- */
+
+.fi-simple-layout {
+    background:
+        radial-gradient(60rem 40rem at 85% -10%, rgb(0 150 255 / 0.45), transparent 60%),
+        radial-gradient(50rem 35rem at -10% 110%, rgb(52 236 166 / 0.3), transparent 60%),
+        linear-gradient(160deg, #0a3d68 0%, var(--myat-navy-deep) 100%);
+    justify-content: center;
+}
+
+.fi-simple-main {
+    border-radius: 1.5rem;
+    box-shadow: 0 30px 60px -20px rgb(0 0 0 / 0.45), 0 0 0 1px rgb(255 255 255 / 0.06);
+}
+
+.fi-simple-main:where(.dark, .dark *) {
+    background-color: #111c2d;
+}
+
+.fi-simple-header .fi-logo {
+    margin-bottom: 0.5rem;
+}
+
+.fi-simple-layout .fi-simple-header-heading {
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.fi-btn.fi-color-primary:not(.fi-outlined),
+.fi-btn.fi-color-primary:not(.fi-outlined) .fi-icon,
+.fi-btn.fi-color-primary:not(.fi-outlined) > span {
+    color: #fff;
+}
+
+.fi-tabs:not(.fi-contained) {
+    width: fit-content;
+    margin-inline: auto;
+}

@@ -32,6 +32,8 @@ Laravel 13 + Filament 5 rebuild of the PHPRunner app `Touro_MyAT_v2026`. It runs
 
 - `app/Models/*` generated from the DB by `php artisan app:generate-models` (views use `ReadOnlyModel`).
 - `app/Filament/Resources/<Name>/` one folder per resource (`Schemas/`, `Tables/`, `Pages/`).
+- Theme: `public/myat/theme.css` (plain CSS over Filament's `fi-*` classes, no build step), Manrope in
+  `public/myat/fonts`, logo view `resources/views/filament/brand/logo.blade.php`; set up in `AdminPanelProvider`.
 - `database/legacy/schema.sql` structure-only export; `php artisan app:load-schema` loads it into an
   empty database.
 - Reference material for porting (pages, fields, lookups, events, button code) was extracted from the
