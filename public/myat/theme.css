@@ -671,7 +671,197 @@
     }
 }
 
-/* ---------- Driver jobs (phone first): next-job hero + compact rows ---------- */
+/* ---------- Driver job cards ---------- */
+
+.myat-job {
+    display: grid;
+    gap: 0.6rem;
+}
+
+.myat-job-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+}
+
+.myat-job-count {
+    flex: none;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    width: 3.1rem;
+    height: 3.1rem;
+    padding-top: 0.55rem;
+    border-radius: 999px;
+    color: #fff;
+    background: var(--myat-azure);
+    box-shadow: 0 4px 12px -4px rgb(0 150 255 / 0.6);
+}
+
+.myat-job-count span {
+    font-size: 1.45rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.myat-job-count small {
+    font-size: 0.7rem;
+    font-weight: 700;
+    opacity: 0.8;
+}
+
+.myat-job-when {
+    flex: 1;
+}
+
+.myat-job-time {
+    font-size: 1.9rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    color: var(--myat-navy);
+}
+
+.dark .myat-job-time {
+    color: #fff;
+}
+
+.myat-job-date {
+    margin-top: 0.2rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: capitalize;
+}
+
+.myat-job-tags {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.3rem;
+}
+
+.myat-job-tag {
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #fff;
+    background: var(--myat-azure);
+}
+
+.myat-job-tag-soft {
+    color: var(--myat-navy);
+    background: #e6f2ff;
+}
+
+.myat-job-tag-warn {
+    color: #7c2d12;
+    background: #fde68a;
+}
+
+.myat-job-route {
+    position: relative;
+    display: grid;
+    gap: 0.55rem;
+    margin: 0;
+    padding: 0 0 0 1.1rem;
+    list-style: none;
+}
+
+.myat-job-route::before {
+    content: '';
+    position: absolute;
+    left: 0.3rem;
+    top: 0.55rem;
+    bottom: 0.55rem;
+    border-left: 2px dashed #cbd5e1;
+}
+
+.myat-job-route li {
+    position: relative;
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+.myat-job-route li::before {
+    content: '';
+    position: absolute;
+    left: -1.1rem;
+    top: 0.3rem;
+    width: 0.65rem;
+    height: 0.65rem;
+    border-radius: 999px;
+    background: var(--myat-mint);
+    box-shadow: 0 0 0 3px #fff;
+}
+
+.myat-job-route li:last-child::before {
+    background: var(--myat-azure);
+}
+
+.myat-job-route-label,
+.myat-job-line span {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    color: #94a3b8;
+}
+
+.myat-job-line {
+    font-size: 0.9rem;
+}
+
+.myat-job-notes {
+    padding: 0.6rem 0.75rem;
+    border-radius: 0.6rem;
+    font-size: 0.875rem;
+    background: #fff7ed;
+    color: #7c2d12;
+    border: 1px solid #fed7aa;
+}
+
+.dark .myat-job-notes {
+    background: rgb(251 146 60 / 0.12);
+    color: #fed7aa;
+    border-color: rgb(251 146 60 / 0.3);
+}
+
+.myat-job-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    margin: -0.25rem -0.25rem 0.1rem;
+}
+
+.myat-job-vehicle {
+    padding: 0.35rem 0.75rem;
+    border-radius: 0.6rem;
+    font-size: 0.95rem;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    color: #fff;
+    background: linear-gradient(135deg, #0a3d68, var(--myat-navy));
+}
+
+.myat-job-id {
+    padding: 0.35rem 0.7rem;
+    border-radius: 0.6rem;
+    font-size: 0.95rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: var(--myat-navy);
+    background: rgb(52 236 166 / 0.25);
+    border: 1px solid rgb(52 236 166 / 0.6);
+}
+
+.dark .myat-job-id {
+    color: var(--myat-mint);
+}
 
 /* job cards: the action buttons wrap in rows, the outer table box steps back */
 .fi-panel-portal .fi-ta-content-grid .fi-ta-actions {
@@ -1376,7 +1566,7 @@ a.myat-tl-link:hover {
     }
 }
 
-/* ---------- Driver portal: day summary, next-job hero, compact rows, tomorrow card ---------- */
+/* ---------- Driver portal: day summary and the next job ---------- */
 
 .myat-day-date {
     display: block;
@@ -1384,554 +1574,103 @@ a.myat-tl-link:hover {
 }
 
 .myat-day {
-    display: block;
-    margin-top: 0.35rem;
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: #64748b;
-}
-
-.myat-day b {
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
-    color: var(--myat-navy);
-}
-
-.dark .myat-day b {
-    color: #fff;
-}
-
-.myat-day-vehicle {
-    display: inline-block;
-    margin-top: 0.55rem;
-    padding: 0.35rem 0.75rem;
-    border-radius: 0.6rem;
-    font-size: 0.85rem;
-    font-weight: 800;
-    letter-spacing: 0.01em;
-    color: #fff;
-    background: linear-gradient(135deg, #0a3d68, var(--myat-navy));
-}
-
-/* The next job: a navy card at the top, its buttons on the same dark surface. */
-.fi-ta-content-grid > .fi-ta-record:has(.myat-hero) {
-    grid-column: 1 / -1;
-    order: -2;
-    color: #fff;
-    background: linear-gradient(150deg, var(--myat-navy) 0%, var(--myat-navy-deep) 100%);
-    box-shadow: 0 18px 36px -18px rgb(5 31 56 / 0.7) !important;
-}
-
-.fi-ta-content-grid:has(.myat-hero):has(.myat-row)::before {
-    content: 'Υπόλοιπα';
-    grid-column: 1 / -1;
-    order: -1;
-    margin: 0.4rem 0.25rem -0.25rem;
-    font-size: 0.95rem;
-    font-weight: 800;
-    color: var(--myat-navy);
-}
-
-.dark .fi-ta-content-grid:has(.myat-hero):has(.myat-row)::before {
-    color: #fff;
-}
-
-.myat-hero {
-    display: grid;
-    gap: 0.9rem;
-}
-
-.myat-hero-top,
-.myat-hero-ids,
-.myat-hero-when {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.6rem;
 }
 
-.myat-hero-when {
-    align-items: flex-start;
-}
-
-.myat-hero-label {
+.myat-day-pill {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
-    font-size: 0.78rem;
-    font-weight: 800;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--myat-mint);
-}
-
-.myat-hero-label-icon {
-    width: 1rem;
-    height: 1rem;
-}
-
-.myat-hero-countdown {
+    gap: 0.25rem;
     padding: 0.3rem 0.7rem;
     border-radius: 999px;
     font-size: 0.82rem;
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
-    color: var(--myat-navy-deep);
-    background: var(--myat-mint);
-}
-
-.myat-hero-vehicle {
-    padding: 0.4rem 0.8rem;
-    border-radius: 0.6rem;
-    font-size: 1rem;
-    font-weight: 800;
-    color: var(--myat-navy-deep);
+    color: var(--myat-navy);
     background: #fff;
+    box-shadow: 0 0 0 1px var(--myat-line);
 }
 
-.myat-hero-id {
-    padding: 0.4rem 0.75rem;
-    border-radius: 0.6rem;
-    font-size: 1rem;
+.myat-day-pill b {
     font-weight: 800;
     font-variant-numeric: tabular-nums;
-    color: var(--myat-mint);
-    border: 1px solid rgb(52 236 166 / 0.55);
-    background: rgb(52 236 166 / 0.12);
 }
 
-.myat-hero-time {
-    font-size: 3rem;
-    font-weight: 800;
-    line-height: 1;
-    letter-spacing: -0.035em;
-    font-variant-numeric: tabular-nums;
-}
-
-.myat-hero-sub {
-    margin-top: 0.35rem;
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: rgb(255 255 255 / 0.65);
-    text-transform: capitalize;
-}
-
-.myat-hero-tags {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 0.3rem;
-    padding-top: 0.2rem;
-}
-
-.myat-hero-tag {
-    padding: 0.25rem 0.6rem;
-    border-radius: 999px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: #fff;
-    background: rgb(255 255 255 / 0.15);
-}
-
-.myat-hero-tag-mint {
-    color: var(--myat-navy-deep);
-    background: var(--myat-mint);
-}
-
-.myat-hero-tag-warn {
-    color: #7c2d12;
-    background: #fde68a;
-}
-
-.myat-hero-route {
-    position: relative;
-    display: grid;
-    gap: 0.7rem;
-    margin: 0;
-    padding: 0 0 0 1.3rem;
-    list-style: none;
-}
-
-.myat-hero-route::before {
-    content: '';
-    position: absolute;
-    left: 0.35rem;
-    top: 0.6rem;
-    bottom: 0.6rem;
-    border-left: 2px dashed rgb(255 255 255 / 0.3);
-}
-
-.myat-hero-route li {
-    position: relative;
-    font-size: 1.1rem;
-    font-weight: 700;
-    line-height: 1.3;
-}
-
-.myat-hero-route li::before {
-    content: '';
-    position: absolute;
-    left: -1.3rem;
-    top: 0.3rem;
-    width: 0.75rem;
-    height: 0.75rem;
-    border-radius: 999px;
-    background: var(--myat-mint);
-    box-shadow: 0 0 0 3px var(--myat-navy);
-}
-
-.myat-hero-route li:last-child::before {
-    background: var(--myat-azure);
-}
-
-.myat-hero-route li span,
-.myat-hero-line span,
-.myat-hero-line-label {
-    display: block;
-    margin-bottom: 0.1rem;
-    font-size: 0.68rem;
-    font-weight: 700;
-    letter-spacing: 0.03em;
-    color: rgb(255 255 255 / 0.55);
-}
-
-.myat-hero-line {
-    font-size: 0.95rem;
-    font-weight: 600;
-}
-
-.myat-hero-pax {
-    padding-top: 0.75rem;
-    border-top: 1px solid rgb(255 255 255 / 0.1);
-}
-
-.myat-hero-pax-name {
-    font-size: 1.05rem;
-    font-weight: 700;
-}
-
-.myat-hero-call {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    min-height: 3rem;
-    margin-top: 0.6rem;
-    border-radius: 0.75rem;
-    font-size: 1.05rem;
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
-    color: var(--myat-navy-deep);
-    background: var(--myat-mint);
-    transition: filter 0.15s ease;
-}
-
-.myat-hero-call:hover,
-.myat-hero-call:active {
-    filter: brightness(1.06);
-}
-
-.myat-hero-call:focus-visible {
-    outline: 2px solid #fff;
-    outline-offset: 2px;
-}
-
-.myat-hero-call-icon {
-    width: 1.15rem;
-    height: 1.15rem;
-}
-
-.myat-hero-notes {
-    padding: 0.65rem 0.8rem;
-    border-radius: 0.65rem;
-    font-size: 0.9rem;
-    color: #fed7aa;
-    background: rgb(251 146 60 / 0.14);
-    border: 1px solid rgb(251 146 60 / 0.35);
-}
-
-/* buttons on the hero: Voucher stays primary, the others are glass */
-.fi-ta-record:has(.myat-hero) .fi-ta-actions {
-    display: grid !important;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.5rem !important;
-}
-
-.fi-ta-record:has(.myat-hero) .fi-ta-actions > * {
-    width: 100%;
-}
-
-.fi-ta-record:has(.myat-hero) .fi-btn {
-    width: 100%;
-    min-height: 3rem;
-    justify-content: center;
-}
-
-.fi-ta-record:has(.myat-hero) .fi-btn.fi-outlined {
-    color: #fff;
-    background: rgb(255 255 255 / 0.1);
-    box-shadow: none;
-}
-
-.fi-ta-record:has(.myat-hero) .fi-btn.fi-outlined .fi-icon {
-    color: #fff;
-}
-
-/* Every other job: a compact row; nothing greyed out, done jobs only get a green tick. */
-.myat-row {
-    display: grid;
-    grid-template-columns: 2.75rem 1fr auto;
-    gap: 0.75rem;
-    align-items: start;
-}
-
-.myat-row-mark {
-    display: grid;
-    place-items: center;
-    width: 2.75rem;
-    height: 2.75rem;
-    border-radius: 999px;
-    font-size: 1.1rem;
-    font-weight: 800;
+.myat-day-next {
     color: #fff;
     background: var(--myat-azure);
-    box-shadow: 0 4px 12px -4px rgb(0 150 255 / 0.6);
+    box-shadow: 0 6px 16px -8px rgb(0 150 255 / 0.8);
 }
 
-.myat-row.is-done .myat-row-mark {
+.myat-day-done {
     color: #047857;
-    background: #d1fae5;
+    background: rgb(16 185 129 / 0.12);
     box-shadow: none;
 }
 
-.myat-row-check {
-    width: 1.35rem;
-    height: 1.35rem;
-}
-
-.myat-row-main {
-    min-width: 0;
-}
-
-.myat-row-head {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.4rem;
-}
-
-.myat-row-time {
-    font-size: 1.15rem;
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
-    color: var(--myat-navy);
-}
-
-.dark .myat-row-time {
-    color: #fff;
-}
-
-.myat-row-id {
-    font-size: 0.78rem;
-    font-weight: 800;
-    color: #0f766e;
-}
-
-.dark .myat-row-id {
-    color: var(--myat-mint);
-}
-
-.myat-row-vehicle,
-.myat-row-date {
-    padding: 0.1rem 0.45rem;
-    border-radius: 0.4rem;
-    font-size: 0.72rem;
-    font-weight: 800;
-    color: #fff;
-    background: var(--myat-navy);
-}
-
-.myat-row-date {
-    color: var(--myat-navy);
-    background: #e6f2ff;
-    text-transform: capitalize;
-}
-
-.myat-row-route {
-    margin-top: 0.15rem;
-    font-size: 0.92rem;
-    font-weight: 700;
-    line-height: 1.3;
-}
-
-.myat-row-info,
-.myat-row-pax {
-    margin-top: 0.2rem;
-    font-size: 0.85rem;
-    color: #334155;
-}
-
-.dark .myat-row-info,
-.dark .myat-row-pax {
-    color: #cbd5e1;
-}
-
-.myat-row-phone {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    min-height: 2.75rem;
-    margin-inline-start: 0.25rem;
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
-    color: var(--myat-azure);
-}
-
-.myat-row-phone-icon {
-    width: 0.95rem;
-    height: 0.95rem;
-}
-
-.myat-row-notes {
-    margin-top: 0.35rem;
-    padding: 0.45rem 0.6rem;
-    border-radius: 0.5rem;
-    font-size: 0.82rem;
-    color: #7c2d12;
-    background: #fff7ed;
-    border: 1px solid #fed7aa;
-}
-
-.dark .myat-row-notes {
-    color: #fed7aa;
-    background: rgb(251 146 60 / 0.12);
-    border-color: rgb(251 146 60 / 0.3);
-}
-
-.myat-row-side {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.25rem;
-}
-
-.myat-row-chip {
-    padding: 0.15rem 0.5rem;
-    border-radius: 999px;
-    font-size: 0.7rem;
-    font-weight: 700;
-    white-space: nowrap;
-    color: var(--myat-navy);
-    background: #e6f2ff;
-}
-
-.dark .myat-row-chip {
+.dark .myat-day-pill:not(.myat-day-next):not(.myat-day-done) {
     color: #e2e8f0;
-    background: rgb(255 255 255 / 0.08);
+    background: rgb(255 255 255 / 0.06);
 }
 
-.myat-row-chip-done {
+.dark .myat-day-done {
+    color: #6ee7b7;
+}
+
+.myat-job-nextbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: -0.25rem -0.25rem 0.1rem;
+    padding: 0.45rem 0.75rem;
+    border-radius: 0.6rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(90deg, var(--myat-azure), #00b4d8);
+}
+
+.myat-job-nextbar b {
+    font-variant-numeric: tabular-nums;
+}
+
+.fi-ta-record:has(.myat-job.is-next) {
+    box-shadow: 0 0 0 2px var(--myat-azure), 0 14px 30px -14px rgb(0 150 255 / 0.55) !important;
+}
+
+/* jobs already started today: only the number and the time step back, the rest stays readable */
+.myat-job.is-past .myat-job-count {
+    background: #94a3b8;
+    box-shadow: none;
+}
+
+.myat-job.is-past .myat-job-time {
+    color: #64748b;
+}
+
+.myat-job-tag-done {
     color: #065f46;
     background: #d1fae5;
 }
 
-.myat-row-chip-warn {
-    color: #7c2d12;
-    background: #fde68a;
-}
 
-/* row buttons: compact, under the text */
-.fi-ta-record:has(.myat-row) .fi-ta-actions {
-    padding-inline-start: 3.5rem;
-}
-
-/* Tomorrow card under the jobs */
-.myat-tomorrow {
-    display: grid;
-    gap: 0.6rem;
-    margin-top: 1rem;
-    padding: 1rem;
-    border-radius: 1rem;
-    background: #fff;
-    box-shadow: var(--myat-shadow), 0 0 0 1px var(--myat-line);
-}
-
-.dark .myat-tomorrow {
-    background: #0f1b2d;
-    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.06);
-}
-
-.myat-tomorrow-head {
+.myat-job-phone {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.myat-tomorrow-head h2 {
-    font-size: 1rem;
-    font-weight: 800;
-    color: var(--myat-navy);
-}
-
-.dark .myat-tomorrow-head h2 {
-    color: #fff;
-}
-
-.myat-tomorrow-date {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    padding: 0.25rem 0.65rem;
-    border-radius: 999px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: var(--myat-azure);
-    background: rgb(0 150 255 / 0.1);
-    text-transform: capitalize;
-}
-
-.myat-tomorrow-date-icon,
-.myat-tomorrow-read-icon {
-    width: 1rem;
-    height: 1rem;
-}
-
-.myat-tomorrow-line {
-    font-size: 0.92rem;
-    font-weight: 600;
-    color: #475569;
-}
-
-.dark .myat-tomorrow-line {
-    color: #cbd5e1;
-}
-
-.myat-tomorrow-line b {
-    font-weight: 800;
-    color: var(--myat-navy);
-}
-
-.dark .myat-tomorrow-line b {
-    color: #fff;
-}
-
-.myat-tomorrow-read {
-    display: flex;
+    width: fit-content;
     align-items: center;
     gap: 0.35rem;
-    font-size: 0.85rem;
+    min-height: 2.75rem;
     font-weight: 700;
-    color: #047857;
+    font-variant-numeric: tabular-nums;
+    color: var(--myat-azure);
 }
 
-.myat-tomorrow-action .fi-btn {
-    width: 100%;
-    min-height: 2.9rem;
-    justify-content: center;
+a.myat-job-phone:hover {
+    text-decoration: underline;
 }
 
-@media (min-width: 80rem) {
-    .fi-ta-content-grid > .fi-ta-record:has(.myat-hero) {
-        grid-column: span 2;
-    }
+.myat-job-phone-icon {
+    width: 1rem;
+    height: 1rem;
 }
