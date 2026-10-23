@@ -10,8 +10,8 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
- * One driver or tour guide with jobs on a day (PHPRunner v_daily_transfers_emails), worked out
- * from v_transfers: who gets the day's transfers by e-mail or Telegram, and whether they
+ * One driver or tour guide with jobs on a day: PHPRunner's v_daily_transfers_emails, whose SQL is
+ * broken on the server (#1271, mixed collations in its UNION), rebuilt here on v_transfers: who gets the day's transfers by e-mail or Telegram, and whether they
  * confirmed reading them (emails_sent).
  *
  * @property string $row_key
@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\DB;
  * @property string|null $VehicleName
  * @property int $Transfers
  * @property int|null $TelegramID
- * @property string $SendStatus Read | ''
+ * @property string $SendStatus Read | Not read
  */
 class DailyRecipient extends Model
 {
@@ -54,14 +54,13 @@ class DailyRecipient extends Model
             ->groupBy('aid', 'TransferDate', 'Fullname', 'Email', 'VehicleName');
 
         $guides = DB::table('v_transfers')
-            ->where('cID_Assistant', '<>', 'xxx')
-            ->whereRaw("IFNULL(AssistantEmail, '') <> ''")
+            ->whereNotNull('assistantid')
             ->selectRaw("assistantid AS ID, TransferDate, {$t('cID_Assistant')} AS Fullname, {$t('AssistantEmail')} AS Email, {$t("'Assistant'")} AS Type, {$t("''")} AS VehicleName, COUNT(*) AS Transfers, NULL AS TelegramID")
             ->groupBy('assistantid', 'TransferDate', 'cID_Assistant', 'AssistantEmail');
 
         $all = DB::query()->fromSub($drivers->unionAll($guides), 'r')
             ->leftJoin('emails_sent as e', fn ($j) => $j->on('e.TransferDate', '=', 'r.TransferDate')->on('e.aID', '=', 'r.ID'))
-            ->selectRaw("r.*, IF(MAX(e.ID) IS NULL, '', 'Read') AS SendStatus, CONCAT(r.Type, '-', r.ID, '-', r.TransferDate) AS row_key")
+            ->selectRaw("r.*, IF(MAX(e.ID) IS NULL, 'Not read', 'Read') AS SendStatus, CONCAT(r.Type, '-', r.ID, '-', r.TransferDate) AS row_key")
             ->groupBy('r.ID', 'r.TransferDate', 'r.Fullname', 'r.Email', 'r.Type', 'r.VehicleName', 'r.Transfers', 'r.TelegramID');
 
         return static::query()->fromSub($all, 'daily_recipients');
@@ -79,13 +78,56 @@ class DailyRecipient extends Model
             ->get();
     }
 
-    /** The day's jobs as one Telegram message (PHPRunner "telsms"). */
+    /**
+     * The day's jobs as one Telegram message: the view's "telsms", line for line
+     * (drivers get a header and numbered jobs; guides the plain list).
+     */
     public function telegramText(): string
     {
         $jobs = $this->jobs();
+        $v = fn ($value): string => (string) $value;
 
-        return '*Δρομολόγια '.$this->TransferDate->format('d/m/Y').'* ('.$jobs->count().")\n\n"
-            .$jobs->map(fn (VTransfer $job): string => $job->smsText())->implode("\n\n");
+        if ($this->Type !== 'Driver') {
+            return $jobs->map(fn (VTransfer $j): string => implode("\r", [
+                '*Ημερομηνία:* '.$j->TransferDate?->format('d/m/Y'),
+                '*Ωρα Pickup:* '.$v($j->TransferTime),
+                '*Άτομα:* '.$v($j->Pax),
+                '*Τύπος:* '.$v($j->TransferType),
+                '*Σημείο Παραλαβής:* '.$v($j->From),
+                '*Σημείο Αποβίβασης:* '.$v($j->To),
+                '*Πληροφορίες:* '.$v($j->Flight_Ship_Num_From),
+                '*Όνομα επιβάτη:* '.$v($j->LeadName),
+                '*Τηλέφωνο επιβάτη:* '.$v($j->LeadPhone),
+                '*Συνοδός - Ξεναγός:* '.$v($j->Assistant),
+                '*Οδηγός:* '.$v($j->Fullname).'-'.$v($j->DriverPhone),
+                '*Παρατηρήσεις:* '.$v($j->Notes),
+                '*Επιβάτες:* '.$v($j->PassengerName),
+            ]))->implode("\r\n\r\n");
+        }
+
+        $header = implode("\r\n\r\n", [
+            '*My Athens Transfers IKE: 0261E60000721601*',
+            '*Ημερομηνία:* '.$this->TransferDate->format('d/m/Y'),
+            '*Οδηγός:* '.$v($this->Fullname),
+            '*Συνολικά Δρομολόγια:* '.$jobs->count(),
+            '---------------------------------------',
+        ]);
+
+        return $header."\r\n\r\n".$jobs->map(fn (VTransfer $j): string => '*_Δρομολόγιο_* #'.$j->row_num."\r\n\r\n".implode("\n\n", [
+            '*Ημερομηνία:* '.$j->TransferDate?->format('d/m/Y'),
+            '*Ωρα Pickup:* '.$v($j->TransferTime),
+            '*Άτομα:* '.$v($j->Pax),
+            '*Τύπος:* '.$v($j->TransferType),
+            '*Σημείο Παραλαβής:* '.$v($j->From),
+            '*Σημείο Αποβίβασης:* '.$v($j->To),
+            '*Πληροφορίες:* '.$v($j->Flight_Ship_Num_From),
+            '*Όνομα επιβάτη:* '.$v($j->LeadName),
+            '*Τηλέφωνο επιβάτη:* '.$v($j->LeadPhone),
+            '*Συνοδός - Ξεναγός:* '.$v($j->Assistant),
+            '*Οδηγός:* '.$v($j->Fullname).'-'.$v($j->DriverPhone),
+            '*Παρατηρήσεις:* '.$v($j->Notes),
+            '*Επιβάτες:* '.$v($j->PassengerName),
+        ]))->implode("\r\n\r\n");
     }
 
     /** PHPRunner "Read" (New_Button87): the driver confirmed they read the day's transfers. */

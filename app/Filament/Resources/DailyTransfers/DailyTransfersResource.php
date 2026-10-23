@@ -98,7 +98,7 @@ class DailyTransfersResource extends Resource
                 TextColumn::make('Transfers')->alignEnd(),
                 TextColumn::make('Email')->placeholder('no e-mail')->copyable(),
                 IconColumn::make('TelegramID')->label('Telegram')->boolean()->getStateUsing(fn (DailyRecipient $record): bool => (int) $record->TelegramID !== 0),
-                TextColumn::make('SendStatus')->label('Status')->badge()->color('success')->placeholder('Not read'),
+                TextColumn::make('SendStatus')->label('Status')->badge()->color(fn (string $state): string => $state === 'Read' ? 'success' : 'gray'),
                 TextColumn::make('TransferDate')->label('Date')->date('D d/m')->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
