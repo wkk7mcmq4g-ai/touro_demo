@@ -90,7 +90,7 @@
     const inject = () => {
         document.querySelectorAll('.fi-ta-table thead th.fi-ta-header-cell').forEach((th) => {
             const key = th.dataset.myatCol, c = comp(th);
-            if (! key || ! c || ! /^[A-Za-z0-9_ ]+$/.test(key)) return;
+            if (! key || ! c || ! /^[A-Za-z0-9_ ]+(\.[A-Za-z0-9_]+)?$/.test(key)) return;
             let btn = th.querySelector('.myat-xf-btn');
             if (! btn) {
                 // Next to the label, inside Filament's sort control when there is one (the click is

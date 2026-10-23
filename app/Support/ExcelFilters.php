@@ -5,6 +5,7 @@ namespace App\Support;
 use Filament\Tables\Columns\Column;
 use Filament\Tables\Contracts\HasTable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
@@ -38,11 +39,36 @@ class ExcelFilters
     /** The table's own column, if it can be filtered on: a plain column of the query, not a relationship. */
     private static function column(HasTable&Component $livewire, string $name): ?Column
     {
-        if (! preg_match('/^[A-Za-z0-9_ ]{1,64}$/', $name)) {
+        if (! preg_match('/^[A-Za-z0-9_ ]{1,64}(\.[A-Za-z0-9_]{1,64})?$/', $name)) {
             return null;
         }
 
         return $livewire->getTable()->getColumn($name);
+    }
+
+    /**
+     * A column shown through a belongs-to relationship ("customer.SupplierName"): the relationship
+     * and the related column, else null.
+     *
+     * @return array{0: string, 1: BelongsTo, 2: string}|null
+     */
+    private static function relation(Builder $query, string $name): ?array
+    {
+        if (! str_contains($name, '.')) {
+            return null;
+        }
+        [$relation, $attribute] = explode('.', $name, 2);
+        $model = $query->getModel();
+        if (! method_exists($model, $relation)) {
+            return null;
+        }
+        try {
+            $related = $model->{$relation}();
+        } catch (Throwable) {
+            return null;
+        }
+
+        return $related instanceof BelongsTo ? [$relation, $related, $attribute] : null;
     }
 
     public static function apply(Builder $query, Component $livewire, bool $isResolvingRecord = false, ?string $except = null): Builder
@@ -56,13 +82,12 @@ class ExcelFilters
                 continue;
             }
 
-            // Models over views or subqueries name their alias as the table, so this works for both.
-            $col = $query->getModel()->qualifyColumn($name);
             $dates = array_values(array_filter($values, fn ($v) => preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $v)));
             $plain = array_values(array_diff($values, [self::EMPTY]));
             $empty = in_array(self::EMPTY, $values, true);
 
-            $query->where(function (Builder $q) use ($col, $plain, $dates, $empty) {
+            // Ticked values of one column, and blanks.
+            $match = function (Builder $q, string $col) use ($plain, $dates): void {
                 if ($plain !== [] && count($dates) === count($plain)) {
                     $q->whereIn(DB::raw('DATE('.$q->getQuery()->getGrammar()->wrap($col).')'), $dates);
                 } elseif ($plain !== []) {
@@ -70,6 +95,27 @@ class ExcelFilters
                 } else {
                     $q->whereRaw('1 = 0');
                 }
+            };
+
+            if ($rel = self::relation($query, $name)) {
+                // e.g. the supplier's name: rows whose related record has a ticked value; blanks are
+                // rows with no related record or a blank value there.
+                [$relation, , $attribute] = $rel;
+                $query->where(function (Builder $q) use ($relation, $attribute, $match, $empty) {
+                    $q->whereHas($relation, fn (Builder $r) => $match($r, $r->getModel()->qualifyColumn($attribute)));
+                    if ($empty) {
+                        $q->orWhereDoesntHave($relation, fn (Builder $r) => $r->whereNotNull($r->getModel()->qualifyColumn($attribute))
+                            ->where($r->getModel()->qualifyColumn($attribute), '<>', ''));
+                    }
+                });
+
+                continue;
+            }
+
+            // Models over views or subqueries name their alias as the table, so this works for both.
+            $col = $query->getModel()->qualifyColumn($name);
+            $query->where(function (Builder $q) use ($col, $match, $empty) {
+                $match($q, $col);
                 if ($empty) {
                     $q->orWhereNull($col)->orWhere($col, '');
                 }
@@ -95,9 +141,22 @@ class ExcelFilters
             // The table's query with every other filter, search and tab, but not this column's ticks.
             session()->put(self::key($livewire), array_diff_key($active, [$name => true]));
             $query = $livewire->getFilteredTableQuery();
-            $qualified = $query->getModel()->qualifyColumn($name);
-            $raw = $query->toBase()->reorder()->select($qualified)->distinct()->orderBy($qualified)
-                ->limit(self::MAX_VALUES + 1)->pluck($name);
+            if ($rel = self::relation($query, $name)) {
+                [$relation, $belongsTo, $attribute] = $rel;
+                $related = $belongsTo->getRelated();
+                $qualified = $related->qualifyColumn($attribute);
+                $raw = $related->newQuery()->toBase()
+                    ->whereIn($related->qualifyColumn($belongsTo->getOwnerKeyName()), $query->clone()->toBase()->reorder()
+                        ->select($query->getModel()->qualifyColumn($belongsTo->getForeignKeyName())))
+                    ->select($qualified)->distinct()->orderBy($qualified)->limit(self::MAX_VALUES + 1)->pluck($attribute);
+                if ($query->clone()->whereDoesntHave($relation, fn (Builder $r) => $r->whereNotNull($qualified)->where($qualified, '<>', ''))->exists()) {
+                    $raw->push(null);
+                }
+            } else {
+                $qualified = $query->getModel()->qualifyColumn($name);
+                $raw = $query->toBase()->reorder()->select($qualified)->distinct()->orderBy($qualified)
+                    ->limit(self::MAX_VALUES + 1)->pluck($name);
+            }
         } catch (Throwable) {
             abort(422, 'This column cannot be filtered.');
         } finally {
@@ -155,7 +214,11 @@ class ExcelFilters
         // Only a column the table's query really has (not one worked out in PHP).
         try {
             $query = $livewire->getTable()->getQuery();
-            $query->clone()->toBase()->select($query->getModel()->qualifyColumn($name))->limit(0)->get();
+            if ($rel = self::relation($query, $name)) {
+                $rel[1]->getRelated()->newQuery()->toBase()->select($rel[1]->getRelated()->qualifyColumn($rel[2]))->limit(0)->get();
+            } else {
+                $query->clone()->toBase()->select($query->getModel()->qualifyColumn($name))->limit(0)->get();
+            }
         } catch (Throwable) {
             abort(422, 'This column cannot be filtered.');
         }

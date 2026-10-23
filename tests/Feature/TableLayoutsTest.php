@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Resources\Expenses\Pages\ListExpenses;
+use App\Filament\Resources\Transfers\Pages\ListTransfers;
 use App\Support\ExcelFilters;
 use App\Support\TableLayouts;
 use Illuminate\Support\Facades\DB;
@@ -62,6 +63,26 @@ class TableLayoutsTest extends TestCase
         $this->assertSame(['2026-10-02'], array_column(ExcelFilters::values($page->instance(), 'ExpenseDate')['values'], 'v'));
 
         $page->call('clearExcelFilters')->assertCanSeeTableRecords($rows->pluck('ExpenseID')->all());
+    }
+
+    public function test_columns_through_a_relationship_filter_too(): void
+    {
+        $this->emptyTables(['transfers', 'counterparties']);
+        $viator = DB::table('counterparties')->insertGetId(['CounterShortName' => 'V', 'SupplierName' => 'Viator', 'IsSupplier' => 1, 'LesseName' => 'V'], 'CID');
+        $gyg = DB::table('counterparties')->insertGetId(['CounterShortName' => 'G', 'SupplierName' => 'GetYourGuide', 'IsSupplier' => 1, 'LesseName' => 'G'], 'CID');
+        $ids = [];
+        foreach ([$viator, $gyg, null] as $i => $customer) {
+            $ids[] = DB::table('transfers')->insertGetId(['ImportDate' => now(), 'TransferDate' => now(), 'TransferTime' => "1{$i}:00", 'TransferType' => 'Arrival',
+                'From' => 'A', 'To' => 'B', 'Status' => 'Pending', 'LeadName' => "L{$i}", 'LesseeName' => 'x', 'cID_Customer' => $customer], 'TransferID');
+        }
+
+        $page = Livewire::test(ListTransfers::class, ['activeTab' => 'all']);
+        $this->assertSame(['GetYourGuide', 'Viator', ExcelFilters::EMPTY], array_column(ExcelFilters::values($page->instance(), 'customer.SupplierName')['values'], 'v'));
+
+        $page->call('applyExcelFilter', 'customer.SupplierName', ['Viator'])
+            ->assertCanSeeTableRecords([$ids[0]])->assertCanNotSeeTableRecords([$ids[1], $ids[2]])
+            ->call('applyExcelFilter', 'customer.SupplierName', [ExcelFilters::EMPTY])
+            ->assertCanSeeTableRecords([$ids[2]])->assertCanNotSeeTableRecords([$ids[0], $ids[1]]);
     }
 
     public function test_unknown_or_computed_columns_are_refused(): void
