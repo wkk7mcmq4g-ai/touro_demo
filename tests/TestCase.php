@@ -4,6 +4,7 @@ namespace Tests;
 
 use App\Models\User;
 use App\Support\Lookups;
+use App\Support\Portal;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +21,7 @@ abstract class TestCase extends BaseTestCase
         parent::setUp();
 
         Lookups::flush();
+        Portal::flush();
 
         // phpunit.xml points at `myat_testing`; rebuild it from the schema once per run,
         // so a leftover database can never hide a broken schema file.

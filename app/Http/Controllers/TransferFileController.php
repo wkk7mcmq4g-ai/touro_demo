@@ -6,7 +6,9 @@ use App\Models\MyatPartnerFile;
 use App\Models\MyatTransfersFile;
 use App\Models\MyatTransfersLoadFile;
 use App\Support\Permissions;
+use App\Support\Portal;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Response;
@@ -34,10 +36,21 @@ class TransferFileController extends Controller
             return redirect()->guest(filament()->getPanel('admin')->getLoginUrl());
         }
 
-        abort_unless($user->canAccessPanel(filament()->getPanel('admin')), 403);
+        $backOffice = $user->canAccessPanel(filament()->getPanel('admin'));
+        abort_unless($backOffice || $user->canAccessPanel(filament()->getPanel('portal')), 403);
         abort_unless(Permissions::allows($user, $table, 'view'), 403);
 
         $file = $model::query()->findOrFail($id);
+
+        // Portal users only get the files of their own transfers and booking requests.
+        if (! $backOffice) {
+            $owner = match ($kind) {
+                'transfers' => DB::table('transfers')->where('TransferID', $file->TransferID)->value('cID_Customer'),
+                'loads' => DB::table('transfers_load')->where('LoadID', $file->TransferID)->value('cID_Customer'),
+                default => null,
+            };
+            abort_unless($owner !== null && (int) $owner === Portal::customerId($user), 404);
+        }
         $name = str_replace(['/', '\\'], '_', $file->Flnm ?: "file-{$file->ID}");
         $asciiName = preg_replace('/[^A-Za-z0-9._ ()-]/', '_', Str::ascii($name)) ?: "file-{$file->ID}";
         $content = (string) $file->getRawOriginal('Attachment');

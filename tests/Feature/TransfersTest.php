@@ -606,16 +606,17 @@ class TransfersTest extends TestCase
         $this->assertNotNull($comm->CreatedDate);
     }
 
-    public function test_file_downloads_need_a_back_office_login(): void
+    public function test_file_downloads_need_a_login_and_portal_users_only_get_their_own(): void
     {
         $transfer = $this->transfer();
         $id = DB::table('myat_transfers_files')->insertGetId(['TransferID' => $transfer->TransferID, 'Flnm' => 'a.txt', 'Attachment' => 'secret'], 'ID');
 
         $this->get(route('transfer-files.download', $id))->assertRedirect();
 
+        // A partner whose customer is someone else.
         $this->actingAs($this->makeLegacyUser('Partner'))
             ->get(route('transfer-files.download', $id))
-            ->assertForbidden();
+            ->assertNotFound();
     }
 
     public function test_svg_files_download_instead_of_opening(): void

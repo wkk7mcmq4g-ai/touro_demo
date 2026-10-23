@@ -85,7 +85,13 @@ class User extends Authenticatable implements FilamentUser, HasName
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->isActive() && (bool) $this->group()?->usesBackOffice();
+        if (! $this->isActive()) {
+            return false;
+        }
+
+        return $panel->getId() === 'portal'
+            ? (bool) $this->group()?->usesPortal()
+            : (bool) $this->group()?->usesBackOffice();
     }
 
     public function getFilamentName(): string

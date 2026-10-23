@@ -61,6 +61,14 @@ class Login extends BaseLogin
 
         $group = $user->group()?->getLabel() ?? ($user->groupid ?: 'no group');
 
-        return "Only Admin and Entry users can use the back office for now. This account is in the group \"{$group}\"; drivers, partners and suppliers will get their own portal.";
+        if (Filament::getCurrentPanel()?->getId() === 'portal') {
+            return $user->group()?->usesBackOffice()
+                ? 'Office accounts sign in to the back office at '.url('/admin').'.'
+                : "This account (group \"{$group}\") cannot use the portal yet.";
+        }
+
+        return $user->group()?->usesPortal()
+            ? "This account is in the group \"{$group}\": please sign in to the portal at ".url('/portal').'.'
+            : "Only Admin and Entry users can use the back office. This account is in the group \"{$group}\".";
     }
 }

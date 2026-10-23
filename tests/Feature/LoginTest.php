@@ -115,6 +115,10 @@ class LoginTest extends TestCase
         Livewire::test(Login::class)->set('data.username', $driver->username)->set('data.password', 'secret-pass')
             ->call('authenticate')->assertSee('Only Admin and Entry users');
 
+        $partner = $this->makeLegacyUser('Partner');
+        Livewire::test(Login::class)->set('data.username', $partner->username)->set('data.password', 'secret-pass')
+            ->call('authenticate')->assertSee('please sign in to the portal');
+
         $inactive = $this->makeLegacyUser('Entry', ['active' => 0]);
         Livewire::test(Login::class)->set('data.username', $inactive->username)->set('data.password', 'secret-pass')
             ->call('authenticate')->assertSee('not active');
