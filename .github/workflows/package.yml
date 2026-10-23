@@ -38,15 +38,15 @@ jobs:
           php artisan key:generate
           php artisan filament:assets
           rm .env
-          mkdir -p ../package
+          mkdir -p "$RUNNER_TEMP/package"
           rsync -a --exclude '.git' --exclude '.github' --exclude 'tests' --exclude 'node_modules' \
             --exclude 'storage/logs/*.log' --exclude 'storage/framework/views/*.php' \
-            --exclude 'bootstrap/cache/*.php' ./ ../package/touro_myat/
-          cd ../package && zip -qr touro_myat.zip touro_myat
+            --exclude 'bootstrap/cache/*.php' ./ "$RUNNER_TEMP/package/touro_myat/"
+          cd "$RUNNER_TEMP/package" && zip -qr touro_myat.zip touro_myat
 
       - name: Upload
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: touro_myat-${{ github.sha }}
-          path: ../package/touro_myat.zip
+          path: ${{ runner.temp }}/package/touro_myat.zip
           retention-days: 14
