@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
@@ -45,5 +46,10 @@ class TransfersComm extends Model
             $comm->CreatedDate = now();
             $comm->CreatedBy = (string) auth()->user()?->username;
         });
+    }
+
+    public function transfer(): BelongsTo
+    {
+        return $this->belongsTo(Transfer::class, 'TransferID', 'TransferID');
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\MyatPartnerFile;
 use App\Models\MyatTransfersFile;
+use App\Models\MyatTransfersLoadFile;
 use App\Support\Permissions;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -19,6 +20,7 @@ class TransferFileController extends Controller
     private const KINDS = [
         'transfers' => [MyatTransfersFile::class, 'myat_transfers_files'],
         'partners' => [MyatPartnerFile::class, 'myat_partner_files'],
+        'loads' => [MyatTransfersLoadFile::class, 'myat_transfers_load_files'],
     ];
 
     public function download(Request $request, int $id, string $kind = 'transfers'): Response

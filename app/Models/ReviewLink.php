@@ -34,4 +34,14 @@ class ReviewLink extends Model
             'ID' => 'integer',
         ];
     }
+
+    protected static function booted(): void
+    {
+        // All columns are NOT NULL; PHPRunner saved blanks as ''.
+        static::saving(function (ReviewLink $link): void {
+            foreach (['TransferType', 'From', 'To', 'ReviewLink'] as $column) {
+                $link->{$column} ??= '';
+            }
+        });
+    }
 }

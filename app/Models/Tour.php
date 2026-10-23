@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Lookups;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -41,5 +42,14 @@ class Tour extends Model
             'order' => 'integer',
             'Tickets' => 'integer',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (Tour $tour): void {
+            $tour->TourDescription ??= '';
+        });
+        // Places feed the From/To suggestions everywhere.
+        static::saved(fn () => Lookups::flush());
     }
 }

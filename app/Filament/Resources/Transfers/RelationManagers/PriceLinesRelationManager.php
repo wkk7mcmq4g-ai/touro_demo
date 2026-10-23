@@ -2,8 +2,6 @@
 
 namespace App\Filament\Resources\Transfers\RelationManagers;
 
-use App\Models\PriceListTransfer;
-use App\Models\Transfer;
 use App\Support\Permissions;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -31,11 +29,11 @@ class PriceLinesRelationManager extends RelationManager
 
     protected static ?string $title = 'Price lines';
 
-    private const TABLE = 'price_list_transfers';
+    protected const TABLE = 'price_list_transfers';
 
     public static function canViewForRecord(Model $ownerRecord, string $pageClass): bool
     {
-        return Permissions::allows(auth()->user(), self::TABLE, 'view');
+        return Permissions::allows(auth()->user(), static::TABLE, 'view');
     }
 
     public function form(Schema $schema): Schema
@@ -86,7 +84,7 @@ class PriceLinesRelationManager extends RelationManager
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('ProductID', '<>', '')->with('product'))
             ->recordTitleAttribute('ProductID')
             ->columns([
-                TextColumn::make('product.Product2')->label('Product')->placeholder(fn (PriceListTransfer $record): string => (string) $record->ProductID),
+                TextColumn::make('product.Product2')->label('Product')->placeholder(fn (Model $record): string => (string) $record->ProductID),
                 TextColumn::make('Category'),
                 TextColumn::make('ProductCarType')->label('Car type'),
                 TextColumn::make('PriceValue')
@@ -98,15 +96,15 @@ class PriceLinesRelationManager extends RelationManager
             ->headerActions([
                 CreateAction::make()
                     ->label('Add product')
-                    ->visible(fn (): bool => Permissions::allows(auth()->user(), self::TABLE, 'create'))
+                    ->visible(fn (): bool => Permissions::allows(auth()->user(), static::TABLE, 'create'))
                     ->after(fn () => $this->dispatch('transfer-prices-changed')),
             ])
             ->recordActions([
                 EditAction::make()
-                    ->visible(fn (): bool => Permissions::allows(auth()->user(), self::TABLE, 'update'))
+                    ->visible(fn (): bool => Permissions::allows(auth()->user(), static::TABLE, 'update'))
                     ->after(fn () => $this->dispatch('transfer-prices-changed')),
                 DeleteAction::make()
-                    ->visible(fn (): bool => Permissions::allows(auth()->user(), self::TABLE, 'delete'))
+                    ->visible(fn (): bool => Permissions::allows(auth()->user(), static::TABLE, 'delete'))
                     ->after(fn () => $this->dispatch('transfer-prices-changed')),
             ]);
     }
@@ -114,9 +112,6 @@ class PriceLinesRelationManager extends RelationManager
     /** The customer's price list (PHPRunner: `cid_Customer = ':master.cID_Customer'`). */
     private function priceList(): \Illuminate\Database\Query\Builder
     {
-        /** @var Transfer $transfer */
-        $transfer = $this->getOwnerRecord();
-
-        return DB::table('price_list')->where('cid_Customer', $transfer->cID_Customer);
+        return DB::table('price_list')->where('cid_Customer', $this->getOwnerRecord()->cID_Customer);
     }
 }

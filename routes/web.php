@@ -14,6 +14,10 @@ Route::get('/files/partners/{id}', [TransferFileController::class, 'download'])
     ->defaults('kind', 'partners')
     ->whereNumber('id')
     ->name('partner-files.download');
+Route::get('/files/loads/{id}', [TransferFileController::class, 'download'])
+    ->defaults('kind', 'loads')
+    ->whereNumber('id')
+    ->name('load-files.download');
 
 // Daily dispatch vouchers (PDF of the PHPRunner v_transfers voucher pages).
 Route::get('/documents/vouchers/{page}/{transfer}', [VoucherController::class, 'show'])

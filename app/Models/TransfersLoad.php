@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -62,5 +63,21 @@ class TransfersLoad extends Model
             'CreatedDate' => 'datetime',
             'Loaded' => 'integer',
         ];
+    }
+
+    public function priceLines(): HasMany
+    {
+        return $this->hasMany(PriceListLoad::class, 'LoadID', 'LoadID');
+    }
+
+    public function notes(): HasMany
+    {
+        return $this->hasMany(TransferNotesLoad::class, 'LoadID', 'LoadID');
+    }
+
+    /** myat_transfers_load_files.TransferID holds the LoadID. */
+    public function files(): HasMany
+    {
+        return $this->hasMany(MyatTransfersLoadFile::class, 'TransferID', 'LoadID');
     }
 }

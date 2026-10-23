@@ -44,4 +44,17 @@ class TransferNotesLoad extends Model
             'NoteDateModified' => 'datetime',
         ];
     }
+
+    protected static function booted(): void
+    {
+        static::creating(function (TransferNotesLoad $note): void {
+            $note->CreatedTimestamp = now();
+            $note->CreatedBy = auth()->user()?->username;
+            $note->NoteDate ??= now();
+        });
+        static::updating(function (TransferNotesLoad $note): void {
+            $note->NoteDateModified = now();
+            $note->ModifiedBy = auth()->user()?->username;
+        });
+    }
 }

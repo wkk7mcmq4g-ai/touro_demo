@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -88,5 +89,11 @@ class TransferCharge extends Model
     public function transfer(): BelongsTo
     {
         return $this->belongsTo(Transfer::class, 'TransferID', 'TransferID');
+    }
+
+    /** Transfer columns PHPRunner showed in the charges lists. */
+    public function scopeWithTransfer(Builder $query): Builder
+    {
+        return $query->with('transfer:TransferID,From,To,TransferDate,TransferTime,CoachCompanyID,Status,cID_Customer');
     }
 }

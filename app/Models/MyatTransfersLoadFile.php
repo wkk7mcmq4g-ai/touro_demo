@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -34,5 +35,12 @@ class MyatTransfersLoadFile extends Model
             'ID' => 'integer',
             'TransferID' => 'integer',
         ];
+    }
+
+    protected $hidden = ['Attachment'];
+
+    public function scopeWithoutBlob(Builder $query): Builder
+    {
+        return $query->select(['ID', 'TransferID', 'Flnm', 'Type'])->selectRaw('OCTET_LENGTH(`Attachment`) as size_bytes');
     }
 }

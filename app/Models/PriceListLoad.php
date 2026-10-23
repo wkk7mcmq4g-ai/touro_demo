@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * `price_list_load` table of the MyAT database.
@@ -36,5 +37,10 @@ class PriceListLoad extends Model
             'LoadID' => 'integer',
             'PriceValue' => 'float',
         ];
+    }
+
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(PriceList::class, 'ProductID', 'ID');
     }
 }

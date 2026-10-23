@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -46,5 +47,22 @@ class PaymentReceived extends Model
             'ModifiedDate' => 'date',
             'Remaining' => 'float',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (PaymentReceived $payment): void {
+            $payment->CreatedDate = now();
+            $payment->CreatedBy = auth()->user()?->username;
+        });
+        static::updating(function (PaymentReceived $payment): void {
+            $payment->ModifiedDate = now();
+            $payment->ModifiedBy = auth()->user()?->username;
+        });
+    }
+
+    public function links(): HasMany
+    {
+        return $this->hasMany(PaymentLink::class, 'PaymentID', 'PaymentID');
     }
 }
