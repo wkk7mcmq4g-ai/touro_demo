@@ -60,18 +60,15 @@
         <div class="myat-job-line"><span>Πληροφορίες</span>{{ $job->Flight_Ship_Num_From }}</div>
     @endif
 
-    <div class="myat-job-line myat-job-pax">
-        <div>
-            <span>Επιβάτης</span>{{ $job->LeadName ?: '—' }}
-            @if (filled($job->LeadPhone))
-                <div class="myat-job-phone">{{ $job->LeadPhone }}</div>
-            @endif
-        </div>
+    <div class="myat-job-line">
+        <span>Επιβάτης</span>{{ $job->LeadName ?: '—' }}
         @if ($phone)
-            <a class="myat-job-call" href="tel:{{ $phone }}" x-on:click.stop aria-label="Κλήση {{ $job->LeadName }} {{ $job->LeadPhone }}">
-                <x-filament::icon icon="heroicon-s-phone" class="myat-job-call-icon" />
-                <b>Κλήση</b>
+            {{-- The number itself dials on a phone. --}}
+            <a class="myat-job-phone" href="tel:{{ $phone }}" x-on:click.stop>
+                <x-filament::icon icon="heroicon-m-phone" class="myat-job-phone-icon" />{{ $job->LeadPhone }}
             </a>
+        @elseif (filled($job->LeadPhone))
+            <div class="myat-job-phone">{{ $job->LeadPhone }}</div>
         @endif
     </div>
 
