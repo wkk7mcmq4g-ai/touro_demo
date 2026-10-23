@@ -82,6 +82,12 @@ class AppServiceProvider extends ServiceProvider
                 return;
             }
 
+            // Reading a column's values or saving widths changes nothing on screen: answer without
+            // re-rendering the whole table (that re-render was most of the wait).
+            if (in_array($method, ['excelFilterValues', 'saveColumnWidths'], true)) {
+                $component->skipRender();
+            }
+
             match ($method) {
                 'excelFilterValues' => $returnEarly(ExcelFilters::values($component, (string) ($params[0] ?? ''))),
                 'applyExcelFilter' => $returnEarly(ExcelFilters::set($component, (string) ($params[0] ?? ''), is_array($params[1] ?? null) ? $params[1] : null)),
