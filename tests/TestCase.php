@@ -18,9 +18,18 @@ abstract class TestCase extends BaseTestCase
     {
         parent::setUp();
 
-        // phpunit.xml points at `myat_testing`; build it from the schema once per run.
+        // phpunit.xml points at `myat_testing`; rebuild it from the schema once per run,
+        // so a leftover database can never hide a broken schema file.
         if (! self::$schemaReady) {
-            Artisan::call('app:load-schema', ['--database' => config('database.connections.mariadb.database')]);
+            $exitCode = Artisan::call('app:load-schema', [
+                '--database' => config('database.connections.mariadb.database'),
+                '--fresh' => true,
+            ]);
+
+            if ($exitCode !== 0) {
+                throw new \RuntimeException('Could not build the test database: '.Artisan::output());
+            }
+
             self::$schemaReady = true;
         }
     }

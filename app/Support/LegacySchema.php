@@ -22,7 +22,10 @@ class LegacySchema
         return $connection->getSchemaBuilder()->hasTable('transfers');
     }
 
-    public static function load(Connection $connection): int
+    /**
+     * @param  'all'|'without-triggers'|'triggers-only'  $part
+     */
+    public static function load(Connection $connection, string $part = 'all'): int
     {
         $sql = file_get_contents(self::path());
 
@@ -30,13 +33,25 @@ class LegacySchema
             throw new RuntimeException('Cannot read '.self::path());
         }
 
-        $statements = self::split($sql);
+        $statements = array_values(array_filter(
+            self::split($sql),
+            fn (string $statement): bool => match ($part) {
+                'without-triggers' => ! self::isTriggerOrEvent($statement),
+                'triggers-only' => self::isTriggerOrEvent($statement),
+                default => true,
+            },
+        ));
 
         foreach ($statements as $statement) {
             $connection->unprepared($statement);
         }
 
         return count($statements);
+    }
+
+    public static function isTriggerOrEvent(string $statement): bool
+    {
+        return (bool) preg_match('/^CREATE\s+(TRIGGER|EVENT)\b/i', ltrim($statement));
     }
 
     /**

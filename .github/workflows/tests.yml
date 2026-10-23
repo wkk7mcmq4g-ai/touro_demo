@@ -47,4 +47,16 @@ jobs:
 
       # The tests build an empty `myat_testing` database from database/legacy/schema.sql.
       - name: Execute tests
-        run: php artisan test
+        shell: bash
+        run: |
+          set -o pipefail
+          php artisan test --without-tty 2>&1 | tee test-output.txt
+
+      # Repeat the end of the output as an annotation, so it shows on the run summary page.
+      - name: Report failing tests
+        if: failure()
+        shell: bash
+        run: |
+          [ -f test-output.txt ] || exit 0
+          summary=$(tail -c 3500 test-output.txt | sed 's/%/%25/g' | sed ':a;N;$!ba;s/\n/%0A/g')
+          echo "::error title=Test output::${summary}"

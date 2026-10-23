@@ -2797,8 +2797,9 @@ CREATE TABLE `v_coach` (
 -- Stand-in structure for view `v_daily_transfers_emails`
 -- (See below for the actual view)
 --
-CREATE TABLE `v_daily_transfers_emails` (
-);
+-- v_daily_transfers_emails: NOT INCLUDED. On the live server this view fails with
+-- "#1271 Illegal mix of collations for operation 'UNION'", so phpMyAdmin could not export it.
+-- Recreate it here once it is fixed on the server.
 
 -- --------------------------------------------------------
 
@@ -4002,7 +4003,7 @@ DROP TABLE IF EXISTS `v_daily_transfers_emails`;
 --
 DROP TABLE IF EXISTS `v_drivers_files`;
 
-CREATE ALGORITHM=UNDEFINED VIEW `v_drivers_files`  AS SELECT concat(`m`.`ID`,'_0') AS `ID`, `m`.`TransferID` AS `TransferID`, `m`.`Attachment` AS `Attachment`, `m`.`Flnm` AS `Flnm`, `m`.`Type` AS `Type` FROM (`myat_transfers_files` `m` left join `optionvalues` `o` on(`m`.`Type` = `o`.`OptionID`)) WHERE `o`.`DriverView` = 1union allselect concat(`p`.`ID`,'_1') AS `ID`,`t`.`TransferID` AS `TransferID`,`p`.`Attachment` AS `Attachment`,`p`.`Flnm` AS `Flnm`,`p`.`Type` AS `Type` from ((`v_transfers` `t` left join `myat_partner_files` `p` on(`p`.`cid` = `t`.`cID_Customer`)) left join `optionvalues` `o` on(`p`.`Type` = `o`.`OptionID`)) where `o`.`DriverView` = 1  ;
+CREATE ALGORITHM=UNDEFINED VIEW `v_drivers_files`  AS SELECT concat(`m`.`ID`,'_0') AS `ID`, `m`.`TransferID` AS `TransferID`, `m`.`Attachment` AS `Attachment`, `m`.`Flnm` AS `Flnm`, `m`.`Type` AS `Type` FROM (`myat_transfers_files` `m` left join `optionvalues` `o` on(`m`.`Type` = `o`.`OptionID`)) WHERE `o`.`DriverView` = 1 union all select concat(`p`.`ID`,'_1') AS `ID`,`t`.`TransferID` AS `TransferID`,`p`.`Attachment` AS `Attachment`,`p`.`Flnm` AS `Flnm`,`p`.`Type` AS `Type` from ((`v_transfers` `t` left join `myat_partner_files` `p` on(`p`.`cid` = `t`.`cID_Customer`)) left join `optionvalues` `o` on(`p`.`Type` = `o`.`OptionID`)) where `o`.`DriverView` = 1  ;
 
 -- --------------------------------------------------------
 

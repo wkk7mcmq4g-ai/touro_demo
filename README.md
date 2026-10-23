@@ -19,19 +19,7 @@ screen.
    you can use to import the database.
 3. **Git**: <https://git-scm.com/download/win>, if you don't have it yet.
 
-### 2. Make a local copy of the database
-
-Use a copy so you're never testing against the live data.
-
-1. In phpMyAdmin on the server, select `kwi14599_myat` and open **Export**. Choose the **Custom**
-   method, tick *Add CREATE PROCEDURE / FUNCTION / EVENT*, keep **structure and data**, then export.
-2. Open HeidiSQL, connect to your local MariaDB (root) and run
-   `CREATE DATABASE kwi14599_myat CHARACTER SET utf8mb4;`
-3. Select that database, then go to *File → Run SQL file…* and pick the export.
-
-The copy contains real customer data and password hashes, so keep it on your machine only.
-
-### 3. Get the app running
+### 2. Get the app running
 
 ```powershell
 cd C:\Projects
@@ -43,7 +31,29 @@ php artisan key:generate
 ```
 
 Open `.env` and set `DB_PASSWORD=` to your local MariaDB root password. The other database
-settings already match the steps above. Then start the app:
+settings already match the steps below.
+
+### 3. Make a local copy of the database
+
+Use a copy so you're never testing against the live data. Do it in three steps:
+
+1. **Structure, without triggers.** The structure comes from this repo. phpMyAdmin's own export of
+   the views is broken, and triggers must not fire while you import data.
+   ```powershell
+   php artisan app:load-schema --without-triggers
+   ```
+2. **Data.** In phpMyAdmin on the server, select `kwi14599_myat`, open **Export**, choose
+   **Custom** and set *Format-specific options* to **data** (not structure). Export it. Then in
+   HeidiSQL, connect to your local MariaDB, select `kwi14599_myat` and use
+   *File → Run SQL file…* on the export.
+3. **Triggers and the daily event.**
+   ```powershell
+   php artisan app:load-schema --triggers-only
+   ```
+
+The copy contains real customer data and password hashes, so keep it on your machine only.
+
+### 4. Start it
 
 ```powershell
 php artisan serve
