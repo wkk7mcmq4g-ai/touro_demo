@@ -18,6 +18,7 @@ use Filament\Support\Facades\FilamentView;
 use Filament\Tables\Columns\Column;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Filament\Tables\View\TablesRenderHook;
@@ -76,6 +77,9 @@ class AppServiceProvider extends ServiceProvider
         // Every table: columns can be reordered and hidden (Filament's column manager), resized,
         // and filtered Excel-style from the header. Layouts are saved per user (TableLayouts).
         Table::configureUsing(fn (Table $table) => $table
+            // Row buttons (edit, ...) on the left of every table, before the columns; card layouts
+            // (the drivers' jobs) keep them under the card.
+            ->recordActionsPosition(fn (Table $table): ?RecordActionsPosition => $table->getContentGrid() || $table->hasColumnsLayout() ? null : RecordActionsPosition::BeforeColumns)
             // The filter button opens a panel that slides in from the right, one filter per row.
             ->filtersLayout(FiltersLayout::Modal)
             ->filtersTriggerAction(fn (Action $action) => $action->slideOver()->label('Φίλτρα')
