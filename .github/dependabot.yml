@@ -10,3 +10,23 @@ updates:
       github-actions:
         patterns:
           - "*"
+
+  # PHP packages (Laravel, Filament, ...): one weekly pull request with the minor and patch
+  # updates allowed by composer.json; major versions (Laravel 14, Filament 6) come as their own
+  # pull requests since they need code changes. The Tests workflow runs on each pull request;
+  # nothing is deployed until it is merged into main.
+  - package-ecosystem: "composer"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "07:00"
+      timezone: "Europe/Athens"
+    cooldown:
+      default-days: 5
+    open-pull-requests-limit: 5
+    groups:
+      php-packages:
+        update-types:
+          - "minor"
+          - "patch"
