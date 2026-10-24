@@ -45,7 +45,9 @@ class TransferResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
+        // PHPRunner's transfers datasource: WHERE TransferDate >= '2025-01-01'; older ones are in Archive.
         return parent::getEloquentQuery()
+            ->where('TransferDate', '>=', Transfer::ARCHIVE_BEFORE)
             ->withoutBlobs()
             ->with('customer:CID,SupplierName');
     }

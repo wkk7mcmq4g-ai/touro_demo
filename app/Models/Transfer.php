@@ -173,6 +173,9 @@ class Transfer extends Model
         'AssistantStatus', 'VPOS', 'PaymentType', 'PaymentOnHoldFlag', 'TicketsRequested', 'ElorusID',
     ];
 
+    /** PHPRunner: the Transfers list shows TransferDate >= this date; earlier ones are in Archive. */
+    public const ARCHIVE_BEFORE = '2025-01-01';
+
     /** Columns MariaDB calculates itself (GENERATED ALWAYS); never written from PHP. */
     public const GENERATED = [
         'TransferTime_sort', 'ReferencePeriod', 'ReferenceYear',

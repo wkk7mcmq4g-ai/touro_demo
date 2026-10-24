@@ -4,9 +4,8 @@ namespace App\Filament\Resources\Archive;
 
 use App\Filament\Concerns\UsesPhpRunnerPermissions;
 use App\Filament\Resources\Archive\Pages\ListArchivedTransfers;
-use App\Models\TransfersArchive;
+use App\Models\Transfer;
 use App\Support\ColorDot;
-use App\Support\LegacyColumns;
 use App\Support\Lookups;
 use BackedEnum;
 use Filament\Forms\Components\DatePicker;
@@ -22,14 +21,17 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use UnitEnum;
 
-/** PHPRunner "Archive" (transfers_archive): older transfers, read-only as in PHPRunner. */
+/**
+ * PHPRunner "Archive" (its transfers_archive datasource is the transfers table WHERE TransferDate <
+ * '2025-01-01'): the transfers before 2025, read-only as in PHPRunner.
+ */
 class ArchiveResource extends Resource
 {
     use UsesPhpRunnerPermissions;
 
     protected static string $permissionTable = 'transfers_archive';
 
-    protected static ?string $model = TransfersArchive::class;
+    protected static ?string $model = Transfer::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArchiveBox;
 
@@ -48,7 +50,7 @@ class ArchiveResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->select(LegacyColumns::except('transfers_archive', ['Attachments']));
+        return parent::getEloquentQuery()->where('TransferDate', '<', Transfer::ARCHIVE_BEFORE)->withoutBlobs();
     }
 
     public static function canCreate(): bool
