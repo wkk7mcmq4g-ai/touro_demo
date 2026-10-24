@@ -217,6 +217,29 @@ class PortalTest extends TestCase
         Livewire::test(MyAssignments::class)->assertSee('Assigned to me')->assertDontSee('Not mine');
     }
 
+    public function test_partners_see_the_shared_files_of_their_assignments(): void
+    {
+        $this->partner();
+        DB::table('counterparties')->where('CID', $this->ours)->update(['CoachName' => 'LS COACH']);
+        $mine = $this->transfer($this->theirs, ['CoachCompanyID' => 'LS COACH', 'TransferDate' => '2026-12-01']);
+        $shared = DB::table('optionvalues')->insertGetId(['Option' => 'TransferFile', 'Value' => 'Voucher', 'PartnerView' => 1], 'OptionID');
+        $internal = DB::table('optionvalues')->insertGetId(['Option' => 'TransferFile', 'Value' => 'Invoice', 'PartnerView' => 0], 'OptionID');
+        $voucher = DB::table('myat_transfers_files')->insertGetId(['TransferID' => $mine->TransferID, 'Flnm' => 'voucher.pdf', 'Type' => $shared, 'Attachment' => '%PDF-1.4 test'], 'ID');
+        $invoice = DB::table('myat_transfers_files')->insertGetId(['TransferID' => $mine->TransferID, 'Flnm' => 'invoice.pdf', 'Type' => $internal, 'Attachment' => '%PDF-1.4 x'], 'ID');
+
+        // PHPRunner myat_coach_files: only the types marked "Partners see it".
+        Livewire::test(MyAssignments::class)->assertSee('voucher.pdf')->assertDontSee('invoice.pdf');
+        $this->get(route('assignment-files.download', $voucher))->assertOk();
+        $this->get(route('assignment-files.download', $invoice))->assertNotFound();
+
+        // Coach companies have no right on these files in PHPRunner.
+        $coach = $this->makeLegacyUser('Coach');
+        DB::table('counterparties')->where('CID', $this->ours)->update(['UserID' => $coach->ID]);
+        $this->actingAs($coach);
+        Livewire::test(MyAssignments::class)->assertDontSee('voucher.pdf');
+        $this->get(route('assignment-files.download', $voucher))->assertForbidden();
+    }
+
     public function test_hotels_see_their_expenses_and_cannot_edit_transfers(): void
     {
         $user = $this->makeLegacyUser('Supplier_Hotel', ['SupplierID' => $this->ours]);

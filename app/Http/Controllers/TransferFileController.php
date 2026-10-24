@@ -24,6 +24,9 @@ class TransferFileController extends Controller
         'transfers' => [MyatTransfersFile::class, 'myat_transfers_files'],
         'partners' => [MyatPartnerFile::class, 'myat_partner_files'],
         'loads' => [MyatTransfersLoadFile::class, 'myat_transfers_load_files'],
+        // PHPRunner myat_coach_files: a transfer's files of the types marked "Partners see it",
+        // for the partner the transfer is assigned to (Οι αναθέσεις μου).
+        'assignments' => [MyatTransfersFile::class, 'myat_coach_files'],
     ];
 
     public function download(Request $request, int $id, string $kind = 'transfers'): Response
@@ -45,7 +48,11 @@ class TransferFileController extends Controller
 
         // Portal users only get the files of their own transfers and booking requests;
         // drivers those of their jobs (and the customer's files the office shares with drivers).
-        if (! $backOffice && $user->group()?->isDriver()) {
+        if ($kind === 'assignments') {
+            $shared = (int) DB::table('optionvalues')->where('OptionID', $file->Type)->value('PartnerView') === 1;
+            $assigned = $backOffice || DB::table('v_transfers2')->where('UserID', $user->getKey())->where('TransferID', $file->TransferID)->exists();
+            abort_unless($shared && $assigned, 404);
+        } elseif (! $backOffice && $user->group()?->isDriver()) {
             $mine = VTransfer::query()->where('username', $user->username);
             $allowed = match ($kind) {
                 'transfers' => $mine->where('TransferID', $file->TransferID)->exists(),

@@ -3103,3 +3103,11 @@ html.myat-immersive .myat-day-sub {
 }
 
 .dark .myat-form-section .fi-fieldset > legend { color: #e2e8f0; }
+
+/* File links in lists (Οι αναθέσεις μου) */
+.myat-file-link {
+    font-weight: 600;
+    color: var(--myat-azure);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}

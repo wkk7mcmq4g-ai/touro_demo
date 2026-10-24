@@ -20,6 +20,10 @@ Route::get('/files/partners/{id}', [TransferFileController::class, 'download'])
     ->defaults('kind', 'partners')
     ->whereNumber('id')
     ->name('partner-files.download');
+Route::get('/files/assignments/{id}', [TransferFileController::class, 'download'])
+    ->defaults('kind', 'assignments')
+    ->whereNumber('id')
+    ->name('assignment-files.download');
 Route::get('/files/loads/{id}', [TransferFileController::class, 'download'])
     ->defaults('kind', 'loads')
     ->whereNumber('id')
