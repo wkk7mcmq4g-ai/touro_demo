@@ -20,13 +20,13 @@ class GuideAssignment extends Mailable
         return new Envelope(
             from: new Address(config('mail.from.address'), 'MyAthensTransfers'),
             replyTo: [config('dispatch.reply_to')],
-            subject: 'Εντολή Ανάθεσης Ξενάγησης',
+            subject: 'Εντολή Ανάθεσης Ξενάγησης'.($this->job->TransferDate ? ' · '.$this->job->TransferDate->format('d/m/Y') : ''),
         );
     }
 
     public function content(): Content
     {
-        return new Content(view: 'mail.guide-assignment');
+        return new Content(view: 'mail.guide-assignment', text: 'mail.guide-assignment-text');
     }
 
     public function attachments(): array

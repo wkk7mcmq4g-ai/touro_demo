@@ -49,7 +49,8 @@ class DailyTransfersTest extends TestCase
         $page->callTableBulkAction('emailSelected', $recipients, data: ['withPassengers' => true])->assertNotified();
         Mail::assertSent(DailyTransfers::class, 2);
         Mail::assertSent(DailyTransfers::class, fn (DailyTransfers $mail): bool => $mail->hasTo('nikos@example.test')
-            && $mail->hasBcc('office@example.test') && $mail->jobs->count() === 2 && str_contains($mail->render(), 'Pax B'));
+            && $mail->hasBcc('office@example.test') && $mail->jobs->count() === 2 && str_contains($mail->render(), 'Pax B')
+            && str_starts_with($mail->envelope()->subject, 'Δρομολόγια ') && str_contains($mail->envelope()->subject, '2 transfers'));
     }
 
     public function test_read_is_recorded_like_phprunner(): void

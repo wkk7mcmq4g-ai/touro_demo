@@ -1,42 +1,30 @@
-{{-- Same layout as the PHPRunner e-mail (New_Button40 / New_Button47). --}}
-<div style="font-family: Arial, Helvetica, sans-serif">
-    <p><img style="height: 30px; width: 170px;" src="https://touro.gr/images/Myatlogo.jpg" alt="My Athens Transfers"></p>
-    <table style="border-collapse: collapse; width: 100%;" border="1">
-        <tr><td style="color: #1997FC;"><strong><em>Εντολέας:</em></strong> <em>My Athens Transfers IKE - &nbsp;MΗ.T.E: 0261E60000721601</em></td></tr>
-    </table>
-    <p><strong>Συνολικά Δρομολόγια: {{ $jobs->count() }} - {{ $recipient->VehicleName }}</strong></p>
-
+{{-- A driver's or guide's transfers for the day (PHPRunner New_Button40 / New_Button47), as job cards. --}}
+@php
+    $day = $recipient->TransferDate->copy()->locale('el');
+    $first = $jobs->pluck('TransferTime')->filter()->sort()->first();
+    $pills = array_values(array_filter([
+        $jobs->count() === 1 ? '1 δρομολόγιο' : $jobs->count().' δρομολόγια',
+        $recipient->Type === 'Driver' ? $recipient->VehicleName : 'Συνοδός / ξεναγός',
+        $first ? 'Πρώτη παραλαβή '.$first : null,
+    ]));
+@endphp
+<x-mail.layout
+    :title="$day->translatedFormat('j F Y')"
+    :kicker="$day->translatedFormat('l')"
+    eyebrow="Εντολή δρομολογίων"
+    :pills="$pills"
+    :preheader="implode(' · ', [$pills[0].' για '.$day->translatedFormat('l j/n'), ...array_slice($pills, 1)])"
+>
     @foreach ($jobs as $job)
-        <p>
-            <strong>Ημερομηνία:</strong> {{ $job->TransferDate?->format('d/m/Y') }}<br>
-            <strong>Ώρα Pickup:</strong> {{ $job->TransferTime }}<br>
-            <strong>Tύπος Οχήματος:</strong> {{ $job->CarTypeID }}<br>
-            <strong>Άτομα:</strong> {{ $job->Pax }}<br>
-            <strong>Τύπος:</strong> {{ $job->TransferType }}<br>
-            <strong>Σημείο Παραλαβής:</strong> {{ $job->From }}<br>
-            <strong>Σημείο Αποβίβασης:</strong> {{ $job->To }}<br>
-            <strong>Πληροφορίες:</strong> {{ $job->Flight_Ship_Num_From }}<br>
-            <strong>Όνομα επιβάτη:</strong> {{ $job->LeadName }}<br>
-            <strong>Τηλέφωνο επιβάτη: </strong>{{ $job->LeadPhone }}<br>
-            <strong>Συνοδός - Ξεναγός: </strong>{{ $job->Assistant }}<br>
-            <strong>Review Link: </strong>{{ $job->ReviewLink }}<br>
-            @if ($recipient->Type === 'Driver')
-                <strong>Παρατηρήσεις:</strong> {{ $job->Notes }}<br>
-            @else
-                <strong>Οδηγός:</strong> {{ $job->Fullname }} - Tel. {{ $job->DriverPhone }}<br>
-            @endif
-            @if ($withPassengers && filled($job->PassengerName))
-                <strong>Επιβάτες:</strong><br>
-                {!! nl2br(e($job->PassengerName)) !!}<br>
-            @endif
-        </p>
+        @include('mail.partials.job', ['job' => $job, 'showNotes' => $recipient->Type === 'Driver', 'showDriver' => $recipient->Type !== 'Driver', 'withPassengers' => $withPassengers])
     @endforeach
 
-    <p>&nbsp;</p>
-    <table style="border-collapse: collapse; width: 100%;" border="1">
-        <tr><td style="color: #1997FC;"><strong><em>Τρόπος Πληρωμής:</em></strong> <em>Πληρωμή με πίστωση βάσει ιδιωτικού συμφωνητικού</em></td></tr>
-    </table>
-    <p>&nbsp;</p>
-    <p style="font-size: 10px; color: #940027;"><em><strong>Παρακαλώ μην απαντήσετε στο παρόν μήνυμα.<br>Για απορίες και διευκρινίσεις επικοινωνήστε στο {{ config('dispatch.operations_phone') }}</strong></em></p>
-    <p><img style="height: 48px; width: 120px;" src="https://touro.gr/images/Touro_email.jpg" alt="Touro"></p>
-</div>
+    <x-slot:footer>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="mx-soft" style="background:#f8fafc;border-radius:10px">
+            <tr><td class="mx-m" style="padding:12px 14px;font-size:12px;line-height:1.7;color:#475569">
+                <strong class="mx-t" style="color:#0f172a">Εντολέας:</strong> My Athens Transfers IKE &middot; ΜΗ.Τ.Ε 0261E60000721601<br>
+                <strong class="mx-t" style="color:#0f172a">Τρόπος πληρωμής:</strong> Πληρωμή με πίστωση βάσει ιδιωτικού συμφωνητικού
+            </td></tr>
+        </table>
+    </x-slot:footer>
+</x-mail.layout>

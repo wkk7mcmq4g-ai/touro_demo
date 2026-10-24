@@ -25,12 +25,25 @@ class DailyTransfers extends Mailable
         return new Envelope(
             from: new Address(config('mail.from.address'), 'MyAthensTransfers'),
             bcc: $bcc,
-            subject: ' Δρομολόγια  '.$this->recipient->TransferDate->format('d/m/Y'),
+            subject: $this->subjectLine(),
         );
+    }
+
+    /** e.g. "Δρομολόγια Κυριακή 25/10 · 2 transfers · VITO 2022". */
+    public function subjectLine(): string
+    {
+        $day = $this->recipient->TransferDate->copy()->locale('el');
+        $count = $this->jobs->count();
+
+        return implode(' · ', array_filter([
+            'Δρομολόγια '.$day->translatedFormat('l').' '.$day->format('d/m'),
+            $count === 1 ? '1 transfer' : "{$count} transfers",
+            $this->recipient->Type === 'Driver' ? trim((string) $this->recipient->VehicleName) : null,
+        ]));
     }
 
     public function content(): Content
     {
-        return new Content(view: 'mail.daily-transfers');
+        return new Content(view: 'mail.daily-transfers', text: 'mail.daily-transfers-text');
     }
 }

@@ -123,7 +123,7 @@ class TransferCellColors
     }
 
     /** Black or white text, whichever reads better on the colour. */
-    private static function textOn(string $colour): string
+    public static function textOn(string $colour): string
     {
         $hex = ltrim($colour, '#');
         if (! ctype_xdigit($hex)) {
