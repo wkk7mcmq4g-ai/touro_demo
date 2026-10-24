@@ -223,4 +223,23 @@ class FleetTest extends TestCase
 
         $page->callAction('copyMonth', ['from' => '2026-10', 'to' => '2026-10'])->assertHasActionErrors(['to']);
     }
+
+    public function test_clear_a_month_of_schedule(): void
+    {
+        $a = DB::table('drivers')->insertGetId(['Fullname' => 'A', 'shortname' => 'AAA', 'Active' => 1, 'CalOrder' => 1], 'DriverID');
+        $b = DB::table('drivers')->insertGetId(['Fullname' => 'B', 'shortname' => 'BBB', 'Active' => 1, 'CalOrder' => 2, 'Flag' => 1], 'DriverID');
+        DB::table('schedule')->insert([
+            ['driver_id' => $a, 'date' => '2026-11-01', 'status' => 1],
+            ['driver_id' => $a, 'date' => '2026-11-30', 'status' => 0],
+            ['driver_id' => $b, 'date' => '2026-11-05', 'status' => 3],
+            ['driver_id' => $a, 'date' => '2026-12-01', 'status' => 1], // another month
+        ]);
+
+        Livewire::test(DriverCalendar::class)
+            ->callAction('clearMonth', ['month' => '2026-11', 'drivers' => 'unflagged'])->assertHasNoActionErrors();
+        $this->assertSame(["{$b} 2026-11-05", "{$a} 2026-12-01"], DB::table('schedule')->orderBy('date')->get()->map(fn ($r) => "{$r->driver_id} {$r->date}")->all());
+
+        $this->assertSame(1, Livewire::test(DriverCalendar::class)->instance()->clearMonth('2026-11', false));
+        $this->assertSame(1, DB::table('schedule')->count());
+    }
 }

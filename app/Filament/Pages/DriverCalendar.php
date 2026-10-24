@@ -74,6 +74,9 @@ class DriverCalendar extends Page
         return Permissions::allows(auth()->user(), 'drivers', 'edit');
     }
 
+    /** Greek weekday initials, Sunday first (Carbon's dayOfWeek). */
+    public const WEEKDAYS = ['Κ', 'Δ', 'Τ', 'Τ', 'Π', 'Π', 'Σ'];
+
     /** Name colour before a colour was picked: PHPRunner's pink for Flag 1. */
     public const PINK = '#F2CEEF';
 
@@ -110,6 +113,7 @@ class DriverCalendar extends Page
 
         return [
             $this->copyMonthAction(),
+            $this->clearMonthAction(),
             Action::make('settings')->label('Ρυθμίσεις')->icon(Heroicon::OutlinedCog6Tooth)->color('gray')
                 ->visible(fn (): bool => $this->canEditSchedule())
                 ->slideOver()->modalWidth(Width::ThreeExtraLarge)->modalSubmitActionLabel('Αποθήκευση')
@@ -157,10 +161,7 @@ class DriverCalendar extends Page
      */
     private function copyMonthAction(): Action
     {
-        $months = [];
-        foreach (CarbonPeriod::create(now()->startOfMonth()->subMonths(12), '1 month', now()->startOfMonth()->addMonths(12)) as $m) {
-            $months[$m->format('Y-m')] = $m->translatedFormat('F Y');
-        }
+        $months = self::monthOptions();
 
         return Action::make('copyMonth')->label('Αντιγραφή μήνα')->icon(Heroicon::OutlinedDocumentDuplicate)->color('gray')
             ->visible(fn (): bool => $this->canEditSchedule())
@@ -176,10 +177,7 @@ class DriverCalendar extends Page
             ->schema([
                 Select::make('from')->label('Από μήνα')->options($months)->required(),
                 Select::make('to')->label('Σε μήνα')->options($months)->required()->different('from'),
-                Radio::make('drivers')->label('Οδηγοί')->required()->options([
-                    'all' => 'Όλοι',
-                    'unflagged' => 'Όλοι εκτός από όσους έχουν «Χωρίς αντιγραφή» (Flag = 1)',
-                ]),
+                Radio::make('drivers')->label('Οδηγοί')->required()->options(self::DRIVER_SCOPES),
                 Radio::make('existing')->label('Μέρες που έχουν ήδη τιμή στον μήνα προορισμού')->required()->options([
                     'keep' => 'Να μείνουν όπως είναι',
                     'overwrite' => 'Να αντικατασταθούν',
@@ -193,6 +191,64 @@ class DriverCalendar extends Page
             });
     }
 
+    /** Καθαρισμός μήνα: empties one month for all drivers on the calendar, or all but Flag 1. */
+    private function clearMonthAction(): Action
+    {
+        return Action::make('clearMonth')->label('Καθαρισμός μήνα')->icon(Heroicon::OutlinedTrash)->color('gray')
+            ->visible(fn (): bool => $this->canEditSchedule())
+            ->modalIcon(Heroicon::OutlinedTrash)->modalIconColor('danger')
+            ->modalHeading('Καθαρισμός μήνα')
+            ->modalDescription('Σβήνονται όλες οι τιμές του μήνα για τους οδηγούς που φαίνονται στο ημερολόγιο. Δεν αναιρείται.')
+            ->modalSubmitActionLabel('Καθαρισμός')
+            ->modalSubmitAction(fn (Action $action) => $action->color('danger'))
+            ->fillForm(fn (): array => ['month' => $this->start()->format('Y-m'), 'drivers' => 'unflagged'])
+            ->schema([
+                Select::make('month')->label('Μήνας')->options(self::monthOptions())->required(),
+                Radio::make('drivers')->label('Οδηγοί')->required()->options(self::DRIVER_SCOPES),
+            ])
+            ->action(function (array $data): void {
+                $cleared = $this->clearMonth($data['month'], $data['drivers'] === 'unflagged');
+                $this->revision++;
+                Notification::make()->success()->title("Σβήστηκαν {$cleared} μέρες")->send();
+            });
+    }
+
+    public const DRIVER_SCOPES = [
+        'all' => 'Όλοι',
+        'unflagged' => 'Όλοι εκτός από όσους έχουν «Χωρίς αντιγραφή» (Flag = 1)',
+    ];
+
+    /** @return array<string, string> 12 months back to 12 ahead */
+    private static function monthOptions(): array
+    {
+        $months = [];
+        foreach (CarbonPeriod::create(now()->startOfMonth()->subMonths(12), '1 month', now()->startOfMonth()->addMonths(12)) as $m) {
+            $months[$m->format('Y-m')] = $m->locale('el')->translatedFormat('F Y');
+        }
+
+        return $months;
+    }
+
+    /** @return list<int> drivers on the calendar, optionally without Flag 1 */
+    private static function calendarDriverIds(bool $skipFlagged): array
+    {
+        return DB::table('drivers')->where('Active', 1)->whereNotNull('CalOrder')
+            ->when($skipFlagged, fn ($q) => $q->where(fn ($q) => $q->whereNull('Flag')->orWhere('Flag', '<>', 1)))
+            ->pluck('DriverID')->map(fn ($id): int => (int) $id)->all();
+    }
+
+    /** @return int days removed */
+    public function clearMonth(string $month, bool $skipFlagged): int
+    {
+        abort_unless($this->canEditSchedule(), 403);
+        abort_unless(preg_match('/^\d{4}-\d{2}$/', $month), 422);
+        $start = CarbonImmutable::parse($month.'-01');
+
+        return DB::table('schedule')->whereIn('driver_id', self::calendarDriverIds($skipFlagged))
+            ->whereBetween('date', [$start->toDateString(), $start->endOfMonth()->toDateString()])
+            ->delete();
+    }
+
     /** @return int days written */
     public function copyMonth(string $from, string $to, bool $skipFlagged, bool $overwrite): int
     {
@@ -202,9 +258,7 @@ class DriverCalendar extends Page
         $source = CarbonImmutable::parse($from.'-01');
         $target = CarbonImmutable::parse($to.'-01');
 
-        $drivers = DB::table('drivers')->where('Active', 1)->whereNotNull('CalOrder')
-            ->when($skipFlagged, fn ($q) => $q->where(fn ($q) => $q->whereNull('Flag')->orWhere('Flag', '<>', 1)))
-            ->pluck('DriverID')->map(fn ($id): int => (int) $id)->all();
+        $drivers = self::calendarDriverIds($skipFlagged);
 
         $rows = DB::table('schedule')->whereIn('driver_id', $drivers)->whereNotNull('status')
             ->whereBetween('date', [$source->toDateString(), $source->endOfMonth()->toDateString()])
@@ -276,12 +330,12 @@ class DriverCalendar extends Page
         $months = [];
         foreach (CarbonPeriod::create($start, $end) as $day) {
             $key = $day->format('Y-m');
-            $months[$key] ??= ['name' => $day->format('F Y'), 'count' => 0];
+            $months[$key] ??= ['name' => $day->locale('el')->translatedFormat('F Y'), 'count' => 0];
             $months[$key]['count']++;
             $days[] = [
                 'date' => $day->toDateString(),
                 'n' => $day->day,
-                'w' => $day->format('D')[0],
+                'w' => self::WEEKDAYS[$day->dayOfWeek],
                 'last' => $day->day === $day->daysInMonth,
                 'weekend' => $day->isWeekend(),
             ];
@@ -316,6 +370,8 @@ class DriverCalendar extends Page
             'firstMonth' => $start->format('Y-m'),
             'today' => now()->toDateString(),
             'colors' => array_map(fn (array $s): string => $s[1], self::STATUSES),
+            'inks' => array_map(fn (array $s): string => TransferCellColors::textOn($s[1]), self::STATUSES),
+            'range' => $start->locale('el')->translatedFormat($start->year === $end->year ? 'F' : 'F Y').' – '.$end->locale('el')->translatedFormat('F Y'),
         ];
     }
 

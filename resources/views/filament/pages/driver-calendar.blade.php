@@ -1,42 +1,51 @@
 {{--
     Drivers' work schedule (PHPRunner driver_cal). Rendered by Alpine from one JSON payload so a
     change only touches the cell and the counters: the 0s/9s of the first month per driver, and per
-    day the ΡΕΠΟ count (0, 8, 9; red above 2) and the Sprinter count (3; red below 3).
+    day the ΡΕΠΟ count (0, 8, 9; flagged above 2) and the Sprinter count (3; flagged below 3).
+    Entry works like a spreadsheet: a digit saves and moves right, arrows/Enter/Tab move, Esc cancels.
 --}}
 @php($cal = $this->calendar())
+@php($canEdit = $this->canEditSchedule())
 <x-filament-panels::page>
-    <div @class(["myat-cal", "is-readonly" => ! $this->canEditSchedule()]) wire:key="cal-{{ $offset }}-{{ $revision }}"
-         x-data="driverCalendar(@js($cal), @js($this->canEditSchedule()))">
+    <div @class(['myat-cal', 'is-readonly' => ! $canEdit]) wire:key="cal-{{ $offset }}-{{ $revision }}"
+         x-data="driverCalendar(@js($cal), @js($canEdit))">
 
         <div class="myat-cal-bar">
             <div class="myat-cal-nav">
-                <x-filament::button color="gray" size="sm" icon="heroicon-m-chevron-left" wire:click="move(-1)">Προηγούμενος</x-filament::button>
-                @if ($offset !== 0)
-                    <x-filament::button color="gray" size="sm" wire:click="move(0)">Σήμερα</x-filament::button>
-                @endif
-                <x-filament::button color="gray" size="sm" icon="heroicon-m-chevron-right" icon-position="after" wire:click="move(1)">Επόμενος</x-filament::button>
+                <div class="myat-cal-step" role="group" aria-label="Μήνες">
+                    <button type="button" wire:click="move(-1)" aria-label="Προηγούμενος μήνας" title="Προηγούμενος μήνας">
+                        <x-filament::icon icon="heroicon-m-chevron-left" class="h-5 w-5" />
+                    </button>
+                    <button type="button" wire:click="move(0)" @disabled($offset === 0)>Σήμερα</button>
+                    <button type="button" wire:click="move(1)" aria-label="Επόμενος μήνας" title="Επόμενος μήνας">
+                        <x-filament::icon icon="heroicon-m-chevron-right" class="h-5 w-5" />
+                    </button>
+                </div>
+                <h2 class="myat-cal-range">{{ $cal['range'] }}</h2>
+                <x-filament::loading-indicator class="h-5 w-5 text-gray-400" wire:loading wire:target="move" />
             </div>
-            <div class="myat-cal-legend">
+            <ul class="myat-cal-legend" aria-label="Κωδικοί">
                 @foreach (\App\Filament\Pages\DriverCalendar::STATUSES as $code => [$label, $color])
-                    <span style="background:{{ $color }};{{ in_array($code, [3, 8, 5]) ? 'color:#fff' : '' }}">{{ $code }} · {{ $label }}</span>
+                    <li><b style="background:{{ $color }};color:{{ $cal['inks'][$code] }}">{{ $code }}</b>{{ $label }}</li>
                 @endforeach
-            </div>
+            </ul>
         </div>
 
         <div class="myat-cal-scroll" @mouseleave="hr = null; hc = null">
             <table>
                 <thead>
                     <tr>
-                        <th class="myat-cal-name" rowspan="2">Οδηγός</th>
-                        <th class="myat-cal-sum" rowspan="2" style="background:#FFC7CE" title="ΡΕΠΟ τον πρώτο μήνα">0s</th>
-                        <th class="myat-cal-sum" rowspan="2" style="background:#b4a7d6" title="ΑΔΕΙΑ τον πρώτο μήνα">9s</th>
+                        <th class="myat-cal-name" rowspan="2" scope="col">Οδηγός</th>
+                        <th class="myat-cal-sum is-0" rowspan="2" scope="col" title="ΡΕΠΟ στον πρώτο μήνα">0</th>
+                        <th class="myat-cal-sum is-9" rowspan="2" scope="col" title="ΑΔΕΙΑ στον πρώτο μήνα">9</th>
                         <template x-for="m in c.months" :key="m.name">
-                            <th class="myat-cal-month" :colspan="m.count" x-text="m.name"></th>
+                            <th class="myat-cal-month" :colspan="m.count" scope="colgroup"><span x-text="m.name"></span></th>
                         </template>
                     </tr>
                     <tr>
                         <template x-for="(d, i) in c.days" :key="d.date">
-                            <th class="myat-cal-day" :class="{ 'is-last': d.last, 'is-weekend': d.weekend, 'is-today': d.date === c.today, 'is-hl': hc === i }">
+                            <th class="myat-cal-day" scope="col"
+                                :class="{ 'is-last': d.last, 'is-weekend': d.weekend, 'is-today': d.date === c.today, 'is-hl': hc === i }">
                                 <span x-text="d.n"></span><small x-text="d.w"></small>
                             </th>
                         </template>
@@ -45,52 +54,75 @@
                 <tbody>
                     <template x-for="(dr, r) in c.drivers" :key="dr.id">
                         <tr>
-                            <td class="myat-cal-name" :class="{ 'is-hl': hr === r }" :style="dr.style" x-text="dr.name"></td>
-                            <td class="myat-cal-sum" style="background:#FFC7CE" x-text="monthCount(dr.id, '0')"></td>
-                            <td class="myat-cal-sum" style="background:#b4a7d6" x-text="monthCount(dr.id, '9')"></td>
+                            <th class="myat-cal-name" scope="row" :class="{ 'is-hl': hr === r }" :style="dr.style" x-text="dr.name"></th>
+                            <td class="myat-cal-sum is-0" x-text="monthCount(dr.id, '0')"></td>
+                            <td class="myat-cal-sum is-9" x-text="monthCount(dr.id, '9')"></td>
                             <template x-for="(d, i) in c.days" :key="d.date">
                                 <td class="myat-cal-cell"
-                                    :class="{ 'is-last': d.last, 'is-today': d.date === c.today, 'is-hl': (hr === r && i <= hc) || (hc === i && r <= hr), 'is-edit': editing === dr.id + '|' + d.date, 'is-dark': ['3', '5', '8'].includes(val(dr.id, d.date)) }"
-                                    :style="bg(val(dr.id, d.date))"
+                                    :class="{
+                                        'is-last': d.last, 'is-weekend': d.weekend, 'is-today': d.date === c.today,
+                                        'is-hl': (hr === r && i <= hc) || (hc === i && r <= hr),
+                                        'is-edit': editing === r + '|' + i,
+                                        'is-saving': saving[dr.id + '|' + d.date],
+                                    }"
+                                    :style="paint(val(dr.id, d.date))"
                                     @mouseenter="hr = r; hc = i"
-                                    @click="open(dr.id, d.date)">
-                                    <template x-if="editing === dr.id + '|' + d.date">
-                                        <input type="text" inputmode="numeric" maxlength="1" x-init="$nextTick(() => { $el.focus(); $el.select() })"
+                                    @click="open(r, i)">
+                                    <template x-if="editing === r + '|' + i">
+                                        <input type="text" inputmode="numeric" maxlength="1" autocomplete="off"
+                                               :aria-label="dr.name + ' ' + d.date"
+                                               x-init="$nextTick(() => { $el.focus(); $el.select() })"
                                                :value="val(dr.id, d.date)"
-                                               @input="$el.value = $el.value.replace(/[^0-9]/g, '')"
-                                               @keydown.enter.prevent="$el.blur()"
+                                               @input="$el.value = $el.value.replace(/[^0-9]/g, ''); if ($el.value !== '') save(r, i, $el.value, 0, 1)"
+                                               @keydown.enter.prevent="save(r, i, $el.value, $event.shiftKey ? -1 : 1, 0)"
+                                               @keydown.tab.prevent="save(r, i, $el.value, 0, $event.shiftKey ? -1 : 1)"
+                                               @keydown.arrow-right.prevent="save(r, i, $el.value, 0, 1)"
+                                               @keydown.arrow-left.prevent="save(r, i, $el.value, 0, -1)"
+                                               @keydown.arrow-down.prevent="save(r, i, $el.value, 1, 0)"
+                                               @keydown.arrow-up.prevent="save(r, i, $el.value, -1, 0)"
                                                @keydown.escape.prevent="editing = null"
-                                               @keydown.tab.prevent="save(dr.id, d.date, $el.value, i + ($event.shiftKey ? -1 : 1))"
-                                               @blur="save(dr.id, d.date, $el.value)">
+                                               @blur="save(r, i, $el.value)">
                                     </template>
-                                    <span x-show="editing !== dr.id + '|' + d.date" x-text="val(dr.id, d.date)"></span>
+                                    <span x-show="editing !== r + '|' + i" x-text="val(dr.id, d.date)"></span>
                                 </td>
                             </template>
                         </tr>
                     </template>
                     <tr class="myat-cal-total is-first">
-                        <td class="myat-cal-name">ΡΕΠΟ</td><td></td><td></td>
+                        <th class="myat-cal-name" scope="row">ΡΕΠΟ <small>0·8·9 · όριο 2</small></th>
+                        <td class="myat-cal-sum"></td><td class="myat-cal-sum"></td>
                         <template x-for="d in c.days" :key="d.date">
-                            <td :class="{ 'is-last': d.last, 'is-bad': dayCount(d.date, ['0', '8', '9']) > 2 }" x-text="dayCount(d.date, ['0', '8', '9'])"></td>
+                            <td x-data="{ get n() { return dayCount(d.date, ['0', '8', '9']) } }"
+                                :class="{ 'is-last': d.last, 'is-bad': n > 2 }" :title="n > 2 ? 'Πάνω από 2 ρεπό' : null" x-text="n"></td>
                         </template>
                     </tr>
                     <tr class="myat-cal-total">
-                        <td class="myat-cal-name">Sprinter</td><td></td><td></td>
+                        <th class="myat-cal-name" scope="row">Sprinter <small>3 · τουλάχιστον 3</small></th>
+                        <td class="myat-cal-sum"></td><td class="myat-cal-sum"></td>
                         <template x-for="d in c.days" :key="d.date">
-                            <td :class="{ 'is-last': d.last, 'is-bad': dayCount(d.date, ['3']) < 3 }" x-text="dayCount(d.date, ['3'])"></td>
+                            <td x-data="{ get n() { return dayCount(d.date, ['3']) } }"
+                                :class="{ 'is-last': d.last, 'is-bad': n < 3 }" :title="n < 3 ? 'Λιγότεροι από 3 Sprinter' : null" x-text="n"></td>
                         </template>
                     </tr>
                 </tbody>
             </table>
         </div>
+
+        @if ($canEdit)
+            <p class="myat-cal-hint">
+                Κλικ σε κελί και πληκτρολογήστε τον κωδικό: αποθηκεύεται και πάει στην επόμενη μέρα.
+                <kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> μετακίνηση · <kbd>Enter</kbd> κάτω ·
+                <kbd>Backspace</kbd> και βέλος για καθάρισμα · <kbd>Esc</kbd> ακύρωση
+            </p>
+        @endif
     </div>
 
     @script
     <script>
         Alpine.data('driverCalendar', (c, canEdit) => ({
-            c, canEdit, hr: null, hc: null, editing: null,
+            c, canEdit, hr: null, hc: null, editing: null, saving: {},
             val(id, date) { return (this.c.cells[id] || {})[date] ?? '' },
-            bg(v) { return this.c.colors[v] ? 'background:' + this.c.colors[v] : '' },
+            paint(v) { return this.c.colors[v] ? 'background:' + this.c.colors[v] + ';color:' + this.c.inks[v] : '' },
             monthCount(id, s) {
                 const row = this.c.cells[id] || {};
                 return Object.keys(row).filter((d) => d.startsWith(this.c.firstMonth + '-') && row[d] === s).length;
@@ -98,22 +130,26 @@
             dayCount(date, list) {
                 return this.c.drivers.filter((d) => list.includes(this.val(d.id, date))).length;
             },
-            open(id, date) {
-                if (this.canEdit) this.editing = id + '|' + date;
+            open(r, i) {
+                if (this.canEdit && this.c.drivers[r] && this.c.days[i]) this.editing = r + '|' + i;
             },
-            async save(id, date, value, nextIndex = null) {
-                if (this.editing !== id + '|' + date) return;
-                const next = this.c.days[nextIndex];
+            // Save the open cell, then move dr rows / dc days (0, 0: just close).
+            async save(r, i, value, dr = 0, dc = 0) {
+                if (this.editing !== r + '|' + i) return;
                 this.editing = null;
-                if (next) this.$nextTick(() => this.open(id, next.date));
+                if (dr || dc) this.$nextTick(() => this.open(r + dr, i + dc));
+                const id = this.c.drivers[r].id, date = this.c.days[i].date, key = id + '|' + date;
                 const before = this.val(id, date);
                 if (value === before) return;
                 this.put(id, date, value);
+                this.saving[key] = true;
                 try {
                     await $wire.setStatus(id, date, value);
                 } catch (e) {
                     this.put(id, date, before);
-                    new FilamentNotification().title('Δεν αποθηκεύτηκε').danger().send();
+                    new FilamentNotification().title('Δεν αποθηκεύτηκε').body(this.c.drivers[r].name + ' ' + date).danger().send();
+                } finally {
+                    delete this.saving[key];
                 }
             },
             put(id, date, value) {
