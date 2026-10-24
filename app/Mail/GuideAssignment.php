@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Mail\Concerns\MarksTestCopies;
 use App\Models\VTransfer;
 use App\Services\Documents\Vouchers;
 use Illuminate\Mail\Attachment;
@@ -13,6 +14,8 @@ use Illuminate\Mail\Mailables\Envelope;
 /** PHPRunner "Αποστολή Email" on the tour guide voucher (Send_Assistant_Email). */
 class GuideAssignment extends Mailable
 {
+    use MarksTestCopies;
+
     public function __construct(public VTransfer $job) {}
 
     public function envelope(): Envelope

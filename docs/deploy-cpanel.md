@@ -30,6 +30,9 @@ A copy of the new back office on your hosting, next to PHPRunner, using the
    ```
    Keep `ELORUS_ENABLED=false` and `MAIL_MAILER=log` on the test copy: nothing is sent to
    Elorus, customers, drivers or the port; emails are written to `storage/logs` instead.
+   To see real emails on the test copy, set `MAIL_MAILER=smtp` with the mailbox password **and**
+   `MAIL_ALWAYS_TO=your@address`: every email then goes only to you (Cc/Bcc dropped), with a
+   yellow strip on top showing who it would have gone to.
 5. **Open** `https://new.myat.touro.gr/admin` and sign in with your PHPRunner login.
 
 ## Updating automatically (every push to main)

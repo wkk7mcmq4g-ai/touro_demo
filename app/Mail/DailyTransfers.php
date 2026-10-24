@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Mail\Concerns\MarksTestCopies;
 use App\Models\DailyRecipient;
 use App\Models\VTransfer;
 use Illuminate\Mail\Mailable;
@@ -14,6 +15,8 @@ use Illuminate\Support\Facades\DB;
 /** PHPRunner "Αποστολή Email" (New_Button40 / New_Button47): a driver's or guide's transfers for the day. */
 class DailyTransfers extends Mailable
 {
+    use MarksTestCopies;
+
     /** @param  Collection<int, VTransfer>  $jobs */
     public function __construct(public DailyRecipient $recipient, public Collection $jobs, public bool $withPassengers = false) {}
 

@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Mail\Concerns\MarksTestCopies;
 use App\Models\VTransfer;
 use App\Services\Documents\Vouchers;
 use Illuminate\Mail\Attachment;
@@ -13,6 +14,8 @@ use Illuminate\Mail\Mailables\Envelope;
 /** PHPRunner "Αποστολή" on the OLP voucher (New_Button66): entry request to Piraeus port. */
 class OlpEntryRequest extends Mailable
 {
+    use MarksTestCopies;
+
     public function __construct(public VTransfer $job, public ?string $replyToAddress = null) {}
 
     public function envelope(): Envelope

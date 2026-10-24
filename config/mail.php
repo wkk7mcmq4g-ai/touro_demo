@@ -115,4 +115,14 @@ return [
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
 
+    /*
+    | Test copies: with MAIL_ALWAYS_TO set, every e-mail goes only to that address (To replaced,
+    | Cc and Bcc dropped) with a yellow strip saying who it would have gone to. Empty = real recipients.
+    */
+
+    'to' => [
+        'address' => env('MAIL_ALWAYS_TO') ?: null,
+        'name' => 'Test copy',
+    ],
+
 ];
