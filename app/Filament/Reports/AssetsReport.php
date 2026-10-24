@@ -22,6 +22,11 @@ abstract class AssetsReport extends PivotReport
         return 'ReferencePeriod';
     }
 
+    public function hasNonZeroFilter(): bool
+    {
+        return true;
+    }
+
     protected function fixedCols(): ?string
     {
         return 'month';

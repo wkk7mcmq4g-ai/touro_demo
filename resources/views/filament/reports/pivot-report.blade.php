@@ -38,6 +38,16 @@
     <div class="myat-rep">
         {{ $this->form }}
 
+        @if ($this->hasNonZeroFilter())
+            <div class="myat-rep-quick">
+                <label @class(['myat-rep-pill', 'is-on' => $this->nonZero])>
+                    <input type="checkbox" wire:model.live="nonZero">
+                    <x-filament::icon icon="heroicon-m-funnel" class="myat-rep-pill-icon" />
+                    <span>Μόνο {{ mb_strtolower($r['measure']) }} ≠ 0</span>
+                </label>
+            </div>
+        @endif
+
         @if ($chips !== [])
             <div class="myat-rep-chips" role="list" aria-label="Ενεργά φίλτρα">
                 @foreach ($chips as $chip)

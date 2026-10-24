@@ -26,6 +26,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Livewire\Attributes\Session;
 use UnitEnum;
 
 /**
@@ -134,6 +135,16 @@ abstract class PivotReport extends Page
 
     /** Heat shading of the cells (per user, this page). */
     public bool $heatmap = true;
+
+    /** Quick filter "only ≠ 0": leave out the records whose chosen amount is 0 (remembered per user and page). */
+    #[Session]
+    public bool $nonZero = false;
+
+    /** Does this report offer the quick filter "only ≠ 0"? */
+    public function hasNonZeroFilter(): bool
+    {
+        return false;
+    }
 
     /**
      * The headline figures above the table: the total, the last period against the one before
@@ -355,7 +366,7 @@ abstract class PivotReport extends Page
      */
     public function result(): array
     {
-        $key = 'myat:pivot:'.static::class.':'.md5(json_encode([$this->data, $this->fixedCols()]));
+        $key = 'myat:pivot:'.static::class.':'.md5(json_encode([$this->data, $this->fixedCols(), $this->hasNonZeroFilter() && $this->nonZero]));
         if ($this->resultMemo && $this->resultMemo[0] === $key) {
             return $this->resultMemo[1];
         }
@@ -380,6 +391,10 @@ abstract class PivotReport extends Page
             ->selectRaw(($colKey ? $dims[$colKey]['expr'] : "''").' AS c')
             ->selectRaw("SUM({$measures[$measureKey]['expr']}) AS v")
             ->groupByRaw('r, c');
+
+        if ($this->hasNonZeroFilter() && $this->nonZero) {
+            $query->whereRaw("COALESCE({$measures[$measureKey]['expr']}, 0) <> 0");
+        }
 
         foreach ($this->data['filter'] ?? [] as $key => $values) {
             if (array_key_exists($key, $dims) && filled($values)) {

@@ -95,4 +95,20 @@ class ReportsTest extends TestCase
         $this->assertArrayHasKey('2025-12-31', $r['cols']);
         $this->assertSame('Coach', $r['rowLabel']);
     }
+
+    public function test_quick_filter_leaves_out_zero_amounts(): void
+    {
+        DB::table('transfers')->insert([
+            ['TransferDate' => '2026-01-05', 'CoachCompanyID' => 'VITO 2022', 'PurchasePrice' => 70, 'TransferType' => 'Arrival', 'From' => 'a', 'To' => 'b', 'Status' => 'Completed'],
+            ['TransferDate' => '2026-01-06', 'CoachCompanyID' => 'E CLASS 2015', 'PurchasePrice' => 0, 'TransferType' => 'Arrival', 'From' => 'a', 'To' => 'b', 'Status' => 'Completed'],
+        ]);
+
+        $page = Livewire::test(DueReport::class)->assertSee('≠ 0', false);
+        $this->assertArrayHasKey('E CLASS 2015', $page->instance()->result()['rows']);
+
+        $page->set('nonZero', true);
+        $rows = $page->instance()->result()['rows'];
+        $this->assertArrayHasKey('VITO 2022', $rows);
+        $this->assertArrayNotHasKey('E CLASS 2015', $rows);
+    }
 }
