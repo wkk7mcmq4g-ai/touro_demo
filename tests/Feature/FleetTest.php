@@ -151,28 +151,76 @@ class FleetTest extends TestCase
         $page->call('move', -1)->assertSet('offset', -1)->call('move', 0)->assertSet('offset', 0);
     }
 
-    public function test_calendar_settings_reorder_hide_and_pink(): void
+    public function test_calendar_settings_reorder_hide_colour_and_no_copy(): void
     {
         $a = DB::table('drivers')->insertGetId(['Fullname' => 'A', 'shortname' => 'AAA', 'Active' => 1, 'CalOrder' => 1, 'Flag' => 1], 'DriverID');
         $b = DB::table('drivers')->insertGetId(['Fullname' => 'B', 'shortname' => 'BBB', 'Active' => 1, 'CalOrder' => 2], 'DriverID');
         $c = DB::table('drivers')->insertGetId(['Fullname' => 'C', 'shortname' => 'CCC', 'Active' => 1, 'CalOrder' => null], 'DriverID');
 
-        // Saving the panel untouched keeps the order and the hidden driver hidden.
+        // Before any colour is picked, Flag 1 shows pink as driver_cal did.
+        $names = collect(Livewire::test(DriverCalendar::class)->instance()->calendar()['drivers'])->keyBy('id');
+        $this->assertStringContainsString(DriverCalendar::PINK, $names[$a]['style']);
+        $this->assertSame('', $names[$b]['style']);
+
+        // Saving the panel untouched keeps the order, the hidden driver hidden and A pink.
         Livewire::test(DriverCalendar::class)->callAction('settings')->assertHasNoActionErrors();
         $this->assertSame([1, 2, null], DB::table('drivers')->whereIn('DriverID', [$a, $b, $c])->orderBy('DriverID')->pluck('CalOrder')->all());
+        $this->assertSame(DriverCalendar::PINK, DB::table('drivers')->where('DriverID', $a)->value('CalColor'));
 
         Livewire::test(DriverCalendar::class)->call('saveSettings', [
-            ['id' => $c, 'shown' => true, 'pink' => true],
-            ['id' => $b, 'shown' => true, 'pink' => false],
-            ['id' => $a, 'shown' => false, 'pink' => false],
+            ['id' => $c, 'shown' => true, 'color' => '#1d4ed8', 'nocopy' => true],
+            ['id' => $b, 'shown' => true, 'color' => 'red;x:y', 'nocopy' => false],
+            ['id' => $a, 'shown' => false, 'color' => null, 'nocopy' => false],
         ])->assertSet('revision', 1);
 
-        $rows = DB::table('drivers')->whereIn('DriverID', [$a, $b, $c])->pluck('CalOrder', 'DriverID');
-        $this->assertSame([1, 2, null], [$rows[$c], $rows[$b], $rows[$a]]);
-        $flags = DB::table('drivers')->whereIn('DriverID', [$a, $b, $c])->pluck('Flag', 'DriverID');
-        $this->assertSame([1, null, 0], [$flags[$c], $flags[$b], $flags[$a]]);
+        $rows = DB::table('drivers')->whereIn('DriverID', [$a, $b, $c])->get(['DriverID', 'CalOrder', 'Flag', 'CalColor'])->keyBy('DriverID');
+        $this->assertSame([1, 2, null], [$rows[$c]->CalOrder, $rows[$b]->CalOrder, $rows[$a]->CalOrder]);
+        $this->assertSame([1, null, 0], [$rows[$c]->Flag, $rows[$b]->Flag, $rows[$a]->Flag]);
+        $this->assertSame(['#1d4ed8', null, null], [$rows[$c]->CalColor, $rows[$b]->CalColor, $rows[$a]->CalColor]);
+
+        $style = collect(Livewire::test(DriverCalendar::class)->instance()->calendar()['drivers'])->keyBy('id')[$c]['style'];
+        $this->assertSame('background:#1d4ed8;color:#ffffff', $style);
 
         $this->actingAs($this->makeLegacyUser('Entry'));
         $this->get(DriverCalendar::getUrl())->assertForbidden();
+    }
+
+    public function test_calendar_works_before_the_colour_column_exists(): void
+    {
+        DriverCalendar::$colorColumn = false;
+        $this->beforeApplicationDestroyed(fn () => DriverCalendar::$colorColumn = null);
+        $a = DB::table('drivers')->insertGetId(['Fullname' => 'A', 'shortname' => 'AAA', 'Active' => 1, 'CalOrder' => 1, 'Flag' => 1, 'CalColor' => '#000000'], 'DriverID');
+
+        $page = Livewire::test(DriverCalendar::class);
+        $this->assertStringContainsString(DriverCalendar::PINK, $page->instance()->calendar()['drivers'][0]['style']);
+        $page->call('saveSettings', [['id' => $a, 'shown' => true, 'color' => '#123456', 'nocopy' => false]]);
+        $this->assertSame('#000000', DB::table('drivers')->where('DriverID', $a)->value('CalColor'));
+        $this->assertSame(0, DB::table('drivers')->where('DriverID', $a)->value('Flag'));
+    }
+
+    public function test_copy_a_month_of_schedule(): void
+    {
+        $a = DB::table('drivers')->insertGetId(['Fullname' => 'A', 'shortname' => 'AAA', 'Active' => 1, 'CalOrder' => 1], 'DriverID');
+        $b = DB::table('drivers')->insertGetId(['Fullname' => 'B', 'shortname' => 'BBB', 'Active' => 1, 'CalOrder' => 2, 'Flag' => 1], 'DriverID');
+        $off = DB::table('drivers')->insertGetId(['Fullname' => 'X', 'shortname' => 'XXX', 'Active' => 1, 'CalOrder' => null], 'DriverID');
+        DB::table('schedule')->insert([
+            ['driver_id' => $a, 'date' => '2026-10-01', 'status' => 1],
+            ['driver_id' => $a, 'date' => '2026-10-02', 'status' => 0],
+            ['driver_id' => $a, 'date' => '2026-10-31', 'status' => 9], // November has no 31st
+            ['driver_id' => $b, 'date' => '2026-10-01', 'status' => 3],
+            ['driver_id' => $off, 'date' => '2026-10-01', 'status' => 3],
+            ['driver_id' => $a, 'date' => '2026-11-02', 'status' => 5], // already filled in
+        ]);
+        $nov = fn (): array => DB::table('schedule')->where('date', '>=', '2026-11-01')->orderBy('driver_id')->orderBy('date')
+            ->get()->map(fn ($r) => "{$r->driver_id} {$r->date} {$r->status}")->all();
+
+        $page = Livewire::test(DriverCalendar::class);
+        $this->assertSame(1, $page->instance()->copyMonth('2026-10', '2026-11', true, false));
+        $this->assertSame(["{$a} 2026-11-01 1", "{$a} 2026-11-02 5"], $nov());
+
+        $this->assertSame(3, $page->instance()->copyMonth('2026-10', '2026-11', false, true));
+        $this->assertSame(["{$a} 2026-11-01 1", "{$a} 2026-11-02 0", "{$b} 2026-11-01 3"], $nov());
+
+        $page->callAction('copyMonth', ['from' => '2026-10', 'to' => '2026-10'])->assertHasActionErrors(['to']);
     }
 }

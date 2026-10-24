@@ -3179,7 +3179,6 @@ html.myat-immersive .myat-day-sub {
 .myat-cal .myat-cal-name { position:sticky; left:0; z-index:3; background:var(--gray-50); text-align:left; padding:0 .6rem; font-weight:700; white-space:nowrap; min-width:7rem; }
 .dark .myat-cal .myat-cal-name { background:var(--gray-800); }
 .myat-cal thead .myat-cal-name { z-index:4; }
-.myat-cal .myat-cal-name.is-flag { background:#F2CEEF; color:#1f2937; }
 .myat-cal-sum { font-weight:700; color:#1f2937; }
 .myat-cal-cell { color:#1f2937; font-weight:600; }
 .myat-cal-cell.is-dark { color:#fff; }

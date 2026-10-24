@@ -29,6 +29,7 @@ use Illuminate\Support\Carbon;
  * @property int|null $CalOrder
  * @property int|null $Flag
  * @property int|null $TelegramID
+ * @property string|null $CalColor name colour on the drivers calendar (added for the new app)
  */
 class Driver extends Model
 {

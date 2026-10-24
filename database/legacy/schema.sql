@@ -1172,7 +1172,8 @@ CREATE TABLE `drivers` (
   `Shortname` varchar(50) DEFAULT NULL,
   `CalOrder` int(11) DEFAULT 0,
   `Flag` int(11) DEFAULT NULL,
-  `TelegramID` bigint(20) DEFAULT NULL
+  `TelegramID` bigint(20) DEFAULT NULL,
+  `CalColor` varchar(20) DEFAULT NULL
 ) ENGINE=MyISAM DEFAULT CHARSET=utf16 COLLATE=utf16_general_ci;
 
 -- --------------------------------------------------------

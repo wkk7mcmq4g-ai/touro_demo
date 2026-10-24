@@ -45,7 +45,7 @@
                 <tbody>
                     <template x-for="(dr, r) in c.drivers" :key="dr.id">
                         <tr>
-                            <td class="myat-cal-name" :class="{ 'is-flag': dr.flag, 'is-hl': hr === r }" x-text="dr.name"></td>
+                            <td class="myat-cal-name" :class="{ 'is-hl': hr === r }" :style="dr.style" x-text="dr.name"></td>
                             <td class="myat-cal-sum" style="background:#FFC7CE" x-text="monthCount(dr.id, '0')"></td>
                             <td class="myat-cal-sum" style="background:#b4a7d6" x-text="monthCount(dr.id, '9')"></td>
                             <template x-for="(d, i) in c.days" :key="d.date">
