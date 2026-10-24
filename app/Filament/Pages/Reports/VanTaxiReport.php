@@ -44,6 +44,11 @@ class VanTaxiReport extends ListReport
         return ['TransferDate', 'desc'];
     }
 
+    protected function thenSortBy(): array
+    {
+        return [['Fullname', 'asc']];
+    }
+
     protected function columns(): array
     {
         return [

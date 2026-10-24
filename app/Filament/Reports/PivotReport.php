@@ -54,7 +54,10 @@ abstract class PivotReport extends Page
     abstract protected function source(): Builder;
 
     /**
-     * @return array<string, array{label: string, expr: string, axis?: 'rows'|'cols'|'both', format?: Closure(mixed): ?string, filter?: bool}>
+     * `group` (rows only): rows are shown under a heading with its subtotal, e.g. months under their year
+     * (PHPRunner's "stepped" layout); it maps a row key to [group key, group label].
+     *
+     * @return array<string, array{label: string, expr: string, axis?: 'rows'|'cols'|'both', format?: Closure(mixed): ?string, filter?: bool, group?: Closure(string): array{0: string, 1: string}}>
      */
     abstract protected function dimensions(): array;
 
@@ -276,7 +279,22 @@ abstract class PivotReport extends Page
         ksort($cells);
         $rowTotals = array_map('array_sum', $cells);
 
+        // Subtotal per group (year), in row order.
+        $groups = [];
+        if ($group = $dims[$rowKey]['group'] ?? null) {
+            foreach ($cells as $r => $cols) {
+                [$gKey, $gLabel] = $group((string) $r);
+                $groups[$gKey] ??= ['label' => $gLabel, 'rows' => [], 'cells' => [], 'total' => 0.0];
+                $groups[$gKey]['rows'][] = (string) $r;
+                foreach ($cols as $c => $v) {
+                    $groups[$gKey]['cells'][$c] = ($groups[$gKey]['cells'][$c] ?? 0) + $v;
+                }
+                $groups[$gKey]['total'] += $rowTotals[$r];
+            }
+        }
+
         return [
+            'groups' => $groups,
             'rows' => collect(array_keys($cells))->mapWithKeys(fn ($r): array => [$r => $this->label($rowKey, $r)])->all(),
             'cols' => collect($colKeys)->mapWithKeys(fn ($c): array => [$c => $c === '__other' ? 'Λοιπά' : ($colKey ? $this->label($colKey, $c) : $measures[$measureKey]['label'])])->all(),
             'cells' => $cells,
@@ -300,8 +318,18 @@ abstract class PivotReport extends Page
                     $r = $this->result();
                     $columns = ['__row' => $r['rowLabel']] + $r['cols'] + ($r['hasCols'] ? ['__total' => 'Σύνολο'] : []);
                     $rows = [];
-                    foreach ($r['rows'] as $key => $label) {
-                        $rows[] = ['__row' => $label] + ($r['cells'][$key] ?? []) + ['__total' => $r['rowTotals'][$key]];
+                    $line = fn (string $label, array $cells, float $total): array => ['__row' => $label] + $cells + ['__total' => $total];
+                    if ($r['groups'] !== []) {
+                        foreach ($r['groups'] as $g) {
+                            $rows[] = $line($g['label'], $g['cells'], $g['total']);
+                            foreach ($g['rows'] as $key) {
+                                $rows[] = $line('    '.$r['rows'][$key], $r['cells'][$key] ?? [], $r['rowTotals'][$key]);
+                            }
+                        }
+                    } else {
+                        foreach ($r['rows'] as $key => $label) {
+                            $rows[] = $line($label, $r['cells'][$key] ?? [], $r['rowTotals'][$key]);
+                        }
                     }
                     $rows[] = ['__row' => 'Σύνολο'] + $r['colTotals'] + ['__total' => $r['total']];
 

@@ -4,6 +4,7 @@ namespace App\Filament\Pages\Reports;
 
 use App\Filament\Reports\PivotReport;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /** PHPRunner "Stats Report" (v_stats crosstab): transfers, income and turnover by period. */
@@ -29,18 +30,23 @@ class StatsReport extends PivotReport
         return 'ReferencePeriod';
     }
 
+    /**
+     * As PHPRunner's crosstab: years with their subtotal and the months under them down the side;
+     * partner (default), coach type or vehicle across; car type and transfer type either way.
+     */
     protected function dimensions(): array
     {
+        $date = fn ($v): string => Carbon::parse($v)->format('d/m/Y');
+
         return [
-            'month' => ['label' => 'Μήνας', 'expr' => "DATE_FORMAT(ReferencePeriod, '%Y-%m')", 'axis' => 'rows'],
+            'month' => ['label' => 'Έτος / Μήνας', 'expr' => 'LAST_DAY(ReferencePeriod)', 'axis' => 'rows', 'format' => $date,
+                'group' => fn (string $key): array => [substr($key, 0, 4), substr($key, 0, 4)]],
             'year' => ['label' => 'Έτος', 'expr' => 'YEAR(ReferencePeriod)', 'axis' => 'rows'],
-            'CoachType' => ['label' => 'Coach type', 'expr' => 'CoachType', 'filter' => true],
-            'CounterShortName' => ['label' => 'Πελάτης', 'expr' => 'CounterShortName', 'filter' => true],
-            'VehicleName' => ['label' => 'Όχημα', 'expr' => 'VehicleName', 'filter' => true],
+            'CounterShortName' => ['label' => 'Πελάτης', 'expr' => 'CounterShortName', 'axis' => 'cols', 'filter' => true],
+            'CoachType' => ['label' => 'Coach type', 'expr' => 'CoachType', 'axis' => 'cols', 'filter' => true],
+            'VehicleName' => ['label' => 'Όχημα', 'expr' => 'VehicleName', 'axis' => 'cols', 'filter' => true],
             'Cartype' => ['label' => 'Car type', 'expr' => 'Cartype', 'filter' => true],
             'TransferType' => ['label' => 'Transfer type', 'expr' => 'TransferType', 'filter' => true],
-            'Status' => ['label' => 'Status', 'expr' => 'Status', 'filter' => true],
-            'TobeInvoiced' => ['label' => 'Τύπος παραστ.', 'expr' => 'TobeInvoiced', 'filter' => true],
         ];
     }
 
@@ -55,6 +61,6 @@ class StatsReport extends PivotReport
 
     protected function defaults(): array
     {
-        return ['month', 'CoachType', 'count'];
+        return ['month', 'CounterShortName', 'count'];
     }
 }

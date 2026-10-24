@@ -24,16 +24,33 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($r['rows'] as $rowKey => $rowLabel)
-                        <tr>
-                            <th class="myat-pivot-rowhead">{{ $rowLabel }}</th>
-                            @foreach ($r['cols'] as $colKey => $label)
-                                <td>{{ $fmt($r['cells'][$rowKey][$colKey] ?? null) }}</td>
-                            @endforeach
-                            @if ($r['hasCols'])
-                                <td class="myat-pivot-total">{{ $fmt($r['rowTotals'][$rowKey]) }}</td>
-                            @endif
-                        </tr>
+                    @php
+                        // Months under their year with the year's subtotal first (PHPRunner "stepped"), or plain rows.
+                        $sections = $r['groups'] !== [] ? $r['groups'] : [['label' => null, 'rows' => array_keys($r['rows'])]];
+                    @endphp
+                    @foreach ($sections as $section)
+                        @if ($section['label'] !== null)
+                            <tr class="myat-pivot-group">
+                                <th class="myat-pivot-rowhead">{{ $section['label'] }}</th>
+                                @foreach ($r['cols'] as $colKey => $label)
+                                    <td>{{ $fmt($section['cells'][$colKey] ?? null) }}</td>
+                                @endforeach
+                                @if ($r['hasCols'])
+                                    <td class="myat-pivot-total">{{ $fmt($section['total']) }}</td>
+                                @endif
+                            </tr>
+                        @endif
+                        @foreach ($section['rows'] as $rowKey)
+                            <tr @class(['myat-pivot-child' => $section['label'] !== null])>
+                                <th class="myat-pivot-rowhead">{{ $r['rows'][$rowKey] }}</th>
+                                @foreach ($r['cols'] as $colKey => $label)
+                                    <td>{{ $fmt($r['cells'][$rowKey][$colKey] ?? null) }}</td>
+                                @endforeach
+                                @if ($r['hasCols'])
+                                    <td class="myat-pivot-total">{{ $fmt($r['rowTotals'][$rowKey]) }}</td>
+                                @endif
+                            </tr>
+                        @endforeach
                     @endforeach
                 </tbody>
                 <tfoot>

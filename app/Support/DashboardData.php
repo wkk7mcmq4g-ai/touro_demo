@@ -135,8 +135,8 @@ class DashboardData
             'sales' => $sales($today->copy()->startOfMonth(), $today->copy()->endOfMonth()),
             'mtd' => $sales($today->copy()->startOfMonth(), $today->copy()),
             'mtdLast' => $sales($lastFrom, $lastTo),
-            'receivable' => (float) Transfer::query()->where('Assets', '>', 0)->sum('Assets'),
-            'payable' => (float) Transfer::query()->where('Liabilities', '>', 0)->sum('Liabilities'),
+            'receivable' => (float) Transfer::query()->sum('Assets'),
+            'payable' => (float) Transfer::query()->sum('Liabilities'),
             'top' => $top,
         ];
     }

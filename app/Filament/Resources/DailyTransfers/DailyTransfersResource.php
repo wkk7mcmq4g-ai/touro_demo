@@ -87,7 +87,7 @@ class DailyTransfersResource extends Resource
         $passengers = Toggle::make('withPassengers')->label('Attach passenger list');
 
         return $table
-            ->defaultSort('Fullname')
+            ->defaultSort('ID') // PHPRunner: ORDER BY ID
             ->paginated(false)
             ->emptyStateHeading('No jobs on this day')
             ->columns([

@@ -47,15 +47,15 @@ class TaxisReport extends ListReport
         return [
             TextColumn::make('TransferID')->label('Transfer ID')->searchable()->sortable()
                 ->url(fn ($record): string => TransferResource::getUrl('edit', ['record' => $record->TransferID])),
-            TextColumn::make('TransferDate')->label('Transfer date')->date('d/m/Y')->sortable(),
-            TextColumn::make('TaxiReceipt')->label('Taxi receipt')->placeholder('—'),
-            TextColumn::make('TaxiReceiptDate')->label('Taxi receipt date')->date('d/m/Y')->placeholder('—'),
-            TextColumn::make('TaxiReceiptAmount')->label('Taxi receipt amount')->money('EUR', locale: 'el')->alignEnd()->placeholder('—'),
-            TextColumn::make('ElorusTaxiNumber')->label('Elorus taxi number')->placeholder('—'),
-            TextColumn::make('SalesInvoiceNum')->label('Sales invoice num')->placeholder('—'),
-            TextColumn::make('TaxiReceipt_Issued')->label('Taxi receipt issued')->placeholder('—'),
-            TextColumn::make('SalePrice')->label('Sale price')->money('EUR', locale: 'el')->alignEnd(),
-            TextColumn::make('TaxiReceiptUploaded')->label('Receipt uploaded')->badge()->color(fn (string $state): string => $state === 'Yes' ? 'success' : 'warning'),
+            TextColumn::make('TransferDate')->label('Transfer date')->date('d/m/Y')->sortable()->searchable(query: fn ($query, string $search) => $query->whereRaw("DATE_FORMAT(TransferDate, '%d/%m/%Y') LIKE ?", ['%'.$search.'%'])),
+            TextColumn::make('TaxiReceipt')->label('Taxi receipt')->searchable()->placeholder('—'),
+            TextColumn::make('TaxiReceiptDate')->label('Taxi receipt date')->date('d/m/Y')->searchable(query: fn ($query, string $search) => $query->whereRaw("DATE_FORMAT(TaxiReceiptDate, '%d/%m/%Y') LIKE ?", ['%'.$search.'%']))->placeholder('—'),
+            TextColumn::make('TaxiReceiptAmount')->label('Taxi receipt amount')->searchable()->money('EUR', locale: 'el')->alignEnd()->placeholder('—'),
+            TextColumn::make('ElorusTaxiNumber')->label('Elorus taxi number')->searchable()->placeholder('—'),
+            TextColumn::make('SalesInvoiceNum')->label('Sales invoice num')->searchable()->placeholder('—'),
+            TextColumn::make('TaxiReceipt_Issued')->label('Taxi receipt issued')->searchable()->placeholder('—'),
+            TextColumn::make('SalePrice')->label('Sale price')->searchable()->money('EUR', locale: 'el')->alignEnd(),
+            TextColumn::make('TaxiReceiptUploaded')->label('Receipt uploaded')->searchable()->badge()->color(fn (string $state): string => $state === 'Yes' ? 'success' : 'warning'),
         ];
     }
 

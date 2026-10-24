@@ -49,11 +49,19 @@ class ReportsTest extends TestCase
 
         $page = Livewire::test(ExpensesReport::class)->assertOk()->assertSee('Ενοίκιο')->assertSee('Καύσιμα');
         $r = $page->instance()->result();
-        $this->assertSame(['2026-09' => 600.0, '2026-10' => 730.0], $r['rowTotals']);
+        // Expense period = month end, as PHPRunner (Last_day).
+        $this->assertSame(['2026-09-30' => 600.0, '2026-10-31' => 730.0], $r['rowTotals']);
+        $this->assertSame('30/09/2026', $r['rows']['2026-09-30']);
         $this->assertEquals(1330, $r['total']);
-        $this->assertEquals(650, $r['cells']['2026-10'][(string) $rent]);
+        $this->assertEquals(650, $r['cells']['2026-10-31'][(string) $rent]);
 
-        $page->set('data.filter.Company', ['ΙΚΕ']);
+        // No vehicle on the expense: "No Vehicle", as PHPRunner, and it can be filtered.
+        $page->set('data.cols', 'VehicleID');
+        $this->assertSame(['No Vehicle' => 'No Vehicle'], $page->instance()->result()['cols']);
+        $page->set('data.filter.VehicleID', ['No Vehicle']);
+        $this->assertEquals(1330, $page->instance()->result()['total']);
+
+        $page->set('data.filter.ExpenseCategoryID', [(string) $rent]);
         $this->assertEquals(1250, $page->instance()->result()['total']);
 
         $page->set('data.cols', null)->set('data.rows', 'year');

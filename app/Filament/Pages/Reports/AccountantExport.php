@@ -31,6 +31,11 @@ class AccountantExport extends ListReport
         return ['ReferencePeriod', 'desc'];
     }
 
+    protected function thenSortBy(): array
+    {
+        return [['TransferDate', 'desc']];
+    }
+
     protected function columns(): array
     {
         return [

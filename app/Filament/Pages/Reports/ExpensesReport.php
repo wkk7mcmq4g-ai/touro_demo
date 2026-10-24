@@ -5,6 +5,7 @@ namespace App\Filament\Pages\Reports;
 use App\Filament\Reports\PivotReport;
 use App\Support\Lookups;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /** PHPRunner "Expenses Report" (expenses crosstab): money in and out by period and category, vehicle or driver. */
@@ -22,7 +23,7 @@ class ExpensesReport extends PivotReport
 
     protected function source(): Builder
     {
-        return DB::table('expenses')->select(['ExpenseDate', 'ExpenseAmountRcvd', 'ExpenseAmountPaid', 'VehicleID', 'DriverID', 'ExpenseCategoryID', 'Company', 'Flag']);
+        return DB::table('expenses')->select(['ExpenseDate', 'ExpenseAmountRcvd', 'ExpenseAmountPaid', 'VehicleID', 'DriverID', 'ExpenseCategoryID']);
     }
 
     protected function dateColumn(): ?string
@@ -30,19 +31,20 @@ class ExpensesReport extends PivotReport
         return 'ExpenseDate';
     }
 
+    /** As PHPRunner's crosstab: expense period (month end) or year down; category, driver or vehicle across. */
     protected function dimensions(): array
     {
         return [
-            'month' => ['label' => 'Expense period', 'expr' => "DATE_FORMAT(ExpenseDate, '%Y-%m')", 'axis' => 'rows'],
+            'month' => ['label' => 'Expense period', 'expr' => 'LAST_DAY(ExpenseDate)', 'axis' => 'rows',
+                'format' => fn ($v): string => Carbon::parse($v)->format('d/m/Y')],
             'year' => ['label' => 'Expense year', 'expr' => 'YEAR(ExpenseDate)', 'axis' => 'rows'],
-            'ExpenseCategoryID' => ['label' => 'Κατηγορία', 'expr' => 'ExpenseCategoryID', 'filter' => true,
+            'ExpenseCategoryID' => ['label' => 'Κατηγορία', 'expr' => 'ExpenseCategoryID', 'axis' => 'cols', 'filter' => true,
                 'format' => fn ($v): ?string => Lookups::optionIds('ExpenseCategory')[$v] ?? null],
-            'VehicleID' => ['label' => 'Όχημα', 'expr' => 'VehicleID', 'filter' => true,
-                'format' => fn ($v): ?string => Lookups::vehicles()[$v] ?? null],
-            'DriverID' => ['label' => 'Οδηγός', 'expr' => 'DriverID', 'filter' => true,
+            // PHPRunner: ifnull(DriverID, 'No Driver'), ifnull(VehicleID, 'No Vehicle').
+            'DriverID' => ['label' => 'Οδηγός', 'expr' => "COALESCE(NULLIF(DriverID, ''), 'No Driver')", 'axis' => 'cols', 'filter' => true,
                 'format' => fn ($v): ?string => Lookups::drivers()[$v] ?? null],
-            'Company' => ['label' => 'Εταιρεία', 'expr' => 'Company', 'filter' => true],
-            'Flag' => ['label' => 'Flag', 'expr' => 'Flag', 'filter' => true],
+            'VehicleID' => ['label' => 'Όχημα', 'expr' => "COALESCE(NULLIF(VehicleID, ''), 'No Vehicle')", 'axis' => 'cols', 'filter' => true,
+                'format' => fn ($v): ?string => Lookups::vehicles()[$v] ?? null],
         ];
     }
 

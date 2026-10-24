@@ -2564,3 +2564,19 @@ html.myat-immersive .myat-day-sub {
     color: var(--myat-azure);
     text-decoration: underline;
 }
+
+/* Pivot reports: year heading with its subtotal, months under it */
+.myat-pivot .myat-pivot-group th,
+.myat-pivot .myat-pivot-group td {
+    font-weight: 800;
+    background: #eef6ee;
+}
+
+.dark .myat-pivot .myat-pivot-group th,
+.dark .myat-pivot .myat-pivot-group td {
+    background: rgb(144 238 144 / 0.08);
+}
+
+.myat-pivot .myat-pivot-child .myat-pivot-rowhead {
+    padding-inline-start: 1.6rem;
+}

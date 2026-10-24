@@ -32,7 +32,7 @@ class CapacityReport extends ListReport
 
     protected function defaultSort(): ?array
     {
-        return ['TransferDate', 'desc'];
+        return ['TransferDate', 'asc'];
     }
 
     protected function columns(): array

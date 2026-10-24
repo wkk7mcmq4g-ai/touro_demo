@@ -14,6 +14,7 @@ use Filament\Tables\Columns\Column;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Str;
 use UnitEnum;
@@ -24,7 +25,9 @@ use UnitEnum;
  */
 abstract class ListReport extends Page implements HasTable
 {
-    use InteractsWithTable;
+    use InteractsWithTable {
+        applySortingToTableQuery as filamentSorting;
+    }
 
     protected string $view = 'filament.reports.list-report';
 
@@ -47,9 +50,27 @@ abstract class ListReport extends Page implements HasTable
         return [];
     }
 
+    /** @return array{0: string, 1: 'asc'|'desc'}|null the default sort column (shown on the header) */
     protected function defaultSort(): ?array
     {
         return null;
+    }
+
+    /** @return list<array{0: string, 1: 'asc'|'desc'}> PHPRunner's further ORDER BY keys, after the default sort */
+    protected function thenSortBy(): array
+    {
+        return [];
+    }
+
+    /** Tie-breakers after whatever sort is active, as PHPRunner's ORDER BY. */
+    protected function applySortingToTableQuery(EloquentBuilder $query): EloquentBuilder
+    {
+        $query = $this->filamentSorting($query);
+        foreach ($this->thenSortBy() as [$column, $direction]) {
+            $query->orderBy($column, $direction);
+        }
+
+        return $query;
     }
 
     public static function canAccess(): bool

@@ -5,6 +5,7 @@ namespace App\Filament\Pages\Reports;
 use App\Filament\Reports\PivotReport;
 use App\Support\Lookups;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /** PHPRunner "Στατιστικά Οδηγών" (v_drivers_stats2 crosstab): transfers per driver, vehicle and type. */
@@ -33,7 +34,8 @@ class DriverStatsReport extends PivotReport
     protected function dimensions(): array
     {
         return [
-            'month' => ['label' => 'Period', 'expr' => "DATE_FORMAT(Period, '%Y-%m')"],
+            'month' => ['label' => 'Period', 'expr' => 'LAST_DAY(Period)', 'axis' => 'rows',
+                'format' => fn ($v): string => Carbon::parse($v)->format('d/m/Y')],
             'DriverID' => ['label' => 'Οδηγός', 'expr' => 'DriverID', 'filter' => true,
                 'format' => fn ($v): ?string => Lookups::drivers()[$v] ?? null],
             'VehicleID' => ['label' => 'Όχημα', 'expr' => 'VehicleID', 'filter' => true,
@@ -49,6 +51,6 @@ class DriverStatsReport extends PivotReport
 
     protected function defaults(): array
     {
-        return ['month', 'DriverID', 'transfers'];
+        return ['month', 'VehicleID', 'transfers'];
     }
 }
