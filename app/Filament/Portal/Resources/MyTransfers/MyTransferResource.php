@@ -31,6 +31,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use UnitEnum;
 
 /**
@@ -70,17 +71,35 @@ class MyTransferResource extends Resource
     }
 
     /**
-     * Suppliers and hotels may change a transfer only while it is still ahead: not on the day itself
-     * nor afterwards (George's rule; PHPRunner hid their edit button the same way, via EditLimit).
+     * PHPRunner's rule (transfers list events + the datasource's EditLimit): partners, suppliers and
+     * hotels may change a transfer only until 48 hours before the pickup; when the pickup time is not
+     * a time (e.g. "TBD"), only while the transfer date is more than 2 days away. Same SQL as PHPRunner.
      */
     public static function canEdit(Model $record): bool
     {
         if (! static::allows('update')) {
             return false;
         }
+        if (! in_array(auth()->user()?->group(), [UserGroup::Partner, UserGroup::Supplier, UserGroup::SupplierHotel], true)) {
+            return true;
+        }
 
-        return ! in_array(auth()->user()?->group(), [UserGroup::Supplier, UserGroup::SupplierHotel], true)
-            || ($record->TransferDate && $record->TransferDate->copy()->startOfDay()->gt(today()));
+        // Asked once per transfer and request (the list asks for every row).
+        $key = 'myat.editLimit.'.$record->getKey();
+        if (request()->attributes->has($key)) {
+            return request()->attributes->get($key);
+        }
+
+        $allowed = (bool) DB::selectOne(
+            "SELECT if(ISNULL(subtime(str_to_date(concat(`TransferDate`, ' ', TransferTime), '%Y-%m-%d %H:%i:%s'), '48:00')),
+                DATEDIFF(TransferDate, CURRENT_DATE) > 2,
+                ifnull(CURRENT_TIMESTAMP() < subtime(str_to_date(concat(`TransferDate`, ' ', TransferTime), '%Y-%m-%d %H:%i:%s'), '48:00'), 1)) AS EditLimit
+            FROM transfers WHERE TransferID = ?",
+            [$record->getKey()],
+        )?->EditLimit;
+        request()->attributes->set($key, $allowed);
+
+        return $allowed;
     }
 
     public static function canCreate(): bool

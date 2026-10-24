@@ -233,21 +233,27 @@ class PortalTest extends TestCase
         $this->get('/portal/booking-requests')->assertForbidden();
     }
 
-    public function test_suppliers_cannot_edit_transfers_of_today_or_earlier(): void
+    public function test_suppliers_edit_only_until_48_hours_before_pickup_as_phprunner(): void
     {
         $this->actingAs($this->makeLegacyUser('Supplier', ['SupplierID' => $this->ours]));
-        $today = $this->transfer($this->ours, ['TransferDate' => Carbon::today()->toDateString()]);
+        $soon = $this->transfer($this->ours, ['TransferDate' => Carbon::tomorrow()->toDateString(), 'TransferTime' => '23:00']);
         $past = $this->transfer($this->ours, ['TransferDate' => Carbon::today()->subDays(3)->toDateString()]);
-        $tomorrow = $this->transfer($this->ours, ['TransferDate' => Carbon::tomorrow()->toDateString()]);
+        $later = $this->transfer($this->ours, ['TransferDate' => Carbon::today()->addDays(3)->toDateString(), 'TransferTime' => '10:00']);
+        // No real time: editable only while the date is more than 2 days away.
+        $tbdNear = $this->transfer($this->ours, ['TransferDate' => Carbon::today()->addDays(2)->toDateString(), 'TransferTime' => 'TBD']);
+        $tbdFar = $this->transfer($this->ours, ['TransferDate' => Carbon::today()->addDays(3)->toDateString(), 'TransferTime' => 'TBD']);
 
-        if (! MyTransferResource::canEdit($tomorrow)) {
+        if (! MyTransferResource::canEdit($later)) {
             $this->markTestSkipped('The Supplier group has no edit right on transfers in this copy.');
         }
-        $this->get("/portal/transfers/{$tomorrow->TransferID}/edit")->assertOk();
-        $this->get("/portal/transfers/{$today->TransferID}/edit")->assertForbidden();
-        $this->get("/portal/transfers/{$past->TransferID}/edit")->assertForbidden();
+        $this->assertFalse(MyTransferResource::canEdit($soon));
+        $this->assertFalse(MyTransferResource::canEdit($past));
+        $this->assertFalse(MyTransferResource::canEdit($tbdNear));
+        $this->assertTrue(MyTransferResource::canEdit($tbdFar));
+        $this->get("/portal/transfers/{$later->TransferID}/edit")->assertOk();
+        $this->get("/portal/transfers/{$soon->TransferID}/edit")->assertForbidden();
         Livewire::test(ListMyTransfers::class)
-            ->assertTableActionVisible('edit', $tomorrow)
-            ->assertTableActionHidden('edit', $today);
+            ->assertTableActionVisible('edit', $later)
+            ->assertTableActionHidden('edit', $soon);
     }
 }
