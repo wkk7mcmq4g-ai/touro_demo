@@ -2,11 +2,15 @@
     <x-filament::section class="myat-board">
         <x-slot name="heading">Το πρόγραμμα της ημέρας</x-slot>
         <x-slot name="description">{{ $jobs->where('Status', '!=', 'Cancelled')->count() }} transfers · τώρα {{ $now }}</x-slot>
-        @if ($all)
-            <x-slot name="afterHeader">
+        <x-slot name="afterHeader">
+            <label class="myat-board-toggle">
+                <input type="checkbox" wire:model.live="showCancelled">
+                <span>Ακυρωμένα{{ $cancelled ? ' ('.$cancelled.')' : '' }}</span>
+            </label>
+            @if ($all)
                 <x-filament::link :href="$all" icon="heroicon-m-arrow-right" icon-position="after" size="sm">Όλα</x-filament::link>
-            </x-slot>
-        @endif
+            @endif
+        </x-slot>
 
         @if ($jobs->isEmpty())
             <div class="myat-board-empty">

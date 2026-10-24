@@ -7,6 +7,7 @@ use App\Support\DashboardData;
 use App\Support\Lookups;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Carbon;
+use Livewire\Attributes\Session;
 
 /** Today's jobs as a timeline, with a "now" line between what is done and what is coming. */
 class TodayBoard extends Widget
@@ -21,9 +22,15 @@ class TodayBoard extends Widget
 
     protected string $view = 'filament.dashboard.today-board';
 
+    /** "Ακυρωμένα": show the cancelled jobs too. Off by default, remembered per user. */
+    #[Session]
+    public bool $showCancelled = false;
+
     protected function getViewData(): array
     {
-        $jobs = DashboardData::todaysJobs();
+        $all = DashboardData::todaysJobs();
+        $cancelled = $all->where('Status', 'Cancelled')->count();
+        $jobs = $this->showCancelled ? $all : $all->where('Status', '!=', 'Cancelled')->values();
         $now = Carbon::now()->format('H:i');
 
         // The first job not yet started: the "now" line goes above it, earlier jobs are greyed.
@@ -31,6 +38,7 @@ class TodayBoard extends Widget
 
         return [
             'jobs' => $jobs,
+            'cancelled' => $cancelled,
             'now' => $now,
             'nextIndex' => $nextIndex === false ? null : $nextIndex,
             'nextId' => $nextIndex === false ? null : $jobs[$nextIndex]->TransferID,

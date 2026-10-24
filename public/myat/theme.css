@@ -3053,3 +3053,30 @@ html.myat-immersive .myat-day-sub {
 @media (prefers-reduced-motion: reduce) {
     .myat-rep-pill { transition: none; }
 }
+
+/* Dashboard day schedule: "Ακυρωμένα" switch in the header */
+.fi-section-header-after-ctn:has(.myat-board-toggle) {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.myat-board-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 2rem;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.myat-board-toggle input {
+    width: 1rem;
+    height: 1rem;
+    accent-color: var(--myat-azure);
+}
+
+.dark .myat-board-toggle { color: #cbd5e1; }
