@@ -61,13 +61,13 @@ class FuelRegisterResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Section::make('Στοιχεία Χρέωσης')->columns(3)->columnSpanFull()->schema([
-                Select::make('VehicleID')->label('Όχημα')->options(fn (): array => Lookups::vehicles(['IKE', 'Taxi', 'DXF']))->searchable()->required(),
+            Section::make('Στοιχεία Χρέωσης')->columns(['default' => 2, 'lg' => 3])->columnSpanFull()->schema([
+                Select::make('VehicleID')->label('Όχημα')->options(fn (): array => Lookups::vehicles(['IKE', 'Taxi', 'DXF']))->searchable()->required()->columnSpan(['default' => 2, 'lg' => 1]),
                 DatePicker::make('FuelDate')->label('Ημερομηνία')->default(now())->required(),
                 TextInput::make('FuelAmount')->label('Αξία')->numeric()->prefix('€')->required(),
-                Select::make('DriverID')->label('Οδηγός')->options(fn (): array => Lookups::drivers())->searchable(),
-                Select::make('ApprovedStatus')->label('Έλεγχος')->options(self::STATUS),
-                Textarea::make('ApprovedReason')->label('Σχόλιο ελέγχου')->rows(1)->maxLength(500),
+                Select::make('DriverID')->label('Οδηγός')->options(fn (): array => Lookups::drivers())->searchable()->columnSpan(['default' => 2, 'lg' => 1]),
+                Select::make('ApprovedStatus')->label('Έλεγχος')->options(self::STATUS)->columnSpan(['default' => 2, 'lg' => 1]),
+                Textarea::make('ApprovedReason')->label('Σχόλιο ελέγχου')->rows(1)->maxLength(500)->columnSpan(['default' => 2, 'lg' => 1]),
             ]),
             Section::make('Αρχεία')->columnSpanFull()->schema(self::legacyFilesComponents()),
         ]);

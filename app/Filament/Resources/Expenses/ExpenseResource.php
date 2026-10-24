@@ -71,16 +71,16 @@ class ExpenseResource extends Resource
     {
         return $schema->components([
             Tabs::make()->columnSpanFull()->tabs([
-                Tab::make('Στοιχεία Εξόδων')->columns(3)->schema([
+                Tab::make('Στοιχεία Εξόδων')->columns(['default' => 2, 'lg' => 3])->schema([
                     Select::make('Company')->label('Εταιρεία')->options(self::COMPANIES)->required(),
                     DatePicker::make('ExpenseDate')->label('Ημερομηνία')->default(now())->required(),
-                    Select::make('ExpenseCategoryID')->label('Κατηγορία')->options(fn (): array => Lookups::optionIds('ExpenseCategory'))->searchable(),
+                    Select::make('ExpenseCategoryID')->label('Κατηγορία')->options(fn (): array => Lookups::optionIds('ExpenseCategory'))->searchable()->columnSpan(['default' => 2, 'lg' => 1]),
                     Textarea::make('ExpenseReason')->label('Αιτιολογία')->required()->rows(2)->maxLength(500)->columnSpanFull(),
                     TextInput::make('ExpenseAmountRcvd')->label('Είσπραξη')->numeric()->prefix('€')->default(0),
                     TextInput::make('ExpenseAmountPaid')->label('Πληρωμή')->numeric()->prefix('€')->default(0),
-                    Select::make('Flag')->options(self::FLAGS),
-                    Select::make('VehicleID')->label('Όχημα')->options(fn (): array => Lookups::vehicles(exclude: ['Sold']))->searchable(),
-                    Select::make('DriverID')->label('Οδηγός')->options(fn (): array => Lookups::drivers(activeOnly: true))->searchable(),
+                    Select::make('Flag')->options(self::FLAGS)->columnSpan(['default' => 2, 'lg' => 1]),
+                    Select::make('VehicleID')->label('Όχημα')->options(fn (): array => Lookups::vehicles(exclude: ['Sold']))->searchable()->columnSpan(['default' => 2, 'lg' => 1]),
+                    Select::make('DriverID')->label('Οδηγός')->options(fn (): array => Lookups::drivers(activeOnly: true))->searchable()->columnSpan(['default' => 2, 'lg' => 1]),
                 ]),
                 Tab::make('Αρχεία')->schema(self::legacyFilesComponents()),
             ]),

@@ -55,10 +55,10 @@ class VehicleLogResource extends Resource
     public static function form(Schema $schema, bool $withVehicle = true): Schema
     {
         return $schema->components([
-            Section::make('Στοιχεία')->columns(2)->columnSpanFull()->schema(array_filter([
-                $withVehicle ? Select::make('VehicleID')->label('Όχημα')->options(fn (): array => Lookups::vehicles())->searchable()->required() : null,
+            Section::make('Στοιχεία')->columns(['default' => 2])->columnSpanFull()->schema(array_filter([
+                $withVehicle ? Select::make('VehicleID')->label('Όχημα')->options(fn (): array => Lookups::vehicles())->searchable()->required()->columnSpan(['default' => 2, 'sm' => 1]) : null,
+                Select::make('LogType')->label('Είδος εργασίας')->options(array_combine(self::TYPES, self::TYPES))->required()->columnSpan(['default' => 2, 'sm' => 1]),
                 DatePicker::make('LogDate')->label('Ημερομηνία')->default(now())->required(),
-                Select::make('LogType')->label('Είδος εργασίας')->options(array_combine(self::TYPES, self::TYPES))->required(),
                 TextInput::make('Kilometers')->label('Χιλιόμετρα')->numeric()->default(0),
                 Textarea::make('Description')->label('Ανταλλακτικά / περιγραφή')->rows(3)->maxLength(2000)->columnSpanFull(),
             ])),

@@ -55,8 +55,9 @@ class LoadFormTabs
                 Tab::make('Πληροφορίες')->icon(Heroicon::OutlinedInformationCircle)->schema([
                     ...$top,
                     Grid::make(['default' => 1, 'lg' => 2])->schema([
-                        Group::make($left)->columns(2),
-                        Group::make($right)->columns(2),
+                        // Two columns also on phones: short fields in pairs, long ones full width.
+                        Group::make($left)->columns(['default' => 2]),
+                        Group::make($right)->columns(['default' => 2]),
                     ]),
                 ]),
                 $list(LoadPriceLinesRelationManager::class, 'Products', Heroicon::OutlinedListBullet),

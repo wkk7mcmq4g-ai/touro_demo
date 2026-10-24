@@ -13,6 +13,7 @@ use App\Support\TablePresets;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Pages\BasePage;
 use Filament\Support\Enums\Width;
 use Filament\Support\Facades\FilamentView;
 use Filament\Tables\Columns\Column;
@@ -70,6 +71,9 @@ class AppServiceProvider extends ServiceProvider
                 : '',
             scopes: ListTransfers::class,
         );
+
+        // Save / Cancel stay in reach at the bottom of the screen on every form page (as on transfers).
+        BasePage::$formActionsAreSticky = true;
 
         // Every select filter lets you pick several values (custom queries use FilterValues).
         SelectFilter::configureUsing(fn (SelectFilter $filter) => $filter->multiple());

@@ -53,10 +53,10 @@ class CashResource extends Resource
             ->numeric()->prefix('€')->default(0)->live(onBlur: true))->values()->all();
 
         return $schema->components([
-            Section::make('Στοιχεία')->columns(4)->columnSpanFull()->schema([
-                DatePicker::make('DT')->label('Ημερομηνία')->default(now())->required(),
+            Section::make('Στοιχεία')->columns(['default' => 2, 'lg' => 4])->columnSpanFull()->schema([
+                DatePicker::make('DT')->label('Ημερομηνία')->default(now())->required()->columnSpan(['default' => 2, 'lg' => 1]),
                 ...$boxes,
-                TextInput::make('total')->label('Total')->prefix('€')->disabled()->dehydrated(false)
+                TextInput::make('total')->label('Total')->prefix('€')->disabled()->dehydrated(false)->columnSpan(['default' => 2, 'lg' => 1])
                     ->helperText('Worked out by the database when saved.')
                     ->formatStateUsing(fn (Get $get): string => Number::format(collect(array_keys(Cash::BOXES))->sum(fn (string $c): float => (float) $get($c)), 2, locale: 'el'))
                     ->live(),
