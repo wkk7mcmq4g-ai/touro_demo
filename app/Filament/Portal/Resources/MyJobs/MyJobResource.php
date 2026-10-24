@@ -75,7 +75,7 @@ class MyJobResource extends Resource
         static $cache = [];
         $user = (string) auth()->user()?->username;
 
-        return $cache[$user] ??= VTransfer::query()->where('username', $user)->whereDate('TransferDate', '>=', today())
+        return $cache[$user] ??= VTransfer::query()->where('username', $user)->where('TransferDate', '>=', today())
             ->orderBy('TransferDate')->orderBy('TransferTime_sort')
             ->get(['TransferID', 'TransferDate', 'TransferTime', 'Pax', 'aid'])
             ->each(fn (VTransfer $job) => $job->setAttribute('day', $job->TransferDate?->toDateString()));

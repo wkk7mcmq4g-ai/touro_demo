@@ -33,7 +33,7 @@ class DispatchDayTotals extends Widget
 
     protected function getViewData(): array
     {
-        $rows = $this->getPageTableQuery()->toBase()->reorder()
+        $rows = $this->getPageTableQuery()->toBase()->reorder()->select([])
             ->selectRaw("DATE(TransferDate) AS day, COUNT(*) AS jobs, SUM(CAST(Pax AS DECIMAL(10,0))) AS pax, COUNT(DISTINCT Fullname) AS drivers, SUM(Runby = 'MYAT' COLLATE utf8mb4_unicode_ci) AS own")
             ->groupByRaw('DATE(TransferDate)')
             ->orderBy('day')

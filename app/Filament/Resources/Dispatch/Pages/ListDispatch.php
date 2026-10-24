@@ -37,8 +37,8 @@ class ListDispatch extends ListRecords
     public function getTabs(): array
     {
         return [
-            'today' => Tab::make('Σήμερα')->modifyQueryUsing(fn (Builder $query): Builder => $query->whereDate('TransferDate', Carbon::today())),
-            'tomorrow' => Tab::make('Αύριο')->modifyQueryUsing(fn (Builder $query): Builder => $query->whereDate('TransferDate', Carbon::tomorrow())),
+            'today' => Tab::make('Σήμερα')->modifyQueryUsing(fn (Builder $query): Builder => $query->where('TransferDate', Carbon::today())),
+            'tomorrow' => Tab::make('Αύριο')->modifyQueryUsing(fn (Builder $query): Builder => $query->where('TransferDate', Carbon::tomorrow())),
             'all' => Tab::make('Next 5 days'),
         ];
     }

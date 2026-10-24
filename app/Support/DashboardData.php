@@ -32,7 +32,7 @@ class DashboardData
     /** @return array{jobs: int, pax: int, done: int, unassigned: int} */
     public static function day(Carbon $date): array
     {
-        $row = self::active()->whereDate('TransferDate', $date)->toBase()
+        $row = self::active()->where('TransferDate', $date)->toBase()
             ->selectRaw('COUNT(*) AS jobs, '.self::PAX." AS pax, SUM(`Status` = 'Completed') AS done, SUM(IFNULL(`CoachCompanyID`, '') = '') AS unassigned")
             ->first();
 
@@ -52,7 +52,7 @@ class DashboardData
         $today = Carbon::today();
 
         return Transfer::query()->withOpenIssues()
-            ->whereDate('TransferDate', '>=', $today)->whereDate('TransferDate', '<=', $today->copy()->addDays($days))->count();
+            ->where('TransferDate', '>=', $today)->where('TransferDate', '<=', $today->copy()->addDays($days))->count();
     }
 
     public static function unassignedNextHours(): int
@@ -78,7 +78,7 @@ class DashboardData
 
         return Transfer::query()
             ->with('customer:CID,SupplierName')
-            ->whereDate('TransferDate', Carbon::today())
+            ->where('TransferDate', Carbon::today())
             ->orderBy('TransferTime_sort')->orderBy('TransferID')
             ->select(['TransferID', 'TransferTime', 'TransferType', 'From', 'To', 'Pax', 'CoachCompanyID', 'Status', 'LeadName', 'cID_Customer', 'Flight_Ship_Num_From'])
             ->selectSub($driver, 'DriverName')

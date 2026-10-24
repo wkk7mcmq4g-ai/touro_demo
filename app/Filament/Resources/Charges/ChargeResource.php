@@ -140,8 +140,8 @@ class ChargeResource extends Resource
                     DatePicker::make('from')->label('Transfer date from'),
                     DatePicker::make('until')->label('until'),
                 ])->query(fn (Builder $q, array $data): Builder => $q
-                    ->when($data['from'] ?? null, fn ($q, $d) => $q->whereHas('transfer', fn ($t) => $t->whereDate('TransferDate', '>=', $d)))
-                    ->when($data['until'] ?? null, fn ($q, $d) => $q->whereHas('transfer', fn ($t) => $t->whereDate('TransferDate', '<=', $d)))),
+                    ->when($data['from'] ?? null, fn ($q, $d) => $q->whereHas('transfer', fn ($t) => $t->where('TransferDate', '>=', $d)))
+                    ->when($data['until'] ?? null, fn ($q, $d) => $q->whereHas('transfer', fn ($t) => $t->where('TransferDate', '<=', $d)))),
             ])
             ->recordActions([
                 Action::make('transfer')->label('Transfer')->icon(Heroicon::OutlinedArrowTopRightOnSquare)->color('gray')

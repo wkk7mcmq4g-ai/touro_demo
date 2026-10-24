@@ -52,8 +52,8 @@ class CapacityReport extends ListReport
         return [
             Filter::make('TransferDate')->columns(2)->schema([DatePicker::make('from')->label('Από'), DatePicker::make('until')->label('Έως')])
                 ->query(fn (EloquentBuilder $query, array $data) => $query
-                    ->when($data['from'] ?? null, fn ($q, $d) => $q->whereDate('TransferDate', '>=', $d))
-                    ->when($data['until'] ?? null, fn ($q, $d) => $q->whereDate('TransferDate', '<=', $d))),
+                    ->when($data['from'] ?? null, fn ($q, $d) => $q->where('TransferDate', '>=', $d))
+                    ->when($data['until'] ?? null, fn ($q, $d) => $q->where('TransferDate', '<=', $d))),
             SelectFilter::make('TransferType')->label('Transfer type')->options(fn (): array => DB::table('v_stats_2')->distinct()->orderBy('TransferType')->pluck('TransferType', 'TransferType')->filter()->all()),
             SelectFilter::make('CarTypeID')->label('Car type')->options(fn (): array => DB::table('v_stats_2')->distinct()->orderBy('CarTypeID')->pluck('CarTypeID', 'CarTypeID')->filter()->all()),
         ];

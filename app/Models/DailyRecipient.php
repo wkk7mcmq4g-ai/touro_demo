@@ -70,7 +70,7 @@ class DailyRecipient extends Model
     public function jobs(): Collection
     {
         return VTransfer::query()
-            ->whereDate('TransferDate', $this->TransferDate)
+            ->where('TransferDate', $this->TransferDate)
             ->when($this->Type === 'Driver',
                 fn ($q) => filled($this->Email) ? $q->where('Email', $this->Email) : $q->where('aid', $this->ID),
                 fn ($q) => $q->where('AssistantEmail', $this->Email))

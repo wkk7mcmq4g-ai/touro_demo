@@ -17,8 +17,8 @@ class ListMyTransfers extends ListRecords
     public function getTabs(): array
     {
         return [
-            'upcoming' => Tab::make('Upcoming')->modifyQueryUsing(fn (Builder $query): Builder => $query->whereDate('TransferDate', '>=', today())),
-            'past' => Tab::make('Past')->modifyQueryUsing(fn (Builder $query): Builder => $query->whereDate('TransferDate', '<', today())->reorder('TransferDate', 'desc')),
+            'upcoming' => Tab::make('Upcoming')->modifyQueryUsing(fn (Builder $query): Builder => $query->where('TransferDate', '>=', today())),
+            'past' => Tab::make('Past')->modifyQueryUsing(fn (Builder $query): Builder => $query->where('TransferDate', '<', today())->reorder('TransferDate', 'desc')),
             'all' => Tab::make('All'),
         ];
     }

@@ -15,6 +15,7 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Pages\BasePage;
 use Filament\Support\Enums\Width;
+use Filament\Support\Facades\FilamentAsset;
 use Filament\Support\Facades\FilamentView;
 use Filament\Tables\Columns\Column;
 use Filament\Tables\Contracts\HasTable;
@@ -137,6 +138,14 @@ class AppServiceProvider extends ServiceProvider
         });
 
         FilamentView::registerRenderHook(PanelsRenderHook::BODY_END, fn () => auth()->check() ? view('filament.tables.excel-and-widths').view('filament.tables.immersive') : '');
+
+        // The filter panel's dropdowns and date pickers are Filament components loaded on demand,
+        // so the first open of the panel waited for them to download. Fetch them with the page.
+        FilamentView::registerRenderHook(PanelsRenderHook::HEAD_END, fn (): string => auth()->check()
+            ? collect(['select', 'date-time-picker'])
+                ->map(fn (string $c): string => '<link rel="modulepreload" href="'.e(FilamentAsset::getAlpineComponentSrc($c, 'filament/forms')).'">')
+                ->implode('')
+            : '');
 
         // Every table's toolbar: Excel export (chosen columns, saved exports) and saved filters.
         FilamentView::registerRenderHook(TablesRenderHook::TOOLBAR_END, function (): string {

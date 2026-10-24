@@ -258,7 +258,7 @@ class TransfersTable
                 ])
                 ->query(function (Builder $query, array $data): Builder {
                     $today = Carbon::today();
-                    $between = fn (Carbon $from, Carbon $until): \Closure => fn (Builder $q) => $q->whereDate('TransferDate', '>=', $from)->whereDate('TransferDate', '<=', $until);
+                    $between = fn (Carbon $from, Carbon $until): \Closure => fn (Builder $q) => $q->where('TransferDate', '>=', $from)->where('TransferDate', '<=', $until);
 
                     return FilterValues::any($query, $data, [
                         'yesterday' => $between($today->copy()->subDay(), $today->copy()->subDay()),
@@ -302,8 +302,8 @@ class TransfersTable
                 ->label('Past date')
                 ->options(['Ναι' => 'Ναι', 'Όχι' => 'Όχι'])
                 ->query(fn (Builder $query, array $data): Builder => FilterValues::any($query, $data, [
-                    'Ναι' => fn (Builder $q) => $q->whereDate('TransferDate', '<=', Carbon::today()),
-                    'Όχι' => fn (Builder $q) => $q->whereDate('TransferDate', '>', Carbon::today()),
+                    'Ναι' => fn (Builder $q) => $q->where('TransferDate', '<=', Carbon::today()),
+                    'Όχι' => fn (Builder $q) => $q->where('TransferDate', '>', Carbon::today()),
                 ])),
             SelectFilter::make('SupplierModified')
                 ->label('Supplier modified')

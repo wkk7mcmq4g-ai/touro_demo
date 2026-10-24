@@ -16,6 +16,7 @@ use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Session;
 
 class ListTransfers extends ListRecords
@@ -85,23 +86,23 @@ class ListTransfers extends ListRecords
         $today = Carbon::today();
 
         return [
-            'today' => $this->dateTab('Today', $today, $today),
-            'tomorrow' => $this->dateTab('Tomorrow', $today->copy()->addDay(), $today->copy()->addDay()),
-            'next5' => $this->dateTab('Next 5 days', $today, $today->copy()->addDays(4)),
+            'today' => $this->dateTab('Today', $today, $today, 'today'),
+            'tomorrow' => $this->dateTab('Tomorrow', $today->copy()->addDay(), $today->copy()->addDay(), 'tomorrow'),
+            'next5' => $this->dateTab('Next 5 days', $today, $today->copy()->addDays(4), 'next5'),
             'pending' => Tab::make('Pending')
                 ->modifyQueryUsing(fn (Builder $query): Builder => $query
                     ->where('Status', 'Pending')
-                    ->whereDate('TransferDate', '>=', $today))
-                ->badge(fn (): int => Transfer::query()->where('Status', 'Pending')->whereDate('TransferDate', '>=', $today)->count())
+                    ->where('TransferDate', '>=', $today))
+                ->badge(fn (): int => $this->tabCounts()['pending'])
                 ->badgeColor('warning'),
             // "Εκκρεμότητες 7 ημερών": open issues (TBD details, issue flags) in the coming week.
             'issues' => Tab::make('Issues (7 days)')
-                ->modifyQueryUsing(fn (Builder $query): Builder => $query->withOpenIssues()->whereDate('TransferDate', '>=', $today)->whereDate('TransferDate', '<=', $today->copy()->addDays(7)))
-                ->badge(fn (): int => Transfer::query()->withOpenIssues()->whereDate('TransferDate', '>=', $today)->whereDate('TransferDate', '<=', $today->copy()->addDays(7))->count())
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->withOpenIssues()->where('TransferDate', '>=', $today)->where('TransferDate', '<=', $today->copy()->addDays(7)))
+                ->badge(fn (): int => $this->tabCounts()['issues'])
                 ->badgeColor('danger'),
             // PHPRunner's list starts at 2025; older transfers are in the archive.
             'all' => Tab::make('All')
-                ->modifyQueryUsing(fn (Builder $query): Builder => $query->whereDate('TransferDate', '>=', '2025-01-01')),
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('TransferDate', '>=', '2025-01-01')),
         ];
     }
 
@@ -110,14 +111,38 @@ class ListTransfers extends ListRecords
         return 'today';
     }
 
-    private function dateTab(string $label, Carbon $from, Carbon $until): Tab
+    private function dateTab(string $label, Carbon $from, Carbon $until, string $key): Tab
     {
         $range = fn (Builder $query): Builder => $query
-            ->whereDate('TransferDate', '>=', $from)
-            ->whereDate('TransferDate', '<=', $until);
+            ->where('TransferDate', '>=', $from)
+            ->where('TransferDate', '<=', $until);
 
         return Tab::make($label)
             ->modifyQueryUsing($range)
-            ->badge(fn (): int => $range(Transfer::query())->count());
+            ->badge(fn (): int => $this->tabCounts()[$key]);
+    }
+
+    /**
+     * The numbers on the tabs, worked out in two queries and kept for a minute: every click on the
+     * page (filters, sorting, pages) redrew them, one count over all transfers per tab.
+     *
+     * @return array{today: int, tomorrow: int, next5: int, pending: int, issues: int}
+     */
+    private function tabCounts(): array
+    {
+        $today = Carbon::today();
+        $compute = function () use ($today): array {
+            [$d0, $d1, $d4, $d7] = [$today->toDateString(), $today->copy()->addDay()->toDateString(), $today->copy()->addDays(4)->toDateString(), $today->copy()->addDays(7)->toDateString()];
+            $row = Transfer::query()->toBase()->where('TransferDate', '>=', $d0)
+                ->selectRaw('SUM(TransferDate = ?) AS today, SUM(TransferDate = ?) AS tomorrow, SUM(TransferDate <= ?) AS next5, SUM(Status = ?) AS pending', [$d0, $d1, $d4, 'Pending'])
+                ->first();
+
+            return [
+                'today' => (int) $row->today, 'tomorrow' => (int) $row->tomorrow, 'next5' => (int) $row->next5, 'pending' => (int) $row->pending,
+                'issues' => Transfer::query()->withOpenIssues()->where('TransferDate', '>=', $d0)->where('TransferDate', '<=', $d7)->count(),
+            ];
+        };
+
+        return app()->runningUnitTests() ? $compute() : Cache::remember('myat:transfer-tab-counts:'.$today->toDateString(), 60, $compute);
     }
 }

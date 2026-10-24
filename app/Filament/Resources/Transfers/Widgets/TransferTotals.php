@@ -32,7 +32,9 @@ class TransferTotals extends Widget
 
     protected function getViewData(): array
     {
-        $row = $this->getPageTableQuery()->toBase()->reorder()
+        // Only the sums: the table's query also selects every column, which MariaDB then read for
+        // all the rows just to return one.
+        $row = $this->getPageTableQuery()->toBase()->reorder()->select([])
             ->selectRaw('COUNT(*) AS jobs, SUM(SalePrice) AS sale, SUM(PurchasePrice) AS purchase, SUM(Assets) AS assets, SUM(Liabilities) AS liabilities')
             ->first();
 

@@ -27,7 +27,7 @@ class ListDailyTransfers extends ListRecords
                 0 => 'Σήμερα', 1 => 'Αύριο', default => $day->locale('el')->translatedFormat('D d/m')
             };
 
-            return ["d{$i}" => Tab::make($label)->modifyQueryUsing(fn (Builder $query): Builder => $query->whereDate('TransferDate', $day))];
+            return ["d{$i}" => Tab::make($label)->modifyQueryUsing(fn (Builder $query): Builder => $query->where('TransferDate', $day))];
         })->all();
     }
 

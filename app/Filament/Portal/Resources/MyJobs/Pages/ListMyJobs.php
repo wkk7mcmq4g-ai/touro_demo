@@ -33,7 +33,7 @@ class ListMyJobs extends ListRecords
 
             return [$jobs->count(), $jobs->max('aid')];
         }
-        $row = VTransfer::query()->where('username', (string) auth()->user()?->username)->whereDate('TransferDate', $day)
+        $row = VTransfer::query()->where('username', (string) auth()->user()?->username)->where('TransferDate', $day)
             ->toBase()->selectRaw('COUNT(*) AS jobs, MAX(aid) AS aid')->first();
 
         return [(int) ($row->jobs ?? 0), $row->aid ?? null];
@@ -91,9 +91,9 @@ class ListMyJobs extends ListRecords
 
         return [
             'today' => Tab::make('Σήμερα')->badge($count(today()))
-                ->modifyQueryUsing(fn (Builder $query): Builder => $query->whereDate('TransferDate', today())),
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('TransferDate', today())),
             'tomorrow' => Tab::make('Αύριο')->badge($count(today()->addDay()))
-                ->modifyQueryUsing(fn (Builder $query): Builder => $query->whereDate('TransferDate', today()->addDay())),
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('TransferDate', today()->addDay())),
             'all' => Tab::make('Όλα'),
         ];
     }

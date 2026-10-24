@@ -103,8 +103,8 @@ class ArchiveResource extends Resource
                     DatePicker::make('from')->label('Transfer date from'),
                     DatePicker::make('until')->label('until'),
                 ])->query(fn (Builder $q, array $data): Builder => $q
-                    ->when($data['from'] ?? null, fn ($q, $d) => $q->whereDate('TransferDate', '>=', Carbon::parse($d)))
-                    ->when($data['until'] ?? null, fn ($q, $d) => $q->whereDate('TransferDate', '<=', Carbon::parse($d)))),
+                    ->when($data['from'] ?? null, fn ($q, $d) => $q->where('TransferDate', '>=', Carbon::parse($d)))
+                    ->when($data['until'] ?? null, fn ($q, $d) => $q->where('TransferDate', '<=', Carbon::parse($d)))),
                 SelectFilter::make('cID_Customer')->label('Supplier')->options(fn (): array => Lookups::customers())->multiple()->searchable(),
             ]);
     }

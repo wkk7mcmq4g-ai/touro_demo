@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -142,7 +143,9 @@ class Lookups
      */
     public static function distinctValues(string $table, string $column): array
     {
-        return self::remember("distinct:{$table}.{$column}", fn () => DB::table($table)
+        // Filter choices: read once and kept for 10 minutes (a DISTINCT over the whole table per filter,
+        // on every redraw, is what made the filter panel slow).
+        $compute = fn () => DB::table($table)
             ->select($column)
             ->distinct()
             ->whereNotNull($column)
@@ -150,7 +153,11 @@ class Lookups
             ->limit(500)
             ->pluck($column)
             ->mapWithKeys(fn ($value): array => [(string) $value => $value === '' ? '(empty)' : (string) $value])
-            ->all());
+            ->all();
+
+        return self::remember("distinct:{$table}.{$column}", fn () => app()->runningUnitTests()
+            ? $compute()
+            : Cache::remember("myat:distinct:{$table}.{$column}", 600, $compute));
     }
 
     /** @return array<int, string> Vehicles by ID; $licences limits to those licences, $exclude leaves them out. */
