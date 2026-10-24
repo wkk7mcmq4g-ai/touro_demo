@@ -2557,3 +2557,10 @@ html.myat-immersive .myat-day-sub {
     font-weight: 800;
     font-variant-numeric: tabular-nums;
 }
+
+/* Transfers row SMS: WhatsApp link */
+.myat-sms-wa {
+    font-weight: 700;
+    color: var(--myat-azure);
+    text-decoration: underline;
+}

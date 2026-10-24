@@ -321,4 +321,35 @@ class Transfer extends Model
 
         return array_values(array_unique($fields));
     }
+
+    /**
+     * PHPRunner's "sms" field of the transfers list (transfers datasource): the job as a text for the
+     * driver, with the driver or partner of the day and their phone. Built by the same SQL.
+     *
+     * @return array{text: string, phone: string}
+     */
+    public function smsForDriver(): array
+    {
+        $driver = "IFNULL(IFNULL((SELECT CONCAT(d.Fullname, '   ', d.MobilePhone) FROM vehicle_assignments va INNER JOIN vehicles v ON va.VehicleID = v.VehicleID INNER JOIN drivers d ON d.DriverID = va.DriverID WHERE va.AssignmentDate = tr.TransferDate AND v.VehicleName = tr.CoachCompanyID LIMIT 1),"
+            ." (SELECT CONCAT(c.CounterShortName, '   ', IFNULL(c.Phones, '')) FROM counterparties c WHERE c.CoachName = tr.CoachCompanyID AND IFNULL(c.CoachName, '') <> '' LIMIT 1)), '')";
+        $phone = 'IFNULL(IFNULL((SELECT d.MobilePhone FROM vehicle_assignments va INNER JOIN vehicles v ON va.VehicleID = v.VehicleID INNER JOIN drivers d ON d.DriverID = va.DriverID WHERE va.AssignmentDate = tr.TransferDate AND v.VehicleName = tr.CoachCompanyID LIMIT 1),'
+            ." (SELECT c.Phones FROM counterparties c WHERE c.CoachName = tr.CoachCompanyID AND IFNULL(c.CoachName, '') <> '' LIMIT 1)), '')";
+
+        $row = DB::selectOne("SELECT CONCAT_WS('\n',
+                CONCAT('*Ημερομηνία:* ', IFNULL(DATE_FORMAT(TransferDate, '%d/%m/%Y'), '')),
+                CONCAT('*Ωρα Pickup:* ', IFNULL(TransferTime, '')),
+                CONCAT('*Άτομα:* ', IFNULL(Pax, '')),
+                CONCAT('*Τύπος:* ', IFNULL(TransferType, '')),
+                CONCAT('*Σημείο Παραλαβής:* ', IFNULL(`From`, '')),
+                CONCAT('*Σημείο Αποβίβασης:* ', IFNULL(`To`, '')),
+                CONCAT('*Πληροφορίες:* ', IFNULL(Flight_Ship_Num_From, '')),
+                CONCAT('*Όνομα επιβάτη:* ', IFNULL(LeadName, '')),
+                CONCAT('*Τηλέφωνο επιβάτη:* ', IFNULL(LeadPhone, '')),
+                CONCAT('*Συνοδός - Ξεναγός:* ', IFNULL(Assistant, '')),
+                CONCAT('*Οδηγός:* ', {$driver}),
+                CONCAT('*Παρατηρήσεις:* ', IF(GetVouchername(tr.CoachCompanyID) = 0, IFNULL(tr.DriverNotes, ''), IF(tr.DriverNotes IS NULL OR tr.DriverNotes = '', IFNULL(tr.Notes, ''), tr.DriverNotes)))
+            ) AS sms, {$phone} AS phone FROM transfers tr WHERE tr.TransferID = ?", [$this->getKey()]);
+
+        return ['text' => (string) ($row->sms ?? ''), 'phone' => (string) ($row->phone ?? '')];
+    }
 }

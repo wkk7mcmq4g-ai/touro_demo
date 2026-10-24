@@ -17,6 +17,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\Summarizers\Count;
 use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Filters\BaseFilter;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
@@ -60,10 +61,12 @@ class TransfersTable
                 $columns,
             ))
             ->filters(self::filters())
+            // Edit, copy and SMS first on each row, as in PHPRunner.
             ->recordActions([
-                EditAction::make(),
-                TransferActions::copy()->iconButton(),
-            ])
+                EditAction::make()->iconButton()->tooltip('Επεξεργασία'),
+                TransferActions::copy()->iconButton()->tooltip('Αντιγραφή'),
+                TransferActions::sms()->iconButton(),
+            ], position: RecordActionsPosition::BeforeColumns)
             // PHPRunner's "Τιμολόγηση" menu: buttons that work on the ticked transfers.
             ->toolbarActions([
                 BulkActionGroup::make([

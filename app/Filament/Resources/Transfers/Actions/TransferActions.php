@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Transfers\Actions;
 
+use App\Enums\UserGroup;
 use App\Filament\Resources\Transfers\TransferResource;
 use App\Models\Transfer;
 use App\Support\Lookups;
@@ -13,6 +14,8 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Text;
+use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -40,6 +43,41 @@ class TransferActions
 
                 $action->redirect(TransferResource::getUrl('edit', ['record' => $newId]));
             });
+    }
+
+    /**
+     * Row button "SMS" (PHPRunner's sms field, Admin only): the job as a text for the driver, to copy
+     * or open in WhatsApp with the driver's number.
+     */
+    public static function sms(): Action
+    {
+        return Action::make('sms')
+            ->label('SMS')
+            ->tooltip('SMS / WhatsApp για τον οδηγό')
+            ->icon(Heroicon::OutlinedChatBubbleLeftEllipsis)
+            ->color('gray')
+            ->visible(fn (): bool => auth()->user()?->group() === UserGroup::Admin)
+            ->modalHeading('Κείμενο για τον οδηγό')
+            ->modalWidth(Width::Large)
+            ->fillForm(fn (Transfer $record): array => ['text' => $record->smsForDriver()['text']])
+            ->schema(fn (Transfer $record): array => [
+                Textarea::make('text')->hiddenLabel()->rows(13)->readOnly()
+                    ->extraInputAttributes(['onclick' => 'this.select()', 'class' => 'myat-sms-text']),
+                Text::make(function () use ($record) {
+                    $sms = $record->smsForDriver();
+                    $digits = preg_replace('/\D/', '', $sms['phone']);
+
+                    return filled($digits)
+                        ? str('<a class="myat-sms-wa" target="_blank" rel="noopener" href="https://wa.me/'.(strlen($digits) === 10 ? '30'.$digits : $digits).'?text='.rawurlencode($sms['text']).'">Άνοιγμα στο WhatsApp</a>')->toHtmlString()
+                        : 'Δεν υπάρχει τηλέφωνο οδηγού για αυτή την ημέρα.';
+                }),
+            ])
+            ->modalSubmitAction(false)
+            ->extraModalFooterActions([
+                Action::make('copySms')->label('Αντιγραφή')->icon(Heroicon::OutlinedClipboardDocument)
+                    ->alpineClickHandler("navigator.clipboard.writeText(document.querySelector('.myat-sms-text')?.value ?? ''); \$tooltip('Αντιγράφηκε', { timeout: 1500 })"),
+            ])
+            ->modalCancelActionLabel('Κλείσιμο');
     }
 
     /** "Κλείσιμο Πωλήσεων" (New_Button32): received = sale price on the selected transfers. */

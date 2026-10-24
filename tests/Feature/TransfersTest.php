@@ -294,6 +294,24 @@ class TransfersTest extends TestCase
             ->assertCanNotSeeTableRecords([$this->transfer(['TransferDate' => Carbon::today()->subYears(2)])]);
     }
 
+    public function test_sms_row_button_for_admins(): void
+    {
+        $transfer = $this->transfer(['LeadName' => 'Ms Sms', 'DriverNotes' => 'Gate B']);
+
+        $this->actingAs($this->makeLegacyUser('Entry'));
+        Livewire::test(ListTransfers::class)->set('activeTab', 'all')->assertTableActionHidden('sms', $transfer);
+
+        $this->actingAs($this->makeLegacyUser('Admin'));
+        Livewire::test(ListTransfers::class)->set('activeTab', 'all')
+            ->assertTableActionVisible('sms', $transfer)
+            ->mountTableAction('sms', $transfer)
+            ->assertOk();
+
+        $text = $transfer->smsForDriver()['text'];
+        $this->assertStringContainsString('*Όνομα επιβάτη:* Ms Sms', $text);
+        $this->assertStringContainsString('*Ημερομηνία:* '.$transfer->TransferDate->format('d/m/Y'), $text);
+    }
+
     public function test_copy_notes_to_driver_notes(): void
     {
         $this->actingAs($this->makeLegacyUser('Entry'));
