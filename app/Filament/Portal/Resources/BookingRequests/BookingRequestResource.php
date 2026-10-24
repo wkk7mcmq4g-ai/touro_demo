@@ -111,6 +111,7 @@ class BookingRequestResource extends Resource
                     TextInput::make('LeadPhone')->label('Lead phone')->tel()->maxLength(150),
                 ],
                 pageClass: EditBookingRequest::class,
+                customerId: fn (): ?int => Portal::customerId(),
             ),
         ]);
     }

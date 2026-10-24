@@ -18,6 +18,7 @@ use App\Models\TransfersLoad;
 use App\Models\User;
 use App\Support\Portal;
 use Filament\Facades\Filament;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
@@ -255,5 +256,28 @@ class PortalTest extends TestCase
         Livewire::test(ListMyTransfers::class)
             ->assertTableActionVisible('edit', $later)
             ->assertTableActionHidden('edit', $soon);
+    }
+
+    public function test_a_booking_request_is_added_with_its_products_and_files(): void
+    {
+        $this->partner();
+        $product = DB::table('price_list')->insertGetId(['cid_Customer' => $this->ours, 'Category' => 'Transfer', 'CarType' => 'VAN', 'Product2' => 'Airport - Athens', 'PriceValue' => 55], 'ID');
+
+        Livewire::test(CreateBookingRequest::class)
+            ->fillForm([
+                'Pax' => '2', 'TransferType' => 'Arrival', 'TransferTime' => '11:00', 'From' => 'Airport', 'To' => 'Hotel',
+                'TransferDate' => Carbon::today()->addDays(5)->toDateString(),
+                'priceLines' => [['Category' => 'Transfer', 'ProductCarType' => 'VAN', 'ProductID' => (string) $product, 'PriceValue' => 55]],
+                'files' => [['upload' => [UploadedFile::fake()->create('voucher.pdf', 12, 'application/pdf')]]],
+            ])
+            ->call('create')->assertHasNoFormErrors();
+
+        $load = TransfersLoad::query()->where('cID_Customer', $this->ours)->latest('LoadID')->firstOrFail();
+        $this->assertSame([(string) $product, 55.0], [(string) $load->priceLines()->value('ProductID'), (float) $load->priceLines()->value('PriceValue')]);
+        $this->assertSame('voucher.pdf', DB::table('myat_transfers_load_files')->where('TransferID', $load->LoadID)->value('Flnm'));
+
+        // MyISAM tables keep their rows after the test: clean up.
+        DB::table('price_list')->where('ID', $product)->delete();
+        DB::table('price_list_load')->where('LoadID', $load->LoadID)->delete();
     }
 }
