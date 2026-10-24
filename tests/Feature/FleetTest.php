@@ -150,4 +150,29 @@ class FleetTest extends TestCase
 
         $page->call('move', -1)->assertSet('offset', -1)->call('move', 0)->assertSet('offset', 0);
     }
+
+    public function test_calendar_settings_reorder_hide_and_pink(): void
+    {
+        $a = DB::table('drivers')->insertGetId(['Fullname' => 'A', 'shortname' => 'AAA', 'Active' => 1, 'CalOrder' => 1, 'Flag' => 1], 'DriverID');
+        $b = DB::table('drivers')->insertGetId(['Fullname' => 'B', 'shortname' => 'BBB', 'Active' => 1, 'CalOrder' => 2], 'DriverID');
+        $c = DB::table('drivers')->insertGetId(['Fullname' => 'C', 'shortname' => 'CCC', 'Active' => 1, 'CalOrder' => null], 'DriverID');
+
+        // Saving the panel untouched keeps the order and the hidden driver hidden.
+        Livewire::test(DriverCalendar::class)->callAction('settings')->assertHasNoActionErrors();
+        $this->assertSame([1, 2, null], DB::table('drivers')->whereIn('DriverID', [$a, $b, $c])->orderBy('DriverID')->pluck('CalOrder')->all());
+
+        Livewire::test(DriverCalendar::class)->call('saveSettings', [
+            ['id' => $c, 'shown' => true, 'pink' => true],
+            ['id' => $b, 'shown' => true, 'pink' => false],
+            ['id' => $a, 'shown' => false, 'pink' => false],
+        ])->assertSet('revision', 1);
+
+        $rows = DB::table('drivers')->whereIn('DriverID', [$a, $b, $c])->pluck('CalOrder', 'DriverID');
+        $this->assertSame([1, 2, null], [$rows[$c], $rows[$b], $rows[$a]]);
+        $flags = DB::table('drivers')->whereIn('DriverID', [$a, $b, $c])->pluck('Flag', 'DriverID');
+        $this->assertSame([1, null, 0], [$flags[$c], $flags[$b], $flags[$a]]);
+
+        $this->actingAs($this->makeLegacyUser('Entry'));
+        $this->get(DriverCalendar::getUrl())->assertForbidden();
+    }
 }

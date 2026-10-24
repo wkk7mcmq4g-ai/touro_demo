@@ -6,6 +6,13 @@ use App\Support\Permissions;
 use BackedEnum;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonPeriod;
+use Filament\Actions\Action;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Repeater\TableColumn;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
@@ -39,6 +46,9 @@ class DriverCalendar extends Page
     #[Url]
     public int $offset = 0;
 
+    /** Bumped after the settings change so the grid is drawn again with the new order. */
+    public int $revision = 0;
+
     public const STATUSES = [
         0 => ['ΡΕΠΟ', '#FFC7CE'],
         1 => ['ΕΡΓΑΣΙΜΗ', '#D9F2D0'],
@@ -57,6 +67,69 @@ class DriverCalendar extends Page
     public function canEditSchedule(): bool
     {
         return Permissions::allows(auth()->user(), 'drivers', 'edit');
+    }
+
+    /**
+     * Ρυθμίσεις: the active drivers in calendar order (drag to reorder), whether each is on the
+     * calendar (drivers.CalOrder filled) and pink (drivers.Flag = 1, also skipped by Copy_Driver_Schedule).
+     */
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('settings')->label('Ρυθμίσεις')->icon(Heroicon::OutlinedCog6Tooth)->color('gray')
+                ->visible(fn (): bool => $this->canEditSchedule())
+                ->slideOver()->modalWidth(Width::TwoExtraLarge)->modalSubmitActionLabel('Αποθήκευση')
+                ->modalHeading('Οδηγοί στο ημερολόγιο')
+                ->modalDescription('Αλλάξτε τη σειρά σύροντας ή με τα βέλη. Εμφάνιση: ο οδηγός φαίνεται στο ημερολόγιο. Ροζ: ροζ φόντο στο όνομα.')
+                ->fillForm(fn (): array => ['drivers' => DB::table('drivers')->where('Active', 1)
+                    ->orderByRaw('CalOrder IS NULL')->orderBy('CalOrder')->orderBy('shortname')
+                    ->get(['DriverID', 'shortname', 'Fullname', 'CalOrder', 'Flag'])
+                    ->map(fn ($d): array => [
+                        'id' => (int) $d->DriverID,
+                        'name' => filled($d->shortname) ? $d->shortname : $d->Fullname,
+                        'shown' => $d->CalOrder !== null,
+                        'pink' => (int) $d->Flag === 1,
+                    ])->all()])
+                ->schema([
+                    Repeater::make('drivers')->hiddenLabel()
+                        ->addable(false)->deletable(false)->reorderable()->reorderableWithButtons()
+                        ->table([
+                            TableColumn::make('Οδηγός'),
+                            TableColumn::make('Εμφάνιση'),
+                            TableColumn::make('Ροζ'),
+                        ])
+                        ->schema([
+                            Hidden::make('id'),
+                            TextInput::make('name')->hiddenLabel()->readOnly()->dehydrated(false),
+                            Toggle::make('shown')->hiddenLabel(),
+                            Toggle::make('pink')->hiddenLabel(),
+                        ]),
+                ])
+                ->action(function (array $data): void {
+                    $this->saveSettings(array_values($data['drivers'] ?? []));
+                    Notification::make()->success()->title('Αποθηκεύτηκε')->send();
+                }),
+        ];
+    }
+
+    /** @param  list<array{id: int|string, shown: bool, pink: bool}>  $rows  in calendar order */
+    public function saveSettings(array $rows): void
+    {
+        abort_unless($this->canEditSchedule(), 403);
+
+        $order = 0;
+        foreach ($rows as $row) {
+            $current = DB::table('drivers')->where('DriverID', (int) $row['id'])->first(['CalOrder', 'Flag']);
+            if (! $current) {
+                continue;
+            }
+            $flag = ! empty($row['pink']) ? 1 : ((int) $current->Flag === 1 ? 0 : $current->Flag);
+            DB::table('drivers')->where('DriverID', (int) $row['id'])->update([
+                'CalOrder' => ! empty($row['shown']) ? ++$order : null,
+                'Flag' => $flag,
+            ]);
+        }
+        $this->revision++;
     }
 
     public function move(int $by): void

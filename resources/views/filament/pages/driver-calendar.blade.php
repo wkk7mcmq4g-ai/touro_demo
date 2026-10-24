@@ -5,7 +5,7 @@
 --}}
 @php($cal = $this->calendar())
 <x-filament-panels::page>
-    <div @class(["myat-cal", "is-readonly" => ! $this->canEditSchedule()]) wire:key="cal-{{ $offset }}"
+    <div @class(["myat-cal", "is-readonly" => ! $this->canEditSchedule()]) wire:key="cal-{{ $offset }}-{{ $revision }}"
          x-data="driverCalendar(@js($cal), @js($this->canEditSchedule()))">
 
         <div class="myat-cal-bar">
