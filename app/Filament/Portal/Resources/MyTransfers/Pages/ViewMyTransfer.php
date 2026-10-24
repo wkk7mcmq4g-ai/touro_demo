@@ -12,6 +12,6 @@ class ViewMyTransfer extends ViewRecord
 
     protected function getHeaderActions(): array
     {
-        return [EditAction::make()];
+        return [EditAction::make()->visible(fn (): bool => MyTransferResource::canEdit($this->getRecord()))];
     }
 }

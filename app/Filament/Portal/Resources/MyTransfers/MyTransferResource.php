@@ -30,6 +30,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 /**
@@ -66,6 +67,20 @@ class MyTransferResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->where('cID_Customer', Portal::scopeId());
+    }
+
+    /**
+     * Suppliers and hotels may change a transfer only while it is still ahead: not on the day itself
+     * nor afterwards (George's rule; PHPRunner hid their edit button the same way, via EditLimit).
+     */
+    public static function canEdit(Model $record): bool
+    {
+        if (! static::allows('update')) {
+            return false;
+        }
+
+        return ! in_array(auth()->user()?->group(), [UserGroup::Supplier, UserGroup::SupplierHotel], true)
+            || ($record->TransferDate && $record->TransferDate->copy()->startOfDay()->gt(today()));
     }
 
     public static function canCreate(): bool
@@ -153,7 +168,7 @@ class MyTransferResource extends Resource
                     ->options(fn (): array => collect(range(-2, 12))->map(fn (int $i) => now()->startOfMonth()->subMonths($i))
                         ->mapWithKeys(fn ($m): array => [$m->copy()->endOfMonth()->toDateString() => $m->format('m/Y')])->all()),
             ])
-            ->recordActions([ViewAction::make(), EditAction::make()]);
+            ->recordActions([ViewAction::make(), EditAction::make()->visible(fn (Transfer $record): bool => static::canEdit($record))]);
     }
 
     public static function getRelations(): array

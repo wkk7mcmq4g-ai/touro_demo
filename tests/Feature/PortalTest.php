@@ -9,6 +9,7 @@ use App\Filament\Portal\Resources\BookingRequests\Pages\ListBookingRequests;
 use App\Filament\Portal\Resources\MyFuel\Pages\CreateMyFuel;
 use App\Filament\Portal\Resources\MyFuel\Pages\ListMyFuel;
 use App\Filament\Portal\Resources\MyJobs\Pages\ListMyJobs;
+use App\Filament\Portal\Resources\MyTransfers\MyTransferResource;
 use App\Filament\Portal\Resources\MyTransfers\Pages\EditMyTransfer;
 use App\Filament\Portal\Resources\MyTransfers\Pages\ListMyTransfers;
 use App\Models\DailyRecipient;
@@ -230,5 +231,23 @@ class PortalTest extends TestCase
         $this->get("/portal/transfers/{$mine->TransferID}")->assertOk();
         $this->get("/portal/transfers/{$mine->TransferID}/edit")->assertForbidden();
         $this->get('/portal/booking-requests')->assertForbidden();
+    }
+
+    public function test_suppliers_cannot_edit_transfers_of_today_or_earlier(): void
+    {
+        $this->actingAs($this->makeLegacyUser('Supplier', ['SupplierID' => $this->ours]));
+        $today = $this->transfer($this->ours, ['TransferDate' => Carbon::today()->toDateString()]);
+        $past = $this->transfer($this->ours, ['TransferDate' => Carbon::today()->subDays(3)->toDateString()]);
+        $tomorrow = $this->transfer($this->ours, ['TransferDate' => Carbon::tomorrow()->toDateString()]);
+
+        if (! MyTransferResource::canEdit($tomorrow)) {
+            $this->markTestSkipped('The Supplier group has no edit right on transfers in this copy.');
+        }
+        $this->get("/portal/transfers/{$tomorrow->TransferID}/edit")->assertOk();
+        $this->get("/portal/transfers/{$today->TransferID}/edit")->assertForbidden();
+        $this->get("/portal/transfers/{$past->TransferID}/edit")->assertForbidden();
+        Livewire::test(ListMyTransfers::class)
+            ->assertTableActionVisible('edit', $tomorrow)
+            ->assertTableActionHidden('edit', $today);
     }
 }
