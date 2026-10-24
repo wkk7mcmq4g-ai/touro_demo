@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Pages\Reports\AccountantExport;
+use App\Filament\Pages\Reports\DueReport;
 use App\Filament\Pages\Reports\ExpensesReport;
 use App\Filament\Pages\Reports\StatsReport;
 use Filament\Actions\Testing\TestAction;
@@ -77,5 +78,21 @@ class ReportsTest extends TestCase
         Livewire::test(AccountantExport::class)->assertSee('ΤΠΥ-12')
             ->callAction(TestAction::make('export')->table())
             ->assertFileDownloaded();
+    }
+
+    public function test_due_report_always_has_the_months_across(): void
+    {
+        DB::table('transfers')->insert([
+            ['TransferDate' => '2025-12-03', 'CoachCompanyID' => 'VITO 2022', 'PurchasePrice' => 50, 'TransferType' => 'Arrival', 'From' => 'a', 'To' => 'b', 'Status' => 'Completed'],
+            ['TransferDate' => '2026-01-05', 'CoachCompanyID' => 'VITO 2022', 'PurchasePrice' => 70, 'TransferType' => 'Arrival', 'From' => 'a', 'To' => 'b', 'Status' => 'Completed'],
+        ]);
+
+        // Asking for something else across is ignored: the months stay the columns, grouped by year.
+        $page = Livewire::test(DueReport::class)->assertOk()->set('data.cols', 'Supplier')->set('data.rows', 'month');
+        $r = $page->instance()->result();
+        $this->assertTrue($r['colTime']);
+        $this->assertSame([2025, 2026], array_keys(array_filter($r['colGroups'], fn ($k) => $k !== 'Παλαιότερα', ARRAY_FILTER_USE_KEY)));
+        $this->assertArrayHasKey('2025-12-31', $r['cols']);
+        $this->assertSame('Coach', $r['rowLabel']);
     }
 }

@@ -2897,3 +2897,23 @@ html.myat-immersive .myat-day-sub {
 @media (prefers-reduced-motion: reduce) {
     .myat-rep-bar, .myat-rep-chip button { transition: none; }
 }
+
+/* Pivot: periods across, grouped under their year; year subtotal columns */
+.myat-pivot thead tr.myat-pivot-years th {
+    text-align: center;
+    color: var(--myat-navy);
+    font-weight: 800;
+    border-inline-start: 1px solid var(--myat-line);
+}
+
+.myat-pivot thead tr.myat-pivot-years + tr th {
+    top: 2.1rem;
+}
+
+.myat-pivot .myat-pivot-sub {
+    font-weight: 800;
+    background: #eef6ee;
+}
+
+.dark .myat-pivot .myat-pivot-sub { background: rgb(144 238 144 / 0.08); }
+.dark .myat-pivot thead tr.myat-pivot-years th { color: #e2e8f0; }

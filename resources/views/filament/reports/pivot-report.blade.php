@@ -21,7 +21,7 @@
     // Trend chart (rows are periods): columns of the row totals, zero line, every n-th label.
     $series = $in['series'];
     $chart = null;
-    if ($r['time'] && count($series) >= 2) {
+    if (($r['time'] || $r['colTime']) && count($series) >= 2) {
         $W = 720; $H = 200; $padL = 8; $padB = 26; $padT = 16;
         $vals = array_column($series, 'value');
         $max = max(0, ...$vals); $min = min(0, ...$vals);
@@ -55,7 +55,7 @@
                 <div class="myat-rep-kpi myat-rep-kpi-main">
                     <span class="myat-rep-kpi-label">Σύνολο · {{ $r['measure'] }}</span>
                     <span class="myat-rep-kpi-value">{{ $fmt($in['total']) }}</span>
-                    <span class="myat-rep-kpi-sub">{{ $in['rows'] }} {{ $r['time'] ? ($in['rows'] === 1 ? 'περίοδος' : 'περίοδοι') : ($in['rows'] === 1 ? 'γραμμή' : 'γραμμές') }}@if ($in['cols']) · {{ $in['cols'] }} {{ $in['cols'] === 1 ? 'στήλη' : 'στήλες' }}@endif</span>
+                    <span class="myat-rep-kpi-sub">{{ $in['rows'] }} {{ $r['time'] ? ($in['rows'] === 1 ? 'περίοδος' : 'περίοδοι') : ($in['rows'] === 1 ? 'γραμμή' : 'γραμμές') }}@if ($in['cols']) · {{ $in['cols'] }} {{ $r['colTime'] ? ($in['cols'] === 1 ? 'περίοδος' : 'περίοδοι') : ($in['cols'] === 1 ? 'στήλη' : 'στήλες') }}@endif</span>
                 </div>
                 @if ($in['last'])
                     <div class="myat-rep-kpi">
@@ -72,7 +72,7 @@
                 @endif
                 @if ($in['top'] !== [])
                     <div class="myat-rep-kpi">
-                        <span class="myat-rep-kpi-label">Μεγαλύτερο · {{ $r['colLabel'] }}</span>
+                        <span class="myat-rep-kpi-label">Μεγαλύτερο · {{ $in['rankLabel'] }}</span>
                         <span class="myat-rep-kpi-value myat-rep-kpi-name">{{ $in['top'][0]['label'] }}</span>
                         <span class="myat-rep-kpi-sub">{{ $fmt($in['top'][0]['value']) }} · {{ \Illuminate\Support\Number::format($in['top'][0]['share'], maxPrecision: 1, locale: 'el') }}% του συνόλου</span>
                     </div>
@@ -83,7 +83,7 @@
                 <section @class(['myat-rep-charts', 'is-single' => ! $chart || count($in['top']) <= 1])>
                     @if ($chart)
                         <figure class="myat-rep-card">
-                            <figcaption class="myat-rep-card-title">{{ $r['measure'] }} ανά {{ mb_strtolower($r['rowLabel']) }}</figcaption>
+                            <figcaption class="myat-rep-card-title">{{ $r['measure'] }} ανά {{ mb_strtolower($in['trendLabel']) }}</figcaption>
                             <svg class="myat-rep-trend" viewBox="0 0 {{ $chart['W'] }} {{ $chart['H'] }}" role="img"
                                 aria-label="{{ $r['measure'] }} ανά περίοδο: {{ collect($series)->map(fn ($p) => $p['label'].' '.$short($p['value']))->implode(', ') }}">
                                 <line x1="0" x2="{{ $chart['W'] }}" y1="{{ $chart['y'](0) }}" y2="{{ $chart['y'](0) }}" class="myat-rep-zero" />
@@ -110,7 +110,7 @@
                     @endif
                     @if (count($in['top']) > 1)
                         <div class="myat-rep-card">
-                            <div class="myat-rep-card-title">Κατανομή ανά {{ mb_strtolower($r['colLabel']) }}</div>
+                            <div class="myat-rep-card-title">Κατανομή ανά {{ mb_strtolower($in['rankLabel']) }}</div>
                             <ol class="myat-rep-rank">
                                 @foreach ($in['top'] as $t)
                                     <li>
@@ -134,16 +134,51 @@
             </div>
         @endif
 
+    @php
+        // Columns in order; with periods across over 2+ years, a subtotal column after each year.
+        $yearTotals = count($r['colGroups']) >= 2;
+        $colSeq = [];
+        if ($r['colGroups'] !== []) {
+            foreach ($r['colGroups'] as $year => $keys) {
+                foreach ($keys as $k) {
+                    $colSeq[] = ['key' => $k];
+                }
+                if ($yearTotals && $year !== 'Παλαιότερα') {
+                    $colSeq[] = ['sub' => $year, 'keys' => $keys];
+                }
+            }
+        } else {
+            foreach (array_keys($r['cols']) as $k) {
+                $colSeq[] = ['key' => (string) $k];
+            }
+        }
+        $valueOf = fn (array $cells, array $c): ?float => isset($c['sub'])
+            ? array_sum(array_map(fn ($k) => $cells[$k] ?? 0, $c['keys']))
+            : ($cells[$c['key']] ?? null);
+    @endphp
     <div class="myat-pivot-ctn" wire:loading.class="opacity-60">
         @if ($r['rows'] === [])
             <div class="myat-pivot-empty">Δεν βρέθηκαν εγγραφές.</div>
         @else
             <table class="myat-pivot">
                 <thead>
+                    @if ($r['colGroups'] !== [])
+                        <tr class="myat-pivot-years">
+                            <th class="myat-pivot-rowhead"></th>
+                            @foreach ($r['colGroups'] as $year => $keys)
+                                <th colspan="{{ count($keys) + ($yearTotals && $year !== 'Παλαιότερα' ? 1 : 0) }}">{{ $year }}</th>
+                            @endforeach
+                            <th class="myat-pivot-total"></th>
+                        </tr>
+                    @endif
                     <tr>
                         <th class="myat-pivot-rowhead">{{ $r['rowLabel'] }}</th>
-                        @foreach ($r['cols'] as $label)
-                            <th>{{ $label }}</th>
+                        @foreach ($colSeq as $c)
+                            @if (isset($c['sub']))
+                                <th class="myat-pivot-sub">Σύνολο {{ $c['sub'] }}</th>
+                            @else
+                                <th>{{ $r['colTime'] ? preg_replace('/^\d{2}\//', '', $r['cols'][$c['key']]) : $r['cols'][$c['key']] }}</th>
+                            @endif
                         @endforeach
                         @if ($r['hasCols'])
                             <th class="myat-pivot-total">Σύνολο</th>
@@ -159,8 +194,8 @@
                         @if ($section['label'] !== null)
                             <tr class="myat-pivot-group">
                                 <th class="myat-pivot-rowhead">{{ $section['label'] }}</th>
-                                @foreach ($r['cols'] as $colKey => $label)
-                                    <td>{{ $fmt($section['cells'][$colKey] ?? null) }}</td>
+                                @foreach ($colSeq as $c)
+                                    <td @class(['myat-pivot-sub' => isset($c['sub'])])>{{ $fmt($valueOf($section['cells'], $c)) }}</td>
                                 @endforeach
                                 @if ($r['hasCols'])
                                     <td class="myat-pivot-total">{{ $fmt($section['total']) }}</td>
@@ -170,9 +205,13 @@
                         @foreach ($section['rows'] as $rowKey)
                             <tr @class(['myat-pivot-child' => $section['label'] !== null])>
                                 <th class="myat-pivot-rowhead">{{ $r['rows'][$rowKey] }}</th>
-                                @foreach ($r['cols'] as $colKey => $label)
-                                    @php $v = $r['cells'][$rowKey][$colKey] ?? null; @endphp
-                                    <td style="{{ $heat($v) }}" @class(['is-neg' => $v < 0, 'is-empty' => ! $v])>{{ $v ? $fmt($v) : '—' }}</td>
+                                @foreach ($colSeq as $c)
+                                    @php $v = $valueOf($r['cells'][$rowKey] ?? [], $c); @endphp
+                                    @if (isset($c['sub']))
+                                        <td @class(['myat-pivot-sub', 'is-neg' => $v < 0])>{{ $fmt($v) }}</td>
+                                    @else
+                                        <td style="{{ $heat($v) }}" @class(['is-neg' => $v < 0, 'is-empty' => ! $v])>{{ $v ? $fmt($v) : '—' }}</td>
+                                    @endif
                                 @endforeach
                                 @if ($r['hasCols'])
                                     <td @class(['myat-pivot-total', 'is-neg' => $r['rowTotals'][$rowKey] < 0])>{{ $fmt($r['rowTotals'][$rowKey]) }}</td>
@@ -184,8 +223,8 @@
                 <tfoot>
                     <tr>
                         <th class="myat-pivot-rowhead">Σύνολο</th>
-                        @foreach ($r['cols'] as $colKey => $label)
-                            <td>{{ $fmt($r['colTotals'][$colKey] ?? 0) }}</td>
+                        @foreach ($colSeq as $c)
+                            <td @class(['myat-pivot-sub' => isset($c['sub'])])>{{ $fmt($valueOf($r['colTotals'], $c) ?? 0) }}</td>
                         @endforeach
                         @if ($r['hasCols'])
                             <td class="myat-pivot-total">{{ $fmt($r['total']) }}</td>

@@ -19,6 +19,6 @@ class ReceiveReport extends AssetsReport
 
     protected function defaults(): array
     {
-        return ['month', 'CoachCompanyID', 'PurchasePrice'];
+        return ['CoachCompanyID', 'month', 'PurchasePrice'];
     }
 }

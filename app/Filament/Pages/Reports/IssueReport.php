@@ -19,6 +19,6 @@ class IssueReport extends AssetsReport
 
     protected function defaults(): array
     {
-        return ['month', 'Supplier', 'SalePrice'];
+        return ['Supplier', 'month', 'SalePrice'];
     }
 }

@@ -31,20 +31,24 @@ class StatsReport extends PivotReport
     }
 
     /**
-     * As PHPRunner's crosstab: years with their subtotal and the months under them down the side;
-     * partner (default), coach type or vehicle across; car type and transfer type either way.
+     * The months always across, under their year with a subtotal per year (George's choice; PHPRunner
+     * had them down the side); partner (default), coach type, vehicle, car type or transfer type down.
      */
+    protected function fixedCols(): ?string
+    {
+        return 'month';
+    }
+
     protected function dimensions(): array
     {
         $date = fn ($v): string => Carbon::parse($v)->format('d/m/Y');
 
         return [
-            'month' => ['label' => 'Έτος / Μήνας', 'expr' => 'LAST_DAY(ReferencePeriod)', 'axis' => 'rows', 'format' => $date,
+            'month' => ['label' => 'Μήνας', 'expr' => 'LAST_DAY(ReferencePeriod)', 'axis' => 'cols', 'format' => $date,
                 'group' => fn (string $key): array => [substr($key, 0, 4), substr($key, 0, 4)]],
-            'year' => ['label' => 'Έτος', 'expr' => 'YEAR(ReferencePeriod)', 'axis' => 'rows'],
-            'CounterShortName' => ['label' => 'Πελάτης', 'expr' => 'CounterShortName', 'axis' => 'cols', 'filter' => true],
-            'CoachType' => ['label' => 'Coach type', 'expr' => 'CoachType', 'axis' => 'cols', 'filter' => true],
-            'VehicleName' => ['label' => 'Όχημα', 'expr' => 'VehicleName', 'axis' => 'cols', 'filter' => true],
+            'CounterShortName' => ['label' => 'Πελάτης', 'expr' => 'CounterShortName', 'axis' => 'rows', 'filter' => true],
+            'CoachType' => ['label' => 'Coach type', 'expr' => 'CoachType', 'axis' => 'rows', 'filter' => true],
+            'VehicleName' => ['label' => 'Όχημα', 'expr' => 'VehicleName', 'axis' => 'rows', 'filter' => true],
             'Cartype' => ['label' => 'Car type', 'expr' => 'Cartype', 'filter' => true],
             'TransferType' => ['label' => 'Transfer type', 'expr' => 'TransferType', 'filter' => true],
         ];
@@ -61,6 +65,6 @@ class StatsReport extends PivotReport
 
     protected function defaults(): array
     {
-        return ['month', 'CounterShortName', 'count'];
+        return ['CounterShortName', 'month', 'count'];
     }
 }

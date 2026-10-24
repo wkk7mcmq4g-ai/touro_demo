@@ -19,6 +19,6 @@ class DueReport extends AssetsReport
 
     protected function defaults(): array
     {
-        return ['month', 'CoachCompanyID', 'Liabilities'];
+        return ['CoachCompanyID', 'month', 'Liabilities'];
     }
 }

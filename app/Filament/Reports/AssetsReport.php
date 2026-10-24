@@ -22,12 +22,18 @@ abstract class AssetsReport extends PivotReport
         return 'ReferencePeriod';
     }
 
+    protected function fixedCols(): ?string
+    {
+        return 'month';
+    }
+
     protected function dimensions(): array
     {
         return [
-            'month' => ['label' => 'Reference period', 'expr' => 'LAST_DAY(ReferencePeriod)', 'axis' => 'rows',
-                'format' => fn ($v): string => Carbon::parse($v)->format('d/m/Y')],
-            'year' => ['label' => 'Έτος', 'expr' => 'YEAR(ReferencePeriod)', 'axis' => 'rows'],
+            // The months are always across (fixedCols), grouped under their year.
+            'month' => ['label' => 'Μήνας', 'expr' => 'LAST_DAY(ReferencePeriod)', 'axis' => 'cols',
+                'format' => fn ($v): string => Carbon::parse($v)->format('d/m/Y'),
+                'group' => fn (string $key): array => [substr($key, 0, 4), substr($key, 0, 4)]],
             'Supplier' => ['label' => 'Supplier', 'expr' => 'Supplier', 'filter' => true],
             'CoachCompanyID' => ['label' => 'Coach', 'expr' => 'CoachCompanyID', 'filter' => true],
             'Status' => ['label' => 'Status', 'expr' => 'Status', 'filter' => true],

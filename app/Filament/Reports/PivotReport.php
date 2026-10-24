@@ -23,6 +23,7 @@ use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use UnitEnum;
@@ -68,6 +69,12 @@ abstract class PivotReport extends Page
     /** @return array{0: string, 1: ?string, 2: string} default rows, columns (null = none), measure */
     abstract protected function defaults(): array;
 
+    /** A dimension always shown across (the user cannot change the columns), or null. */
+    protected function fixedCols(): ?string
+    {
+        return null;
+    }
+
     /** Date column for the from/until filter, or null. */
     protected function dateColumn(): ?string
     {
@@ -97,7 +104,9 @@ abstract class PivotReport extends Page
             Section::make()->compact()->schema([
                 Grid::make(['default' => 1, 'md' => 3])->schema([
                     Select::make('rows')->label('Γραμμές')->options($options('rows'))->required()->selectablePlaceholder(false)->live(),
-                    Select::make('cols')->label('Στήλες')->options($options('cols'))->placeholder('— χωρίς —')->live(),
+                    $this->fixedCols()
+                        ? TextInput::make('cols_fixed')->label('Στήλες')->default($dims[$this->fixedCols()]['label'])->formatStateUsing(fn (): string => $dims[$this->fixedCols()]['label'])->disabled()->dehydrated(false)
+                        : Select::make('cols')->label('Στήλες')->options($options('cols'))->placeholder('— χωρίς —')->live(),
                     Select::make('measure')->label('Άθροισμα')->options(collect($this->measures())->map(fn (array $m): string => $m['label'])->all())
                         ->required()->selectablePlaceholder(false)->live(),
                 ]),
@@ -135,28 +144,38 @@ abstract class PivotReport extends Page
      */
     public function insights(array $r): array
     {
+        // The periods (down or across) make the trend; the other axis makes the ranking.
         $series = [];
-        foreach ($r['rows'] as $key => $label) {
-            $series[] = ['label' => $label, 'value' => (float) $r['rowTotals'][$key]];
+        if ($r['colTime']) {
+            foreach ($r['cols'] as $key => $label) {
+                if ($key !== '__other') {
+                    $series[] = ['label' => $label, 'value' => (float) ($r['colTotals'][$key] ?? 0)];
+                }
+            }
+        } else {
+            foreach ($r['rows'] as $key => $label) {
+                $series[] = ['label' => $label, 'value' => (float) $r['rowTotals'][$key]];
+            }
         }
 
         $last = null;
-        if ($r['time'] && count($series) >= 2) {
+        if (($r['time'] || $r['colTime']) && count($series) >= 2) {
             $current = $series[count($series) - 1];
             $prev = $series[count($series) - 2]['value'] ?? null;
             $last = $current + ['prev' => $prev, 'change' => $prev ? ($current['value'] - $prev) / abs($prev) * 100 : null];
         }
 
         $top = [];
-        if ($r['hasCols'] && $r['total'] != 0) {
-            $totals = $r['colTotals'];
+        [$totals, $labels] = $r['colTime'] ? [$r['rowTotals'], $r['rows']] : [$r['colTotals'], $r['cols']];
+        if (($r['hasCols'] || $r['colTime']) && $r['total'] != 0) {
             arsort($totals);
             foreach (array_slice(array_filter($totals, fn ($v): bool => $v != 0), 0, 5, true) as $key => $value) {
-                $top[] = ['label' => $r['cols'][$key] ?? (string) $key, 'value' => (float) $value, 'share' => $value / $r['total'] * 100];
+                $top[] = ['label' => $labels[$key] ?? (string) $key, 'value' => (float) $value, 'share' => $value / $r['total'] * 100];
             }
         }
 
-        return ['total' => (float) $r['total'], 'rows' => count($r['rows']), 'cols' => $r['hasCols'] ? count($r['cols']) : 0, 'last' => $last, 'top' => $top, 'series' => $series];
+        return ['total' => (float) $r['total'], 'rows' => count($r['rows']), 'cols' => $r['hasCols'] ? count($r['cols']) : 0, 'last' => $last, 'top' => $top, 'series' => $series,
+            'trendLabel' => $r['colTime'] ? $r['colLabel'] : $r['rowLabel'], 'rankLabel' => $r['colTime'] ? $r['rowLabel'] : $r['colLabel']];
     }
 
     /** @return list<array{key: string, label: string, value: string}> the filters set now, as chips */
@@ -268,12 +287,50 @@ abstract class PivotReport extends Page
     /** @return array<string, string> the distinct values of a dimension, for its filter */
     private function distinct(string $key): array
     {
-        $d = $this->dimensions()[$key];
+        return array_map(fn ($k): string => $this->label($key, $k), $this->filterValues()[$key] ?? []);
+    }
 
-        return DB::query()->fromSub($this->source(), 's')
-            ->selectRaw("{$d['expr']} AS k")->distinct()->orderBy('k')->pluck('k')
-            ->filter(fn ($k): bool => $k !== null)
-            ->mapWithKeys(fn ($k): array => [(string) $k => $this->label($key, $k)])->all();
+    /** @var array<string, array<string, string>>|null */
+    private ?array $filterValuesMemo = null;
+
+    /**
+     * The values of every filter in one pass over the source (the views are heavy), kept for
+     * 10 minutes, so the filter panel opens at once.
+     *
+     * @return array<string, array<string, string>> dimension => [value => value]
+     */
+    private function filterValues(): array
+    {
+        if ($this->filterValuesMemo !== null) {
+            return $this->filterValuesMemo;
+        }
+        $compute = function (): array {
+            $dims = collect($this->dimensions())->filter(fn (array $d): bool => $d['filter'] ?? false);
+            if ($dims->isEmpty()) {
+                return [];
+            }
+            $query = DB::query()->fromSub($this->source(), 's')->distinct();
+            foreach ($dims->keys()->values() as $i => $key) {
+                $query->selectRaw("{$dims[$key]['expr']} AS d{$i}");
+            }
+            $values = array_fill_keys($dims->keys()->all(), []);
+            foreach ($query->get() as $row) {
+                foreach ($dims->keys()->values() as $i => $key) {
+                    $v = $row->{"d{$i}"};
+                    if ($v !== null) {
+                        $values[$key][(string) $v] = (string) $v;
+                    }
+                }
+            }
+
+            return array_map(function (array $v): array {
+                ksort($v, SORT_NATURAL | SORT_FLAG_CASE);
+
+                return $v;
+            }, $values);
+        };
+
+        return $this->filterValuesMemo = app()->runningUnitTests() ? $compute() : Cache::remember('myat:pivot-filters:'.static::class, 600, $compute);
     }
 
     private function label(string $key, mixed $value): string
@@ -286,17 +343,36 @@ abstract class PivotReport extends Page
         return (string) ($format ? ($format($value) ?? $value) : $value);
     }
 
+    /** @var array{0: string, 1: array}|null */
+    private ?array $resultMemo = null;
+
     /**
-     * The crosstab: row and column headers, the cells, and the totals.
+     * The crosstab for what is set now: row and column headers, the cells and the totals. Kept for
+     * 30 seconds: opening the filter panel or the export re-draws the page and would otherwise run
+     * the same heavy query again.
      *
-     * @return array{rows: array<string, string>, cols: array<string, string>, cells: array<string, array<string, float>>, rowTotals: array<string, float>, colTotals: array<string, float>, total: float, money: bool, measure: string}
+     * @return array<string, mixed>
      */
     public function result(): array
     {
+        $key = 'myat:pivot:'.static::class.':'.md5(json_encode([$this->data, $this->fixedCols()]));
+        if ($this->resultMemo && $this->resultMemo[0] === $key) {
+            return $this->resultMemo[1];
+        }
+
+        $compute = fn (): array => $this->computeResult();
+
+        return ($this->resultMemo = [$key, app()->runningUnitTests() ? $compute() : Cache::remember($key, 30, $compute)])[1];
+    }
+
+    private function computeResult(): array
+    {
         $dims = $this->dimensions();
         $measures = $this->measures();
-        $rowKey = array_key_exists($this->data['rows'] ?? '', $dims) ? $this->data['rows'] : $this->defaults()[0];
-        $colKey = array_key_exists($this->data['cols'] ?? '', $dims) ? $this->data['cols'] : null;
+        $fixed = $this->fixedCols();
+        $rowKey = array_key_exists($this->data['rows'] ?? '', $dims) && ($this->data['rows'] ?? null) !== $fixed ? $this->data['rows'] : $this->defaults()[0];
+        $colKey = $fixed ?? (array_key_exists($this->data['cols'] ?? '', $dims) ? $this->data['cols'] : null);
+        $colTime = in_array($colKey, ['month', 'year'], true);
         $measureKey = array_key_exists($this->data['measure'] ?? '', $measures) ? $this->data['measure'] : $this->defaults()[2];
 
         $query = DB::query()->fromSub($this->source(), 's')
@@ -322,8 +398,8 @@ abstract class PivotReport extends Page
             $colTotals[(string) $row->c] = ($colTotals[(string) $row->c] ?? 0) + (float) $row->v;
         }
 
-        // Widest columns first when there are too many to show.
-        arsort($colTotals);
+        // Too many to show: the widest columns, or for periods the latest ones (the rest under one column).
+        $colTime ? krsort($colTotals) : arsort($colTotals);
         if (count($colTotals) > self::MAX_COLUMNS) {
             $keep = array_slice(array_keys($colTotals), 0, self::MAX_COLUMNS - 1);
             foreach ($cells as $r => $cols) {
@@ -339,7 +415,16 @@ abstract class PivotReport extends Page
         $colKeys = array_keys($colTotals);
         sort($colKeys);
         if (in_array('__other', $colKeys, true)) {
-            $colKeys = [...array_diff($colKeys, ['__other']), '__other'];
+            // Older periods go first, other values last.
+            $colKeys = $colTime ? ['__other', ...array_diff($colKeys, ['__other'])] : [...array_diff($colKeys, ['__other']), '__other'];
+        }
+
+        // Periods across, grouped by year: [year => [column keys]] (for the year header and subtotals).
+        $colGroups = [];
+        if ($colTime && ($group = $dims[$colKey]['group'] ?? null)) {
+            foreach ($colKeys as $c) {
+                $colGroups[$c === '__other' ? 'Παλαιότερα' : $group((string) $c)[1]][] = (string) $c;
+            }
         }
 
         ksort($cells);
@@ -362,7 +447,9 @@ abstract class PivotReport extends Page
         return [
             'groups' => $groups,
             'rows' => collect(array_keys($cells))->mapWithKeys(fn ($r): array => [$r => $this->label($rowKey, $r)])->all(),
-            'cols' => collect($colKeys)->mapWithKeys(fn ($c): array => [$c => $c === '__other' ? 'Λοιπά' : ($colKey ? $this->label($colKey, $c) : $measures[$measureKey]['label'])])->all(),
+            'cols' => collect($colKeys)->mapWithKeys(fn ($c): array => [$c => $c === '__other' ? ($colTime ? 'Παλαιότερα' : 'Λοιπά') : ($colKey ? $this->label($colKey, $c) : $measures[$measureKey]['label'])])->all(),
+            'colGroups' => $colGroups,
+            'colTime' => $colTime,
             'cells' => $cells,
             'rowTotals' => $rowTotals,
             'colTotals' => $colTotals,

@@ -19,6 +19,6 @@ class RequireReport extends AssetsReport
 
     protected function defaults(): array
     {
-        return ['month', 'Supplier', 'Assets'];
+        return ['Supplier', 'month', 'Assets'];
     }
 }
