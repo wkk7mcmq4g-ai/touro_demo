@@ -7,6 +7,7 @@ use App\Filament\Concerns\UsesPhpRunnerPermissions;
 use App\Filament\Resources\Expenses\Pages\CreateExpense;
 use App\Filament\Resources\Expenses\Pages\EditExpense;
 use App\Filament\Resources\Expenses\Pages\ListExpenses;
+use App\Filament\Resources\Transfers\Tables\TransferCellColors;
 use App\Models\Expense;
 use App\Support\LegacyFiles;
 use App\Support\Lookups;
@@ -33,7 +34,6 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\HtmlString;
 use UnitEnum;
 
 /**
@@ -108,16 +108,19 @@ class ExpenseResource extends Resource
                 TextColumn::make('Files')->formatStateUsing(fn (?string $state) => LegacyFiles::links($state))->html()->placeholder('—'),
                 TextColumn::make('Company')->label('Εταιρεία')->badge()->color(fn (?string $state): string => $state === 'ΙΚΕ' ? 'info' : 'gray')->sortable(),
                 TextColumn::make('Flag')->placeholder('—')->sortable(),
-                // PHPRunner paints the category with optionvalues.Color (BeforeMoveNextList).
+                // PHPRunner's list event "After record processed" (BeforeMoveNextList): the whole category
+                // cell painted with optionvalues.Color, text dark or white to stay readable.
                 TextColumn::make('ExpenseCategoryID')->label('Κατηγορία')->sortable()
-                    ->formatStateUsing(function ($state): HtmlString|string|null {
-                        $label = Lookups::optionIds('ExpenseCategory')[$state] ?? null;
-                        $color = Lookups::colorById('ExpenseCategory', $state);
+                    ->formatStateUsing(fn ($state): ?string => Lookups::optionIds('ExpenseCategory')[$state] ?? null)
+                    ->extraCellAttributes(function ($record): array {
+                        $color = Lookups::colorById('ExpenseCategory', $record?->ExpenseCategoryID);
+                        if ($color === null || ! preg_match('/^#?[0-9a-fA-F]{3,8}$|^[a-zA-Z]+$/', $color)) {
+                            return [];
+                        }
 
-                        return $label !== null && $color !== null
-                            ? new HtmlString('<span style="display:inline-block;width:.6rem;height:.6rem;border-radius:999px;margin-right:.4rem;background:'.e($color).'"></span>'.e($label))
-                            : $label;
-                    })->placeholder('—'),
+                        return ['style' => 'background-color:'.$color.';color:'.TransferCellColors::textOn($color), 'class' => 'myat-cell-painted'];
+                    })
+                    ->placeholder('—'),
                 TextColumn::make('ExpenseID')->label('ID')->sortable()->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('CreatedBy')->label('Καταχώρηση')->toggleable(isToggledHiddenByDefault: true),
             ])
