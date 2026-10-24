@@ -285,6 +285,13 @@ class TransfersTest extends TestCase
             ->filterTable('period', 'last_month')
             ->assertCanSeeTableRecords([$lastMonth])
             ->assertCanNotSeeTableRecords([$fine]);
+
+        // Every select filter is multi-select: several periods match any of them.
+        $thisMonth = $this->transfer(['TransferDate' => Carbon::today()->startOfMonth(), 'ImportDate' => Carbon::today()->subYear()]);
+        Livewire::test(ListTransfers::class)->set('activeTab', 'all')
+            ->filterTable('period', ['last_month', 'this_month'])
+            ->assertCanSeeTableRecords([$lastMonth, $thisMonth])
+            ->assertCanNotSeeTableRecords([$this->transfer(['TransferDate' => Carbon::today()->subYears(2)])]);
     }
 
     public function test_copy_notes_to_driver_notes(): void

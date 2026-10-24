@@ -9,6 +9,7 @@ use App\Filament\Resources\Transfers\Actions\InvoicingActions;
 use App\Filament\Resources\Transfers\TransferResource;
 use App\Models\TransferCharge;
 use App\Support\ColorDot;
+use App\Support\FilterValues;
 use App\Support\Lookups;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -127,11 +128,10 @@ class ChargeResource extends Resource
             ->filters([
                 SelectFilter::make('PaymentVia')->label('Τρόπος πληρ.')->options(TransferCharge::PAYMENT_VIA),
                 SelectFilter::make('paid')->label('Πληρωμή')->options(['paid' => 'Paid', 'unpaid' => 'Not paid'])
-                    ->query(fn (Builder $q, array $data) => match ($data['value'] ?? null) {
-                        'paid' => $q->where('PaymentStatus', 'Paid'),
-                        'unpaid' => $q->where(fn ($q) => $q->whereNull('PaymentStatus')->orWhere('PaymentStatus', '<>', 'Paid')),
-                        default => $q,
-                    }),
+                    ->query(fn (Builder $q, array $data) => FilterValues::any($q, $data, [
+                        'paid' => fn (Builder $q) => $q->where('PaymentStatus', 'Paid'),
+                        'unpaid' => fn (Builder $q) => $q->whereNull('PaymentStatus')->orWhere('PaymentStatus', '<>', 'Paid'),
+                    ])),
                 SelectFilter::make('ExpenseChargeCategory')->label('Κατηγορία')->options(fn (): array => Lookups::optionIds('ExpenseChargeCategory')),
                 Filter::make('dates')->columnSpanFull()->columns(2)->schema([
                     DatePicker::make('from')->label('Transfer date from'),

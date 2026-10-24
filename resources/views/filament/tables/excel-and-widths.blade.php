@@ -213,38 +213,59 @@
         };
     };
 
+    /* Saved filters: a list to apply/delete and a name box to save, drawn in `box` (the toolbar popover
+       or the filter side panel). From the side panel, saving first applies what is set in the panel. */
+    const savedUi = async (box, c, { inPanel = false, onApplied = () => {} } = {}) => {
+        const w = wire(c);
+        box.innerHTML = '<div class="myat-xf-loading">…</div>';
+        let presets = [];
+        try { presets = await w.call('tablePresets', 'filters'); } catch (e) {}
+        const render = () => {
+            box.innerHTML = `<div class="myat-xf-head">Αποθηκευμένα φίλτρα</div>
+                <div class="myat-saved-list">${presets.length ? presets.map((p) => `<div class="myat-saved-item"><button type="button" class="myat-saved-apply" data-id="${p.id}">${esc(p.name)}</button><button type="button" class="myat-saved-del" data-id="${p.id}" aria-label="Διαγραφή ${esc(p.name)}">&times;</button></div>`).join('') : '<div class="myat-xf-loading">Δεν έχετε αποθηκεύσει φίλτρα σε αυτόν τον πίνακα.</div>'}</div>
+                <div class="myat-panel-row" style="margin-top:.5rem"><input type="text" class="myat-panel-input myat-saved-name" placeholder="Όνομα…" maxlength="80"><button type="button" class="myat-xf-ok myat-saved-save">Αποθήκευση</button></div>
+                <div class="myat-panel-note">${inPanel ? 'Εφαρμόζει και αποθηκεύει τα φίλτρα του πίνακα, την καρτέλα, την αναζήτηση και τα φίλτρα στηλών.' : 'Αποθηκεύει την καρτέλα, την αναζήτηση, τα φίλτρα και τα φίλτρα στηλών που ισχύουν τώρα.'}</div>`;
+            box.querySelectorAll('.myat-saved-apply').forEach((b) => b.onclick = async () => {
+                b.disabled = true;
+                const active = await w.call('applyFilterPreset', +b.dataset.id);
+                T.active[sessKey(nameOf(c))] = Array.isArray(active) ? active : [];
+                onApplied();
+                inject();
+            });
+            box.querySelectorAll('.myat-saved-del').forEach((b) => b.onclick = async () => { await w.call('deletePreset', 'filters', +b.dataset.id); presets = presets.filter((p) => String(p.id) !== b.dataset.id); render(); });
+            const save = async () => {
+                const name = box.querySelector('.myat-saved-name').value.trim(); if (! name) return box.querySelector('.myat-saved-name').focus();
+                const btn = box.querySelector('.myat-saved-save'); btn.disabled = true;
+                try {
+                    const id = await w.call(inPanel ? 'savePanelPreset' : 'savePreset', 'filters', name);
+                    presets = presets.filter((p) => p.id !== id).concat([{ id, name }]).sort((a, b) => a.name.localeCompare(b.name));
+                } finally { render(); }
+            };
+            box.querySelector('.myat-saved-save').onclick = save;
+            box.querySelector('.myat-saved-name').onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); save(); } };
+        };
+        render();
+    };
+
     const openSaved = async (btn) => {
-        const c = comp(btn), w = wire(c);
+        const c = comp(btn);
         close();
         pop = document.createElement('div');
         pop.className = 'myat-xf-pop myat-saved-pop'; pop.dataset.for = '__saved';
-        pop.innerHTML = '<div class="myat-xf-loading">…</div>';
         document.body.appendChild(pop);
         const r = btn.getBoundingClientRect();
         pop.style.top = (scrollY + r.bottom + 6) + 'px';
         pop.style.left = Math.max(8, Math.min(scrollX + r.right - 288, scrollX + document.documentElement.clientWidth - 300)) + 'px';
-        let presets = [];
-        try { presets = await w.call('tablePresets', 'filters'); } catch (e) {}
-        const render = () => {
-            pop.innerHTML = `<div class="myat-xf-head">Αποθηκευμένα φίλτρα</div>
-                <div class="myat-saved-list">${presets.length ? presets.map((p) => `<div class="myat-saved-item"><button type="button" class="myat-saved-apply" data-id="${p.id}">${esc(p.name)}</button><button type="button" class="myat-saved-del" data-id="${p.id}" aria-label="Διαγραφή ${esc(p.name)}">&times;</button></div>`).join('') : '<div class="myat-xf-loading">Δεν έχετε αποθηκεύσει φίλτρα σε αυτόν τον πίνακα.</div>'}</div>
-                <div class="myat-panel-row" style="margin-top:.5rem"><input type="text" class="myat-panel-input myat-saved-name" placeholder="Όνομα…" maxlength="80"><button type="button" class="myat-xf-ok myat-saved-save">Αποθήκευση</button></div>
-                <div class="myat-panel-note">Αποθηκεύει την καρτέλα, την αναζήτηση, τα φίλτρα και τα φίλτρα στηλών που ισχύουν τώρα.</div>`;
-            pop.querySelectorAll('.myat-saved-apply').forEach((b) => b.onclick = async () => {
-                close();
-                const active = await w.call('applyFilterPreset', +b.dataset.id);
-                T.active[sessKey(nameOf(c))] = Array.isArray(active) ? active : [];
-                inject();
-            });
-            pop.querySelectorAll('.myat-saved-del').forEach((b) => b.onclick = async () => { await w.call('deletePreset', 'filters', +b.dataset.id); presets = presets.filter((p) => String(p.id) !== b.dataset.id); render(); });
-            pop.querySelector('.myat-saved-save').onclick = async () => {
-                const name = pop.querySelector('.myat-saved-name').value.trim(); if (! name) return;
-                const id = await w.call('savePreset', 'filters', name);
-                presets = presets.filter((p) => p.id !== id).concat([{ id, name }]).sort((a, b) => a.name.localeCompare(b.name)); render();
-            };
-        };
-        render();
+        await savedUi(pop, c, { onApplied: close });
     };
+
+    // Inside the filter side panel (the box is wire:ignore'd, so it is filled once per panel).
+    const fillPanels = () => document.querySelectorAll('[data-myat-saved-inline]:not([data-ready])').forEach((box) => {
+        const c = comp(box); if (! c || ! wire(c)) return;
+        box.dataset.ready = '1';
+        savedUi(box, c, { inPanel: true });
+    });
+    new MutationObserver(() => fillPanels()).observe(document.documentElement, { childList: true, subtree: true });
 
     document.addEventListener('click', (e) => {
         const ex = e.target.closest?.('[data-myat-export]');

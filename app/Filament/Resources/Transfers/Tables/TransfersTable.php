@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Transfers\Tables;
 use App\Filament\Resources\Transfers\Actions\InvoicingActions;
 use App\Filament\Resources\Transfers\Actions\TransferActions;
 use App\Models\Transfer;
+use App\Support\FilterValues;
 use App\Support\Lookups;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
@@ -254,16 +255,15 @@ class TransfersTable
                 ])
                 ->query(function (Builder $query, array $data): Builder {
                     $today = Carbon::today();
-                    $range = match ($data['value'] ?? null) {
-                        'yesterday' => [$today->copy()->subDay(), $today->copy()->subDay()],
-                        'this_month' => [$today->copy()->startOfMonth(), $today->copy()->endOfMonth()],
-                        'last_month' => [$today->copy()->subMonthNoOverflow()->startOfMonth(), $today->copy()->subMonthNoOverflow()->endOfMonth()],
-                        'this_year' => [$today->copy()->startOfYear(), $today->copy()->endOfYear()],
-                        'last_year' => [$today->copy()->subYear()->startOfYear(), $today->copy()->subYear()->endOfYear()],
-                        default => null,
-                    };
+                    $between = fn (Carbon $from, Carbon $until): \Closure => fn (Builder $q) => $q->whereDate('TransferDate', '>=', $from)->whereDate('TransferDate', '<=', $until);
 
-                    return $range ? $query->whereDate('TransferDate', '>=', $range[0])->whereDate('TransferDate', '<=', $range[1]) : $query;
+                    return FilterValues::any($query, $data, [
+                        'yesterday' => $between($today->copy()->subDay(), $today->copy()->subDay()),
+                        'this_month' => $between($today->copy()->startOfMonth(), $today->copy()->endOfMonth()),
+                        'last_month' => $between($today->copy()->subMonthNoOverflow()->startOfMonth(), $today->copy()->subMonthNoOverflow()->endOfMonth()),
+                        'this_year' => $between($today->copy()->startOfYear(), $today->copy()->endOfYear()),
+                        'last_year' => $between($today->copy()->subYear()->startOfYear(), $today->copy()->subYear()->endOfYear()),
+                    ]);
                 }),
             $dateRange('import_dates', 'ImportDate', 'Date in'),
             SelectFilter::make('cID_Customer')->label('Supplier')->multiple()->searchable()
@@ -298,19 +298,17 @@ class TransfersTable
             SelectFilter::make('PastDate')
                 ->label('Past date')
                 ->options(['Ναι' => 'Ναι', 'Όχι' => 'Όχι'])
-                ->query(fn (Builder $query, array $data): Builder => match ($data['value'] ?? null) {
-                    'Ναι' => $query->whereDate('TransferDate', '<=', Carbon::today()),
-                    'Όχι' => $query->whereDate('TransferDate', '>', Carbon::today()),
-                    default => $query,
-                }),
+                ->query(fn (Builder $query, array $data): Builder => FilterValues::any($query, $data, [
+                    'Ναι' => fn (Builder $q) => $q->whereDate('TransferDate', '<=', Carbon::today()),
+                    'Όχι' => fn (Builder $q) => $q->whereDate('TransferDate', '>', Carbon::today()),
+                ])),
             SelectFilter::make('SupplierModified')
                 ->label('Supplier modified')
                 ->options(['Yes' => 'Yes', 'No' => 'No'])
-                ->query(fn (Builder $query, array $data): Builder => match ($data['value'] ?? null) {
-                    'Yes' => $query->where('SupplierModified', 1),
-                    'No' => $query->where(fn (Builder $query) => $query->where('SupplierModified', '<>', 1)->orWhereNull('SupplierModified')),
-                    default => $query,
-                }),
+                ->query(fn (Builder $query, array $data): Builder => FilterValues::any($query, $data, [
+                    'Yes' => fn (Builder $q) => $q->where('SupplierModified', 1),
+                    'No' => fn (Builder $q) => $q->where('SupplierModified', '<>', 1)->orWhereNull('SupplierModified'),
+                ])),
             $values('pricecheck', 'Price check'),
             SelectFilter::make('TaxiReceipt_flag')
                 ->label('Taxi receipt')
@@ -318,11 +316,10 @@ class TransfersTable
                 ->query(function (Builder $query, array $data): Builder {
                     $hasReceipt = "if(`CoachCompanyID` in ('VITO 2022','E CLASS 2015'), Get_Taxi_flnm(`TransferID`), 0) > 0";
 
-                    return match ($data['value'] ?? null) {
-                        'Yes' => $query->whereRaw($hasReceipt),
-                        'No' => $query->whereRaw("not ({$hasReceipt})"),
-                        default => $query,
-                    };
+                    return FilterValues::any($query, $data, [
+                        'Yes' => fn (Builder $q) => $q->whereRaw($hasReceipt),
+                        'No' => fn (Builder $q) => $q->whereRaw("not ({$hasReceipt})"),
+                    ]);
                 }),
             $values('CreatedBy', 'Created by'),
             $values('ModifiedBy', 'Modified by'),

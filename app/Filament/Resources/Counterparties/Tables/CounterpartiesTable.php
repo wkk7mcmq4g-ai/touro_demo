@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Counterparties\Tables;
 
 use App\Filament\Resources\Counterparties\Actions\AddToElorus;
 use App\Models\Counterparty;
+use App\Support\FilterValues;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -66,11 +67,10 @@ class CounterpartiesTable
                     ),
                 SelectFilter::make('elorus')->label('In Elorus')
                     ->options(['yes' => 'Yes', 'no' => 'No'])
-                    ->query(fn (Builder $q, array $data) => match ($data['value'] ?? null) {
-                        'yes' => $q->whereNotIn('ElorusID', ['', 'NotRegistered']),
-                        'no' => $q->whereIn('ElorusID', ['', 'NotRegistered']),
-                        default => $q,
-                    }),
+                    ->query(fn (Builder $q, array $data) => FilterValues::any($q, $data, [
+                        'yes' => fn (Builder $q) => $q->whereNotIn('ElorusID', ['', 'NotRegistered']),
+                        'no' => fn (Builder $q) => $q->whereIn('ElorusID', ['', 'NotRegistered']),
+                    ])),
             ])
             ->recordActions([EditAction::make()])
             ->toolbarActions([AddToElorus::make()]);

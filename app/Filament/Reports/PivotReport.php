@@ -4,14 +4,20 @@ namespace App\Filament\Reports;
 
 use App\Support\CsvDownload;
 use App\Support\Permissions;
+use App\Support\TablePresets;
 use BackedEnum;
 use Closure;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
@@ -82,16 +88,7 @@ abstract class PivotReport extends Page
             ->filter(fn (array $d): bool => in_array($d['axis'] ?? 'both', [$axis, 'both'], true))
             ->map(fn (array $d): string => $d['label'])->all();
 
-        $filters = collect($dims)->filter(fn (array $d): bool => $d['filter'] ?? false)
-            ->map(fn (array $d, string $key) => Select::make("filter.{$key}")->label($d['label'])->multiple()->searchable()
-                ->options(fn (): array => $this->distinct($key))->live())
-            ->values()->all();
-
-        $dates = $this->dateColumn() ? [
-            DatePicker::make('from')->label('Από')->live(),
-            DatePicker::make('until')->label('Έως')->live(),
-        ] : [];
-
+        // The layout stays on top; the filters are in the side panel (filtersAction).
         return $schema->statePath('data')->components([
             Section::make()->compact()->schema([
                 Grid::make(['default' => 1, 'md' => 3])->schema([
@@ -100,9 +97,103 @@ abstract class PivotReport extends Page
                     Select::make('measure')->label('Άθροισμα')->options(collect($this->measures())->map(fn (array $m): string => $m['label'])->all())
                         ->required()->selectablePlaceholder(false)->live(),
                 ]),
-                Grid::make(['default' => 1, 'md' => 4])->schema([...$dates, ...$filters]),
             ]),
         ]);
+    }
+
+    /** @return list<Component> dates and the dimension filters, for the side panel */
+    private function filterFields(): array
+    {
+        $dates = $this->dateColumn() ? [
+            Grid::make(2)->schema([
+                DatePicker::make('from')->label('Από'),
+                DatePicker::make('until')->label('Έως'),
+            ]),
+        ] : [];
+
+        $filters = collect($this->dimensions())->filter(fn (array $d): bool => $d['filter'] ?? false)
+            ->map(fn (array $d, string $key) => Select::make("filter.{$key}")->label($d['label'])->multiple()->searchable()
+                ->options(fn (): array => $this->distinct($key)))
+            ->values()->all();
+
+        return [...$dates, ...$filters];
+    }
+
+    /** How many filters are set (the badge on the Φίλτρα button). */
+    private function activeFilterCount(): int
+    {
+        return (int) filled($this->data['from'] ?? null) + (int) filled($this->data['until'] ?? null)
+            + collect($this->data['filter'] ?? [])->filter(fn ($v): bool => filled($v))->count();
+    }
+
+    /** @return array{rows: mixed, cols: mixed, measure: mixed, from: mixed, until: mixed, filter: array} */
+    private function presetData(): array
+    {
+        return [
+            'rows' => $this->data['rows'] ?? null, 'cols' => $this->data['cols'] ?? null, 'measure' => $this->data['measure'] ?? null,
+            'from' => $this->data['from'] ?? null, 'until' => $this->data['until'] ?? null,
+            'filter' => array_filter((array) ($this->data['filter'] ?? []), fn ($v): bool => filled($v)),
+        ];
+    }
+
+    /** "Φίλτρα": dates and filters in a panel from the right, with saved filters (per user). */
+    protected function filtersAction(): Action
+    {
+        $presets = fn (): array => collect(TablePresets::list(TablePresets::FILTERS, static::class))->pluck('name', 'id')->all();
+
+        return Action::make('filters')->label('Φίλτρα')->icon(Heroicon::OutlinedFunnel)->color('gray')
+            ->badge(fn (): ?int => $this->activeFilterCount() ?: null)
+            ->slideOver()->modalWidth(Width::Medium)->modalHeading('Φίλτρα')
+            ->modalSubmitActionLabel('Εφαρμογή')
+            ->fillForm(fn (): array => ['preset' => null, 'save_as' => ''] + $this->presetData())
+            ->schema(fn (): array => [
+                Select::make('preset')->label('Αποθηκευμένα φίλτρα')->options($presets)->placeholder('— επιλέξτε —')
+                    ->visible(fn (): bool => $presets() !== [])->live()
+                    ->afterStateUpdated(function ($state, Set $set): void {
+                        $preset = $state ? TablePresets::find(TablePresets::FILTERS, static::class, (int) $state) : null;
+                        if (! $preset) {
+                            return;
+                        }
+                        foreach (['from', 'until', 'filter'] as $key) {
+                            $set($key, $preset['data'][$key] ?? ($key === 'filter' ? [] : null));
+                        }
+                    })
+                    ->suffixAction(Action::make('deletePreset')->icon(Heroicon::OutlinedTrash)->color('danger')->tooltip('Διαγραφή')
+                        ->visible(fn (Get $get): bool => filled($get('preset')))
+                        ->action(function (Get $get, Set $set): void {
+                            TablePresets::delete(TablePresets::FILTERS, static::class, (int) $get('preset'));
+                            $set('preset', null);
+                        })),
+                ...$this->filterFields(),
+                TextInput::make('save_as')->label('Αποθήκευση ως')->placeholder('Όνομα (προαιρετικό)')->maxLength(80)
+                    ->helperText('Με όνομα, η εφαρμογή αποθηκεύει και τα φίλτρα μαζί με τις γραμμές, στήλες και άθροισμα. Το ίδιο όνομα τα αντικαθιστά.'),
+            ])
+            ->extraModalFooterActions(fn (): array => [
+                Action::make('clearFilters')->label('Καθαρισμός')->color('danger')->link()
+                    ->action(function (): void {
+                        $this->data['filter'] = [];
+                        $this->data['from'] = $this->data['until'] = null;
+                    })
+                    ->cancelParentActions(),
+            ])
+            ->action(function (array $data): void {
+                $this->data['from'] = $data['from'] ?? null;
+                $this->data['until'] = $data['until'] ?? null;
+                $this->data['filter'] = (array) ($data['filter'] ?? []);
+                $preset = filled($data['preset'] ?? null) ? TablePresets::find(TablePresets::FILTERS, static::class, (int) $data['preset']) : null;
+                $name = trim((string) ($data['save_as'] ?? ''));
+
+                if ($name !== '') {
+                    // Saved with the layout shown now; the same name replaces it.
+                    TablePresets::save(TablePresets::FILTERS, static::class, $name, $this->presetData());
+                    Notification::make()->title('Τα φίλτρα αποθηκεύτηκαν')->success()->send();
+                } elseif ($preset) {
+                    // A saved preset picked as it is brings its layout back too.
+                    foreach (['rows', 'cols', 'measure'] as $key) {
+                        $this->data[$key] = $preset['data'][$key] ?? $this->data[$key] ?? null;
+                    }
+                }
+            });
     }
 
     /** @return array<string, string> the distinct values of a dimension, for its filter */
@@ -202,6 +293,7 @@ abstract class PivotReport extends Page
     protected function getHeaderActions(): array
     {
         return [
+            $this->filtersAction(),
             Action::make('export')->label('Export')->icon(Heroicon::OutlinedArrowDownTray)->color('gray')
                 ->visible(fn (): bool => Permissions::allows(auth()->user(), static::$permissionTable, 'export'))
                 ->action(function () {

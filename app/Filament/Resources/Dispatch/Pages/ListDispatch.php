@@ -4,7 +4,9 @@ namespace App\Filament\Resources\Dispatch\Pages;
 
 use App\Filament\Resources\DailyTransfers\DailyTransfersResource;
 use App\Filament\Resources\Dispatch\DispatchResource;
+use App\Filament\Resources\Dispatch\Widgets\DispatchDayTotals;
 use Filament\Actions\Action;
+use Filament\Pages\Concerns\ExposesTableToWidgets;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Support\Enums\Width;
@@ -14,7 +16,20 @@ use Illuminate\Support\Carbon;
 
 class ListDispatch extends ListRecords
 {
+    use ExposesTableToWidgets;
+
     protected static string $resource = DispatchResource::class;
+
+    /** Totals of each day the list shows, above it (also in full screen). */
+    protected function getHeaderWidgets(): array
+    {
+        return [DispatchDayTotals::class];
+    }
+
+    public function getHeaderWidgetsColumns(): int|array
+    {
+        return 1;
+    }
 
     protected Width|string|null $maxContentWidth = Width::Full;
 

@@ -54,7 +54,11 @@ class SavedFilters
         }
 
         // Fill the filter panel and apply it (Filament keeps it in the session where asked).
-        $livewire->getTableFiltersForm()->fill((array) ($state['filters'] ?? []));
+        // Saved before every select filter became multi-select: {"value": x} is now {"values": [x]}.
+        $filters = array_map(fn ($f) => is_array($f) && array_key_exists('value', $f) && ! array_key_exists('values', $f)
+            ? ['values' => filled($f['value']) ? [$f['value']] : []] + array_diff_key($f, ['value' => true])
+            : $f, (array) ($state['filters'] ?? []));
+        $livewire->getTableFiltersForm()->fill($filters);
         if ($livewire->getTable()->hasDeferredFilters()) {
             $livewire->applyTableFilters();
         } elseif (method_exists($livewire, 'handleTableFilterUpdates')) {

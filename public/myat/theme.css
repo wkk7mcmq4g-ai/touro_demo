@@ -2064,9 +2064,121 @@ html.myat-immersive .fi-header {
     }
 }
 
-html.myat-immersive .fi-page-header-widgets,
+html.myat-immersive .fi-page-header-widgets:not(:has(.myat-daytotals)),
 html.myat-immersive .fi-wi:has(.myat-totals) {
     display: none;
+}
+
+/* ---------- Dispatch: totals of each day ---------- */
+
+.myat-daytotals {
+    display: flex;
+    gap: 0.6rem;
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+
+.myat-day {
+    flex: 1 0 9.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.05rem;
+    padding: 0.55rem 0.85rem;
+    border-radius: 0.8rem;
+    background: #fff;
+    box-shadow: var(--myat-shadow), 0 0 0 1px var(--myat-line);
+}
+
+.dark .myat-day {
+    background: #0f1b2d;
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.06);
+}
+
+.myat-day-date {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #64748b;
+}
+
+.myat-day-main {
+    font-size: 1.15rem;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    color: var(--myat-navy);
+}
+
+.myat-day-main small {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #64748b;
+}
+
+.dark .myat-day-main {
+    color: #fff;
+}
+
+.myat-day-sub {
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+    color: #475569;
+}
+
+.dark .myat-day-sub {
+    color: #94a3b8;
+}
+
+.myat-day-today {
+    background: linear-gradient(135deg, #0a3d68, var(--myat-navy-deep));
+    box-shadow: none;
+}
+
+.myat-day-today .myat-day-date,
+.myat-day-today .myat-day-main small,
+.myat-day-today .myat-day-sub {
+    color: rgb(255 255 255 / 0.75);
+}
+
+.myat-day-today .myat-day-main {
+    color: #fff;
+}
+
+.myat-day-empty {
+    color: #64748b;
+    font-size: 0.85rem;
+}
+
+/* Full screen: one compact row above the table. */
+html.myat-immersive .fi-page-header-widgets:has(.myat-daytotals) {
+    margin-bottom: 0.35rem;
+}
+
+html.myat-immersive .myat-day {
+    flex: 0 1 auto;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: 0.5rem;
+    padding: 0.3rem 0.65rem;
+}
+
+html.myat-immersive .myat-day-main {
+    font-size: 0.95rem;
+}
+
+html.myat-immersive .myat-day-sub {
+    font-size: 0.7rem;
+}
+
+@media (max-width: 639px) {
+    .myat-day {
+        flex-basis: 8.5rem;
+        padding: 0.45rem 0.7rem;
+    }
+
+    .myat-day-main {
+        font-size: 1rem;
+    }
 }
 
 /* ---------- Table toolbar: saved filters + Excel export ---------- */
@@ -2314,12 +2426,37 @@ html.myat-immersive .fi-wi:has(.myat-totals) {
     background: rgb(225 29 72 / 0.06);
 }
 
-.myat-saved-pop .myat-xf-ok {
+.myat-saved-pop .myat-xf-ok,
+.myat-saved-inline .myat-xf-ok {
     padding: 0.45rem 0.75rem;
     border-radius: 0.5rem;
     font-weight: 700;
     color: #fff;
     background: var(--myat-azure);
+}
+
+/* saved filters inside the filter side panel */
+.myat-saved-inline {
+    display: grid;
+    gap: 0.35rem;
+    margin-top: 0.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--myat-line);
+}
+
+.myat-saved-inline .myat-xf-head {
+    padding: 0;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.myat-saved-inline .myat-saved-list {
+    max-height: none;
+}
+
+.myat-saved-inline .myat-xf-ok:disabled,
+.myat-saved-apply:disabled {
+    opacity: 0.6;
 }
 
 /* ---------- Driver fuel receipts (phone first) ---------- */

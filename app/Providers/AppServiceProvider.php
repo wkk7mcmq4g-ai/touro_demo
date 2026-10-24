@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Auth\PhpRunnerUserProvider;
+use App\Filament\Resources\Dispatch\Pages\ListDispatch;
 use App\Filament\Resources\Transfers\Pages\ListTransfers;
 use App\Listeners\LogAccess;
 use App\Support\ExcelFilters;
@@ -18,6 +19,7 @@ use Filament\Support\Facades\FilamentView;
 use Filament\Tables\Columns\Column;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Filament\Tables\View\TablesRenderHook;
 use Filament\View\PanelsRenderHook;
@@ -69,12 +71,17 @@ class AppServiceProvider extends ServiceProvider
             scopes: ListTransfers::class,
         );
 
+        // Every select filter lets you pick several values (custom queries use FilterValues).
+        SelectFilter::configureUsing(fn (SelectFilter $filter) => $filter->multiple());
+
         // Every table: columns can be reordered and hidden (Filament's column manager), resized,
         // and filtered Excel-style from the header. Layouts are saved per user (TableLayouts).
         Table::configureUsing(fn (Table $table) => $table
             // The filter button opens a panel that slides in from the right, one filter per row.
             ->filtersLayout(FiltersLayout::Modal)
-            ->filtersTriggerAction(fn (Action $action) => $action->slideOver()->label('Φίλτρα'))
+            ->filtersTriggerAction(fn (Action $action) => $action->slideOver()->label('Φίλτρα')
+                // Saved filters (apply, delete, save the panel's filters) under the filters.
+                ->modalContentFooter(fn () => view('filament.tables.saved-in-panel')))
             ->filtersFormWidth(Width::Medium)
             ->filtersFormColumns(1)
             ->reorderableColumns()
@@ -92,7 +99,7 @@ class AppServiceProvider extends ServiceProvider
         // The header funnels and column widths talk to the table's own Livewire component.
         \Livewire\on('call', function ($component, string $method, array $params, $context, $returnEarly) {
             if (! $component instanceof HasTable || ! in_array($method, ['excelFilterValues', 'applyExcelFilter', 'clearExcelFilters', 'saveColumnWidths',
-                'exportColumns', 'exportTable', 'tablePresets', 'savePreset', 'deletePreset', 'applyFilterPreset'], true)) {
+                'exportColumns', 'exportTable', 'tablePresets', 'savePreset', 'savePanelPreset', 'deletePreset', 'applyFilterPreset'], true)) {
                 return;
             }
 
@@ -114,6 +121,8 @@ class AppServiceProvider extends ServiceProvider
                 'savePreset' => $returnEarly(($params[0] ?? '') === 'export'
                     ? TablePresets::save(TablePresets::EXPORT, SavedFilters::key($component), (string) ($params[1] ?? ''), ['columns' => array_values(array_filter((array) ($params[2] ?? []), 'is_string'))])
                     : TablePresets::save(TablePresets::FILTERS, SavedFilters::key($component), (string) ($params[1] ?? ''), SavedFilters::current($component))),
+                // From the filter side panel: apply what is set there, then save it.
+                'savePanelPreset' => $returnEarly(self::savePanelPreset($component, (string) ($params[1] ?? ''))),
                 'deletePreset' => $returnEarly(TablePresets::delete(($params[0] ?? '') === 'export' ? TablePresets::EXPORT : TablePresets::FILTERS, SavedFilters::key($component), (int) ($params[1] ?? 0))),
                 'applyFilterPreset' => $returnEarly(self::filtered($component, fn () => ($preset = TablePresets::find(TablePresets::FILTERS, SavedFilters::key($component), (int) ($params[0] ?? 0)))
                     ? SavedFilters::apply($component, $preset['data']) : abort(404)) ?? array_keys(ExcelFilters::active($component))),
@@ -132,7 +141,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         // Wide tables that get Full screen + zoom (phones sideways, tablets, computers).
-        ImmersiveTables::register([ListTransfers::class]);
+        ImmersiveTables::register([ListTransfers::class, ListDispatch::class]);
 
         // Same access_log rows the PHPRunner login/logout events wrote.
         Event::listen(Login::class, [LogAccess::class, 'login']);
@@ -140,6 +149,17 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /** Run a column-filter change, then tell widgets over the table (e.g. transfer totals) to redraw. */
+    /** Saving from the filter side panel: what is set in the panel is applied first, then saved. */
+    private static function savePanelPreset(Component $component, string $name): int
+    {
+        if (method_exists($component, 'applyTableFilters')) {
+            $component->applyTableFilters();
+        }
+        $component->dispatch('myat-table-filtered');
+
+        return TablePresets::save(TablePresets::FILTERS, SavedFilters::key($component), $name, SavedFilters::current($component));
+    }
+
     private static function filtered(Component $component, \Closure $change): null
     {
         $change();

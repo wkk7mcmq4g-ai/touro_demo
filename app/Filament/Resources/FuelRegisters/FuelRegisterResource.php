@@ -8,6 +8,7 @@ use App\Filament\Resources\FuelRegisters\Pages\CreateFuelRegister;
 use App\Filament\Resources\FuelRegisters\Pages\EditFuelRegister;
 use App\Filament\Resources\FuelRegisters\Pages\ListFuelRegisters;
 use App\Models\FuelRegister;
+use App\Support\FilterValues;
 use App\Support\LegacyFiles;
 use App\Support\Lookups;
 use BackedEnum;
@@ -93,11 +94,10 @@ class FuelRegisterResource extends Resource
             ->filters([
                 SelectFilter::make('VehicleID')->label('Όχημα')->options(fn (): array => Lookups::vehicles())->multiple(),
                 SelectFilter::make('checked')->label('Έλεγχος')->options(['pending' => 'Not checked', 'checked' => 'Checked'])
-                    ->query(fn (Builder $q, array $data) => match ($data['value'] ?? null) {
-                        'pending' => $q->where(fn ($q) => $q->whereNull('ApprovedStatus')->orWhere('ApprovedStatus', '')),
-                        'checked' => $q->whereNotNull('ApprovedStatus')->where('ApprovedStatus', '<>', ''),
-                        default => $q,
-                    }),
+                    ->query(fn (Builder $q, array $data) => FilterValues::any($q, $data, [
+                        'pending' => fn (Builder $q) => $q->whereNull('ApprovedStatus')->orWhere('ApprovedStatus', ''),
+                        'checked' => fn (Builder $q) => $q->whereNotNull('ApprovedStatus')->where('ApprovedStatus', '<>', ''),
+                    ])),
                 Filter::make('month')->schema([DatePicker::make('month')->label('Μήνας')->displayFormat('m/Y')])
                     ->query(fn (Builder $q, array $data): Builder => $q->when($data['month'] ?? null, fn ($q, $m) => $q->whereYear('FuelDate', substr($m, 0, 4))->whereMonth('FuelDate', substr($m, 5, 2)))),
             ])
