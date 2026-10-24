@@ -2057,22 +2057,86 @@ html.myat-immersive .fi-header {
     color: #fff;
 }
 
+/* Phones: one slim strip (transfers · sales); tapping it opens the other totals underneath. */
+.myat-totals-strip {
+    display: none;
+}
+
 @media (max-width: 639px) {
-    .myat-totals {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+    .myat-totals-strip {
+        display: flex;
+        align-items: center;
         gap: 0.4rem;
+        width: 100%;
+        min-height: 2.6rem;
+        padding: 0.45rem 0.85rem;
+        border-radius: 0.8rem;
+        font-size: 0.85rem;
+        font-variant-numeric: tabular-nums;
+        color: rgb(255 255 255 / 0.8);
+        text-align: start;
+        background: linear-gradient(135deg, #0a3d68, var(--myat-navy-deep));
+        cursor: pointer;
     }
 
-    .myat-total:first-child {
-        grid-column: 1 / -1;
-        flex-direction: row;
-        align-items: baseline;
-        justify-content: space-between;
+    .myat-totals-strip strong {
+        font-weight: 800;
+        color: #fff;
+    }
+
+    .myat-totals-strip-sep {
+        color: rgb(255 255 255 / 0.5);
+    }
+
+    .myat-totals-strip-icon {
+        width: 1.1rem;
+        height: 1.1rem;
+        margin-inline-start: auto;
+        color: #fff;
+        transition: transform 0.2s;
+    }
+
+    .myat-totals-wrap.is-open .myat-totals-strip-icon {
+        transform: rotate(180deg);
+    }
+
+    .myat-totals-strip:focus-visible {
+        outline: 2px solid var(--myat-azure);
+        outline-offset: 2px;
+    }
+
+    /* the cards: hidden until the strip is opened; then the ones the strip doesn't show */
+    .myat-totals {
+        display: none;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.4rem;
+        margin-top: 0.4rem;
+    }
+
+    .myat-totals-wrap.is-open .myat-totals {
+        display: grid;
+    }
+
+    .myat-totals .myat-total:first-child,
+    .myat-totals .myat-total-sales {
+        display: none;
+    }
+
+    .myat-total {
+        padding: 0.45rem 0.6rem;
+    }
+
+    .myat-total-label {
+        font-size: 0.68rem;
     }
 
     .myat-total-value {
-        font-size: 1rem;
+        font-size: 0.9rem;
     }
+}
+
+@media (max-width: 639px) and (prefers-reduced-motion: reduce) {
+    .myat-totals-strip-icon { transition: none; }
 }
 
 html.myat-immersive .fi-page-header-widgets:not(:has(.myat-daytotals)),
