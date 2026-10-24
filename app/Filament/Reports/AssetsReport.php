@@ -3,6 +3,7 @@
 namespace App\Filament\Reports;
 
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -24,7 +25,8 @@ abstract class AssetsReport extends PivotReport
     protected function dimensions(): array
     {
         return [
-            'month' => ['label' => 'Reference period', 'expr' => "DATE_FORMAT(ReferencePeriod, '%Y-%m')", 'axis' => 'rows'],
+            'month' => ['label' => 'Reference period', 'expr' => 'LAST_DAY(ReferencePeriod)', 'axis' => 'rows',
+                'format' => fn ($v): string => Carbon::parse($v)->format('d/m/Y')],
             'year' => ['label' => 'Έτος', 'expr' => 'YEAR(ReferencePeriod)', 'axis' => 'rows'],
             'Supplier' => ['label' => 'Supplier', 'expr' => 'Supplier', 'filter' => true],
             'CoachCompanyID' => ['label' => 'Coach', 'expr' => 'CoachCompanyID', 'filter' => true],

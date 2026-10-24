@@ -22,6 +22,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Query\Builder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use UnitEnum;
@@ -120,6 +121,71 @@ abstract class PivotReport extends Page
             ->values()->all();
 
         return [...$dates, ...$filters];
+    }
+
+    /** Heat shading of the cells (per user, this page). */
+    public bool $heatmap = true;
+
+    /**
+     * The headline figures above the table: the total, the last period against the one before
+     * (when rows are periods), and the biggest columns with their share.
+     *
+     * @param  array<string, mixed>  $r  result()
+     * @return array{total: float, rows: int, cols: int, last: ?array{label: string, value: float, prev: ?float, change: ?float}, top: list<array{label: string, value: float, share: float}>, series: list<array{label: string, value: float}>}
+     */
+    public function insights(array $r): array
+    {
+        $series = [];
+        foreach ($r['rows'] as $key => $label) {
+            $series[] = ['label' => $label, 'value' => (float) $r['rowTotals'][$key]];
+        }
+
+        $last = null;
+        if ($r['time'] && count($series) >= 2) {
+            $current = $series[count($series) - 1];
+            $prev = $series[count($series) - 2]['value'] ?? null;
+            $last = $current + ['prev' => $prev, 'change' => $prev ? ($current['value'] - $prev) / abs($prev) * 100 : null];
+        }
+
+        $top = [];
+        if ($r['hasCols'] && $r['total'] != 0) {
+            $totals = $r['colTotals'];
+            arsort($totals);
+            foreach (array_slice(array_filter($totals, fn ($v): bool => $v != 0), 0, 5, true) as $key => $value) {
+                $top[] = ['label' => $r['cols'][$key] ?? (string) $key, 'value' => (float) $value, 'share' => $value / $r['total'] * 100];
+            }
+        }
+
+        return ['total' => (float) $r['total'], 'rows' => count($r['rows']), 'cols' => $r['hasCols'] ? count($r['cols']) : 0, 'last' => $last, 'top' => $top, 'series' => $series];
+    }
+
+    /** @return list<array{key: string, label: string, value: string}> the filters set now, as chips */
+    public function activeFilters(): array
+    {
+        $chips = [];
+        foreach (['from' => 'Από', 'until' => 'Έως'] as $key => $label) {
+            if (filled($this->data[$key] ?? null)) {
+                $chips[] = ['key' => $key, 'label' => $label, 'value' => Carbon::parse($this->data[$key])->format('d/m/Y')];
+            }
+        }
+        $dims = $this->dimensions();
+        foreach ((array) ($this->data['filter'] ?? []) as $key => $values) {
+            if (filled($values) && isset($dims[$key])) {
+                $shown = array_map(fn ($v): string => $this->label($key, $v), (array) $values);
+                $chips[] = ['key' => "filter.{$key}", 'label' => $dims[$key]['label'], 'value' => count($shown) > 2 ? $shown[0].', '.$shown[1].' +'.(count($shown) - 2) : implode(', ', $shown)];
+            }
+        }
+
+        return $chips;
+    }
+
+    public function removeFilter(string $key): void
+    {
+        if (in_array($key, ['from', 'until'], true)) {
+            $this->data[$key] = null;
+        } elseif (str_starts_with($key, 'filter.')) {
+            $this->data['filter'][substr($key, 7)] = [];
+        }
     }
 
     /** How many filters are set (the badge on the Φίλτρα button). */
@@ -304,7 +370,10 @@ abstract class PivotReport extends Page
             'money' => $measures[$measureKey]['money'] ?? false,
             'measure' => $measures[$measureKey]['label'],
             'rowLabel' => $dims[$rowKey]['label'],
+            'colLabel' => $colKey ? $dims[$colKey]['label'] : null,
             'hasCols' => $colKey !== null,
+            'time' => in_array($rowKey, ['month', 'year'], true),
+            'maxCell' => max([0.0, ...array_map(fn (array $c): float => max([0.0, ...array_map('abs', $c)]), $cells)]),
         ];
     }
 
