@@ -10,6 +10,7 @@ use App\Filament\Portal\Resources\BookingRequests\Pages\ListBookingRequests;
 use App\Filament\Resources\TransfersToSort\RelationManagers\LoadFilesRelationManager;
 use App\Filament\Resources\TransfersToSort\RelationManagers\LoadNotesRelationManager;
 use App\Filament\Resources\TransfersToSort\RelationManagers\LoadPriceLinesRelationManager;
+use App\Filament\Resources\TransfersToSort\Schemas\LoadFormTabs;
 use App\Models\TransfersLoad;
 use App\Support\Lookups;
 use App\Support\Portal;
@@ -22,7 +23,6 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -90,23 +90,28 @@ class BookingRequestResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Section::make('Πληροφορίες')->columns(3)->columnSpanFull()->schema([
-                TextInput::make('SupplierCode')->label('Supplier code')->maxLength(50),
-                TextInput::make('Pax')->maxLength(50)->required(),
-                Select::make('TransferType')->label('Transfer type')->options(fn (): array => Lookups::optionValues('TransferType'))->required(),
-                DatePicker::make('TransferDate')->label('Transfer date')->required()->rule(fn (): Closure => self::transferDateRule()),
-                TextInput::make('TransferTime')->label('Transfer time')->placeholder('14:30')->maxLength(50)->required(),
-                Select::make('CarType')->label('Car type')->options(fn (): array => Lookups::optionValues('CarType')),
-                TextInput::make('From')->datalist(fn (): array => array_keys(Lookups::pickupPlaces()))->maxLength(150)->required(),
-                TextInput::make('To')->datalist(fn (): array => array_keys(Lookups::destinations()))->maxLength(150)->required(),
-                TextInput::make('Flight_Ship_Num_From')->label('Πτήση / Πλοίο')->maxLength(150),
-                TextInput::make('LeadName')->label('Lead name')->maxLength(150),
-                TextInput::make('LeadPhone')->label('Lead phone')->tel()->maxLength(150),
-                TextInput::make('Assistant')->label('Συνοδός')->maxLength(500),
-                TextInput::make('Sale_Price')->label('Sale price')->numeric()->prefix('€'),
-                Textarea::make('PassengerList')->label('Passenger list')->rows(2)->maxLength(500)->columnSpan(2),
-                Textarea::make('Notes')->label('Παρατηρήσεις')->rows(3)->maxLength(2500)->columnSpanFull(),
-            ]),
+            LoadFormTabs::make(
+                left: [
+                    TextInput::make('SupplierCode')->label('Supplier code')->maxLength(50),
+                    TextInput::make('Pax')->maxLength(50)->required(),
+                    Select::make('TransferType')->label('Transfer type')->options(fn (): array => Lookups::optionValues('TransferType'))->required(),
+                    DatePicker::make('TransferDate')->label('Transfer date')->required()->rule(fn (): Closure => self::transferDateRule()),
+                    TextInput::make('TransferTime')->label('Transfer time')->placeholder('14:30')->maxLength(50)->required(),
+                    Select::make('CarType')->label('Car type')->options(fn (): array => Lookups::optionValues('CarType')),
+                    Textarea::make('Notes')->label('Παρατηρήσεις')->rows(4)->maxLength(2500)->columnSpanFull(),
+                ],
+                right: [
+                    TextInput::make('From')->datalist(fn (): array => array_keys(Lookups::pickupPlaces()))->maxLength(150)->required(),
+                    TextInput::make('To')->datalist(fn (): array => array_keys(Lookups::destinations()))->maxLength(150)->required(),
+                    TextInput::make('Flight_Ship_Num_From')->label('Πτήση / Πλοίο')->maxLength(150),
+                    TextInput::make('Assistant')->label('Συνοδός')->maxLength(500),
+                    TextInput::make('Sale_Price')->label('Sale price')->numeric()->prefix('€'),
+                    Textarea::make('PassengerList')->label('Passenger list')->rows(2)->maxLength(500),
+                    TextInput::make('LeadName')->label('Lead name')->maxLength(150),
+                    TextInput::make('LeadPhone')->label('Lead phone')->tel()->maxLength(150),
+                ],
+                pageClass: EditBookingRequest::class,
+            ),
         ]);
     }
 

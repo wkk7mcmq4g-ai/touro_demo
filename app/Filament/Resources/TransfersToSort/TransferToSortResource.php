@@ -8,6 +8,7 @@ use App\Filament\Resources\TransfersToSort\Pages\ListTransferToSorts;
 use App\Filament\Resources\TransfersToSort\RelationManagers\LoadFilesRelationManager;
 use App\Filament\Resources\TransfersToSort\RelationManagers\LoadNotesRelationManager;
 use App\Filament\Resources\TransfersToSort\RelationManagers\LoadPriceLinesRelationManager;
+use App\Filament\Resources\TransfersToSort\Schemas\LoadFormTabs;
 use App\Models\TransfersLoad;
 use App\Support\Lookups;
 use BackedEnum;
@@ -19,7 +20,6 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -71,24 +71,29 @@ class TransferToSortResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Section::make('Πληροφορίες')->columns(3)->columnSpanFull()->schema([
-                Select::make('cID_Customer')->label('Customer')->options(fn (): array => Lookups::customers())->searchable()->disabled(),
-                TextInput::make('SupplierCode')->label('Supplier code')->maxLength(50),
-                TextInput::make('Pax')->maxLength(50),
-                Select::make('TransferType')->label('Type')->options(fn (): array => Lookups::optionValues('TransferType')),
-                DatePicker::make('TransferDate')->label('Transfer date'),
-                TextInput::make('TransferTime')->label('Transfer time')->maxLength(50),
-                Select::make('CarType')->label('Car type')->options(fn (): array => Lookups::optionValues('CarType')),
-                TextInput::make('From')->datalist(fn (): array => array_keys(Lookups::pickupPlaces()))->maxLength(150),
-                TextInput::make('To')->datalist(fn (): array => array_keys(Lookups::destinations()))->maxLength(150),
-                TextInput::make('Flight_Ship_Num_From')->label('Πτήση / Πλοίο')->maxLength(150),
-                TextInput::make('Assistant')->label('Συνοδός')->maxLength(500),
-                TextInput::make('Sale_Price')->label('Sale price')->numeric()->prefix('€'),
-                TextInput::make('LeadName')->label('Lead name')->maxLength(150),
-                TextInput::make('LeadPhone')->label('Lead phone')->maxLength(150),
-                Textarea::make('PassengerList')->label('Passenger list')->rows(2)->maxLength(500),
-                Textarea::make('Notes')->label('Παρατηρήσεις')->rows(3)->maxLength(2500)->columnSpanFull(),
-            ]),
+            LoadFormTabs::make(
+                left: [
+                    TextInput::make('SupplierCode')->label('Supplier code')->maxLength(50),
+                    TextInput::make('Pax')->maxLength(50),
+                    Select::make('TransferType')->label('Type')->options(fn (): array => Lookups::optionValues('TransferType')),
+                    DatePicker::make('TransferDate')->label('Transfer date'),
+                    TextInput::make('TransferTime')->label('Transfer time')->maxLength(50),
+                    Select::make('CarType')->label('Car type')->options(fn (): array => Lookups::optionValues('CarType')),
+                    Textarea::make('Notes')->label('Παρατηρήσεις')->rows(4)->maxLength(2500)->columnSpanFull(),
+                ],
+                right: [
+                    TextInput::make('From')->datalist(fn (): array => array_keys(Lookups::pickupPlaces()))->maxLength(150),
+                    TextInput::make('To')->datalist(fn (): array => array_keys(Lookups::destinations()))->maxLength(150),
+                    TextInput::make('Flight_Ship_Num_From')->label('Πτήση / Πλοίο')->maxLength(150),
+                    TextInput::make('Assistant')->label('Συνοδός')->maxLength(500),
+                    TextInput::make('Sale_Price')->label('Sale price')->numeric()->prefix('€'),
+                    Textarea::make('PassengerList')->label('Passenger list')->rows(2)->maxLength(500),
+                    TextInput::make('LeadName')->label('Lead name')->maxLength(150),
+                    TextInput::make('LeadPhone')->label('Lead phone')->maxLength(150),
+                ],
+                pageClass: EditTransferToSort::class,
+                top: [Select::make('cID_Customer')->label('Customer')->options(fn (): array => Lookups::customers())->searchable()->disabled()],
+            ),
         ]);
     }
 
