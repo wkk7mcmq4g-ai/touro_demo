@@ -39,6 +39,9 @@ class DriverLeaveResource extends Resource
 
     protected static ?string $navigationLabel = 'Άδειες Οδηγών';
 
+    /** List page title and breadcrumb: the same as the menu item. */
+    protected static ?string $pluralModelLabel = 'Άδειες Οδηγών';
+
     protected static ?string $modelLabel = 'leave';
 
     protected static ?string $slug = 'driver-leave';

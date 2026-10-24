@@ -43,6 +43,9 @@ class VehicleLogResource extends Resource
 
     protected static ?string $navigationLabel = 'Ιστορικό';
 
+    /** List page title and breadcrumb: the same as the menu item. */
+    protected static ?string $pluralModelLabel = 'Ιστορικό';
+
     protected static ?string $modelLabel = 'log entry';
 
     protected static ?string $slug = 'vehicle-log';

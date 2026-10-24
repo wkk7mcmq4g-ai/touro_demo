@@ -37,6 +37,9 @@ class CommunicationResource extends Resource
 
     protected static ?string $navigationLabel = 'Communications';
 
+    /** List page title and breadcrumb: the same as the menu item. */
+    protected static ?string $pluralModelLabel = 'Communications';
+
     protected static ?string $modelLabel = 'message';
 
     protected static ?string $slug = 'communications';

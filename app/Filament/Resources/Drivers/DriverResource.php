@@ -45,6 +45,9 @@ class DriverResource extends Resource
 
     protected static ?string $navigationLabel = 'Οδηγοί';
 
+    /** List page title and breadcrumb: the same as the menu item. */
+    protected static ?string $pluralModelLabel = 'Οδηγοί';
+
     protected static ?string $modelLabel = 'driver';
 
     protected static ?string $recordTitleAttribute = 'Fullname';

@@ -39,6 +39,9 @@ class ReviewLinkResource extends Resource
 
     protected static ?string $navigationLabel = 'Review links';
 
+    /** List page title and breadcrumb: the same as the menu item. */
+    protected static ?string $pluralModelLabel = 'Review links';
+
     protected static ?string $modelLabel = 'review link';
 
     public static function form(Schema $schema): Schema

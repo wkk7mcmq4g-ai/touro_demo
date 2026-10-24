@@ -49,6 +49,9 @@ class FuelRegisterResource extends Resource
 
     protected static ?string $navigationLabel = 'Καύσιμα';
 
+    /** List page title and breadcrumb: the same as the menu item. */
+    protected static ?string $pluralModelLabel = 'Καύσιμα';
+
     protected static ?string $modelLabel = 'fuel receipt';
 
     protected static ?string $slug = 'fuel';

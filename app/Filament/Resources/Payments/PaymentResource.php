@@ -41,11 +41,14 @@ class PaymentResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBanknotes;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Operations';
+    protected static string|UnitEnum|null $navigationGroup = 'Finance';
 
     protected static ?int $navigationSort = 5;
 
     protected static ?string $navigationLabel = 'Εισερχόμενα Εμβάσματα';
+
+    /** List page title and breadcrumb: the same as the menu item. */
+    protected static ?string $pluralModelLabel = 'Εισερχόμενα Εμβάσματα';
 
     protected static ?string $modelLabel = 'payment';
 

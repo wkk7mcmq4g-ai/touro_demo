@@ -37,6 +37,9 @@ class CounterpartyResource extends Resource
 
     protected static ?string $navigationLabel = 'Συνεργάτες';
 
+    /** List page title and breadcrumb: the same as the menu item. */
+    protected static ?string $pluralModelLabel = 'Συνεργάτες';
+
     protected static ?string $modelLabel = 'partner';
 
     protected static ?string $recordTitleAttribute = 'CounterShortName';

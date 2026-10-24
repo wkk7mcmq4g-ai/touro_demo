@@ -46,11 +46,14 @@ class ChargeResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedReceiptPercent;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Operations';
+    protected static string|UnitEnum|null $navigationGroup = 'Finance';
 
     protected static ?int $navigationSort = 4;
 
     protected static ?string $navigationLabel = 'Χρεώσεις';
+
+    /** List page title and breadcrumb: the same as the menu item. */
+    protected static ?string $pluralModelLabel = 'Χρεώσεις';
 
     protected static ?string $modelLabel = 'charge';
 

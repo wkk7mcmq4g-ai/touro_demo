@@ -34,6 +34,9 @@ class AccessLogResource extends Resource
 
     protected static ?string $navigationLabel = 'Access Log';
 
+    /** List page title and breadcrumb: the same as the menu item. */
+    protected static ?string $pluralModelLabel = 'Access Log';
+
     protected static ?string $slug = 'access-log';
 
     public static function canCreate(): bool

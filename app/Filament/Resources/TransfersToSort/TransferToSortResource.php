@@ -50,6 +50,9 @@ class TransferToSortResource extends Resource
 
     protected static ?string $navigationLabel = 'Προς Διαλογή';
 
+    /** List page title and breadcrumb: the same as the menu item. */
+    protected static ?string $pluralModelLabel = 'Προς Διαλογή';
+
     protected static ?string $modelLabel = 'booking to sort';
 
     protected static ?string $slug = 'to-sort';

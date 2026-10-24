@@ -39,6 +39,9 @@ class ArchiveResource extends Resource
 
     protected static ?string $navigationLabel = 'Archive';
 
+    /** List page title and breadcrumb: the same as the menu item. */
+    protected static ?string $pluralModelLabel = 'Archive';
+
     protected static ?string $modelLabel = 'archived transfer';
 
     protected static ?string $slug = 'archive';

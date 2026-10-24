@@ -44,6 +44,9 @@ class VehicleResource extends Resource
 
     protected static ?string $navigationLabel = 'Οχήματα';
 
+    /** List page title and breadcrumb: the same as the menu item. */
+    protected static ?string $pluralModelLabel = 'Οχήματα';
+
     protected static ?string $modelLabel = 'vehicle';
 
     protected static ?string $recordTitleAttribute = 'VehicleName';

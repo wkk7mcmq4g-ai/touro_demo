@@ -25,7 +25,7 @@ class DriverCalendar extends Page
 
     protected static ?string $navigationLabel = 'Calendar';
 
-    protected static ?string $title = 'Πρόγραμμα οδηγών';
+    protected static ?string $title = 'Calendar';
 
     protected Width|string|null $maxContentWidth = Width::Full;
 

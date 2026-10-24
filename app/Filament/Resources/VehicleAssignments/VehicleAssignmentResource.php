@@ -47,6 +47,9 @@ class VehicleAssignmentResource extends Resource
 
     protected static ?string $navigationLabel = 'Ανάθεση';
 
+    /** List page title and breadcrumb: the same as the menu item. */
+    protected static ?string $pluralModelLabel = 'Ανάθεση';
+
     protected static ?string $modelLabel = 'assignment';
 
     private const AWAY = ['ΑΔΕΙΑ' => 'ΑΔΕΙΑ', 'ΡΕΠΟ' => 'ΡΕΠΟ', 'ΑΡΡΩΣΤΟΣ' => 'ΑΡΡΩΣΤΟΣ'];

@@ -38,6 +38,9 @@ class VehicleKmResource extends Resource
 
     protected static ?string $navigationLabel = 'Ιστορικό ΧΛΜ';
 
+    /** List page title and breadcrumb: the same as the menu item. */
+    protected static ?string $pluralModelLabel = 'Ιστορικό ΧΛΜ';
+
     protected static ?string $modelLabel = 'km reading';
 
     protected static ?string $slug = 'vehicle-km';

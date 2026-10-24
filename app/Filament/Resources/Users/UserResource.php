@@ -30,6 +30,9 @@ class UserResource extends Resource
 
     protected static ?string $navigationLabel = 'Users & roles';
 
+    /** List page title and breadcrumb: the same as the menu item. */
+    protected static ?string $pluralModelLabel = 'Users & roles';
+
     protected static ?string $modelLabel = 'user';
 
     protected static ?string $recordTitleAttribute = 'username';

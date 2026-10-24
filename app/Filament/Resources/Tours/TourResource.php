@@ -48,6 +48,9 @@ class TourResource extends Resource
 
     protected static ?string $navigationLabel = 'Προορισμοί';
 
+    /** List page title and breadcrumb: the same as the menu item. */
+    protected static ?string $pluralModelLabel = 'Προορισμοί';
+
     protected static ?string $modelLabel = 'destination';
 
     protected static ?string $recordTitleAttribute = 'TourName';
