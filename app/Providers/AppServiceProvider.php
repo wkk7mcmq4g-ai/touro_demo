@@ -3,8 +3,6 @@
 namespace App\Providers;
 
 use App\Auth\PhpRunnerUserProvider;
-use App\Filament\Resources\DailyTransfers\Pages\ListDailyTransfers;
-use App\Filament\Resources\Dispatch\Pages\ListDispatch;
 use App\Filament\Resources\Transfers\Pages\ListTransfers;
 use App\Listeners\LogAccess;
 use App\Support\ExcelFilters;
@@ -142,7 +140,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         // Wide tables that get Full screen + zoom (phones sideways, tablets, computers).
-        ImmersiveTables::register([ListTransfers::class, ListDispatch::class, ListDailyTransfers::class]);
+        ImmersiveTables::register();
 
         // Same access_log rows the PHPRunner login/logout events wrote.
         Event::listen(Login::class, [LogAccess::class, 'login']);

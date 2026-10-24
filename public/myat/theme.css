@@ -1871,6 +1871,12 @@ html.myat-immersive body {
     body:has(.myat-zoombar) .fi-header-actions-ctn .fi-btn {
         height: 2rem;
         min-height: 2rem !important;
+        padding: 0 0.6rem;
+        font-size: 0.8rem;
+    }
+
+    /* buttons with an icon show just the icon; the rest keep a short label */
+    body:has(.myat-zoombar) .fi-header-actions-ctn .fi-btn:has(.fi-icon) {
         padding: 0 0.5rem;
         font-size: 0;
         gap: 0;
@@ -1884,6 +1890,11 @@ html.myat-immersive body {
 
 html.myat-immersive .fi-header-actions-ctn .fi-btn {
     height: 2rem;
+    padding: 0 0.6rem;
+    font-size: 0.8rem;
+}
+
+html.myat-immersive .fi-header-actions-ctn .fi-btn:has(.fi-icon) {
     padding: 0 0.5rem;
     font-size: 0;
     gap: 0;
