@@ -1252,6 +1252,9 @@ a.myat-kpi:focus-visible,
 /* Today's timeline */
 
 .myat-timeline {
+    /* positioned, so the hidden screen-reader text of rows scrolled out of view stays inside the
+       list instead of stretching the page (the empty space under the dashboard) */
+    position: relative;
     display: flex;
     flex-direction: column;
     max-height: 30rem;
