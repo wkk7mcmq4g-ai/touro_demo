@@ -127,6 +127,27 @@ class FleetTest extends TestCase
         $this->assertEqualsCanonicalizing(['ΑΔΕΙΑ', 'ΡΕΠΟ'], $rows->pluck('HolidayType')->all());
 
         Livewire::test(ListDriverLeaves::class)->assertCanSeeTableRecords($rows)->assertSee('Nikos');
-        $this->get(DriverCalendar::getUrl())->assertOk()->assertSee('driver_cal');
+    }
+
+    public function test_driver_calendar_shows_and_saves_the_schedule(): void
+    {
+        $d = DB::table('drivers')->insertGetId(['Fullname' => 'Nikos K', 'shortname' => 'NIKOS', 'Active' => 1, 'CalOrder' => 1, 'Flag' => 1], 'DriverID');
+        DB::table('drivers')->insert(['Fullname' => 'Hidden', 'shortname' => 'HIDDEN', 'Active' => 1, 'CalOrder' => null]);
+        $day = now()->startOfMonth()->addDays(2)->toDateString();
+        DB::table('schedule')->insert(['driver_id' => $d, 'date' => $day, 'status' => 0]);
+
+        $this->get(DriverCalendar::getUrl())->assertOk()->assertSee('NIKOS')->assertDontSee('HIDDEN')->assertDontSee('driver_cal');
+        $cal = Livewire::test(DriverCalendar::class)->instance()->calendar();
+        $this->assertSame('0', $cal['cells']->{$d}->{$day});
+        $this->assertCount(now()->startOfMonth()->daysInMonth + now()->startOfMonth()->addMonthNoOverflow()->daysInMonth, $cal['days']);
+
+        $page = Livewire::test(DriverCalendar::class)->call('setStatus', $d, $day, '3');
+        $this->assertSame(3, (int) DB::table('schedule')->where('driver_id', $d)->where('date', $day)->value('status'));
+        $this->assertSame(1, DB::table('schedule')->where('driver_id', $d)->count());
+
+        $page->call('setStatus', $d, $day, '');
+        $this->assertSame(0, DB::table('schedule')->where('driver_id', $d)->count());
+
+        $page->call('move', -1)->assertSet('offset', -1)->call('move', 0)->assertSet('offset', 0);
     }
 }

@@ -3155,3 +3155,45 @@ html.myat-immersive .myat-day-sub {
         padding-inline: 0.7rem;
     }
 }
+
+/* ---- Drivers' work schedule (Calendar page) ---- */
+.myat-cal-bar { display:flex; flex-wrap:wrap; gap:.75rem 1.5rem; align-items:center; justify-content:space-between; margin-bottom:.75rem; }
+.myat-cal-nav { display:flex; gap:.5rem; }
+.myat-cal-legend { display:flex; flex-wrap:wrap; gap:.35rem; font-size:.72rem; font-weight:600; }
+.myat-cal-legend span { padding:.15rem .55rem; border-radius:999px; color:#1f2937; }
+.myat-cal-scroll { overflow:auto; max-height:calc(100vh - 13rem); border:1px solid var(--gray-200); border-radius:.75rem; background:#fff; }
+.dark .myat-cal-scroll { border-color:var(--gray-700); background:var(--gray-900); }
+.myat-cal table { border-collapse:separate; border-spacing:0; font-size:12px; font-variant-numeric:tabular-nums; }
+.myat-cal th, .myat-cal td { border-right:1px solid var(--gray-200); border-bottom:1px solid var(--gray-200); text-align:center; padding:0; min-width:28px; height:26px; }
+.dark .myat-cal th, .dark .myat-cal td { border-color:var(--gray-700); }
+.myat-cal thead th { position:sticky; background:var(--gray-50); font-weight:600; z-index:2; }
+.dark .myat-cal thead th { background:var(--gray-800); }
+.myat-cal thead tr:first-child th { top:0; height:28px; }
+.myat-cal thead tr:last-child th { top:28px; }
+.myat-cal-month { text-align:left !important; padding:0 .5rem !important; }
+.myat-cal-day { line-height:1.05; padding:2px 0 !important; }
+.myat-cal-day small { display:block; font-size:10px; font-weight:500; color:var(--gray-500); }
+.myat-cal-day.is-weekend { background:var(--gray-100) !important; }
+.dark .myat-cal-day.is-weekend { background:var(--gray-700) !important; }
+.myat-cal-day.is-today { box-shadow:inset 0 -3px 0 var(--primary-500); }
+.myat-cal .myat-cal-name { position:sticky; left:0; z-index:3; background:var(--gray-50); text-align:left; padding:0 .6rem; font-weight:700; white-space:nowrap; min-width:7rem; }
+.dark .myat-cal .myat-cal-name { background:var(--gray-800); }
+.myat-cal thead .myat-cal-name { z-index:4; }
+.myat-cal .myat-cal-name.is-flag { background:#F2CEEF; color:#1f2937; }
+.myat-cal-sum { font-weight:700; color:#1f2937; }
+.myat-cal-cell { color:#1f2937; font-weight:600; }
+.myat-cal-cell.is-dark { color:#fff; }
+.myat-cal-cell.is-today { box-shadow:inset 2px 0 0 var(--primary-500), inset -2px 0 0 var(--primary-500); }
+.myat-cal .is-last { border-right:4px solid var(--gray-900) !important; }
+.dark .myat-cal .is-last { border-right-color:var(--gray-300) !important; }
+.myat-cal .is-hl { background:#f3f006 !important; color:#1f2937 !important; }
+.myat-cal.is-readonly .myat-cal-cell:hover { outline:none; cursor:default; }
+.myat-cal-cell:hover { outline:2px solid var(--primary-500); outline-offset:-2px; cursor:pointer; }
+.myat-cal-cell.is-edit { padding:0; }
+.myat-cal-cell input { width:100%; height:24px; border:0; text-align:center; font:inherit; background:#fff; color:#111; outline:2px solid var(--primary-600); }
+.myat-cal-total td { font-weight:700; background:#fff; }
+.dark .myat-cal-total td { background:var(--gray-900); }
+.myat-cal-total.is-first td { border-top:3px solid var(--gray-900); }
+.dark .myat-cal-total.is-first td { border-top-color:var(--gray-300); }
+.myat-cal-total td.is-bad { background:#e06666; color:#fff; }
+.myat-cal-total:last-child td.is-bad { background:#FF0000; }
