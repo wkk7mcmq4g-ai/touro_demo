@@ -12,7 +12,6 @@ use App\Support\LegacyFiles;
 use App\Support\Lookups;
 use BackedEnum;
 use Closure;
-use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -20,10 +19,11 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
-use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\Layout\View;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use UnitEnum;
 
 /**
@@ -85,15 +85,30 @@ class MyFuelResource extends Resource
         };
     }
 
+    /** The vehicle assigned to this driver most recently (today's first), to start the form with. */
+    public static function myVehicleId(): ?int
+    {
+        $driver = DB::table('drivers')->where('UserID', auth()->id())->value('DriverID');
+
+        return $driver ? DB::table('vehicle_assignments')->where('DriverID', $driver)
+            ->where('AssignmentDate', '<=', today())->orderByDesc('AssignmentDate')->value('VehicleID') : null;
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Section::make('Στοιχεία')->columns(3)->columnSpanFull()->schema([
-                Select::make('VehicleID')->label('Όχημα')->options(fn (): array => Lookups::vehicles(['IKE', 'Taxi', 'DXF']))->searchable()->required(),
-                DatePicker::make('FuelDate')->label('Ημερομηνία')->default(now())->required()->rule(fn (): Closure => self::fuelDateRule()),
-                TextInput::make('FuelAmount')->label('Αξία')->numeric()->minValue(0)->prefix('€')->required(),
+            // Phone first: one column, the amount first and big, the vehicle filled in.
+            Section::make()->columns(['default' => 1, 'sm' => 3])->columnSpanFull()->schema([
+                TextInput::make('FuelAmount')->label('Αξία')->numeric()->minValue(0)->step(0.01)->prefix('€')->required()
+                    ->inputMode('decimal')->autofocus()->extraInputAttributes(['class' => 'myat-fuel-input']),
+                DatePicker::make('FuelDate')->label('Ημερομηνία')->default(now())->required()->native()->maxDate(today())
+                    ->rule(fn (): Closure => self::fuelDateRule()),
+                Select::make('VehicleID')->label('Όχημα')->options(fn (): array => Lookups::vehicles(['IKE', 'Taxi', 'DXF']))
+                    ->default(fn (): ?int => self::myVehicleId())->searchable()->required(),
             ]),
-            Section::make('Απόδειξη')->columnSpanFull()->schema(self::legacyFilesComponents('Files', 'receipt'))
+            Section::make('Φωτογραφία απόδειξης')->columnSpanFull()
+                ->description('Τραβήξτε φωτογραφία ή διαλέξτε αρχείο.')
+                ->schema(self::legacyFilesComponents('Files', 'receipt', 'Φωτογραφία ή αρχείο', ['image/*', 'application/pdf']))
                 ->visible(fn (?FuelRegister $record): bool => LegacyFiles::canUpload() || filled($record?->Files)),
         ]);
     }
@@ -101,21 +116,18 @@ class MyFuelResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->stackedOnMobile()
             ->columnManager(false)
             ->defaultSort('FuelDate', 'desc')
+            ->paginated([20, 50])
             ->emptyStateHeading('Δεν υπάρχουν αποδείξεις')
+            ->emptyStateDescription('Πατήστε «Νέα απόδειξη» για να καταχωρήσετε καύσιμα.')
+            ->emptyStateIcon(Heroicon::OutlinedBeaker)
+            // One card per receipt: amount, date, status, vehicle, photo. Tap a card to edit it.
+            ->contentGrid(['md' => 2, 'xl' => 3])
+            ->recordUrl(fn (FuelRegister $record): ?string => static::canEdit($record) ? static::getUrl('edit', ['record' => $record]) : null)
             ->columns([
-                TextColumn::make('FuelDate')->label('Ημερομηνία')->date('d/m/Y')->sortable(),
-                TextColumn::make('VehicleID')->label('Όχημα')->formatStateUsing(fn ($state): ?string => Lookups::vehicles()[$state] ?? null),
-                TextColumn::make('FuelAmount')->label('Αξία')->money('EUR', locale: 'el')->alignEnd(),
-                TextColumn::make('Files')->formatStateUsing(fn (?string $state) => LegacyFiles::links($state))->html()->placeholder('—'),
-                TextColumn::make('ApprovedStatus')->label('Έλεγχος')->badge()->placeholder('Pending')
-                    ->color(fn (?string $state): string => match ($state) {
-                        'Rejected' => 'danger', null, '' => 'warning', default => 'success'
-                    }),
-            ])
-            ->recordActions([EditAction::make()]);
+                View::make('filament.portal.fuel-card'),
+            ]);
     }
 
     public static function getPages(): array

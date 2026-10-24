@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Model;
 trait HandlesLegacyFiles
 {
     /** Form components for a document column. */
-    public static function legacyFilesComponents(string $column = 'Files', string $label = 'Files'): array
+    public static function legacyFilesComponents(string $column = 'Files', string $label = 'Files', ?string $uploadLabel = null, ?array $accept = null): array
     {
         return [
             Text::make(fn (?Model $record) => $record && LegacyFiles::parse($record->{$column}) !== []
@@ -23,7 +23,9 @@ trait HandlesLegacyFiles
                 ->visible(fn (?Model $record): bool => $record !== null)
                 ->columnSpanFull(),
             FileUpload::make("{$column}__upload")
-                ->label("Add {$label}")
+                ->label($uploadLabel ?? "Add {$label}")
+                ->when($accept, fn (FileUpload $upload) => $upload->acceptedFileTypes($accept))
+                ->when($uploadLabel, fn (FileUpload $upload) => $upload->placeholder('Πατήστε για φωτογραφία ή αρχείο'))
                 ->multiple()
                 ->storeFiles(false)
                 ->maxSize(20 * 1024)

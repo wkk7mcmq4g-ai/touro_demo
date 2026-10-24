@@ -2321,3 +2321,102 @@ html.myat-immersive .fi-wi:has(.myat-totals) {
     color: #fff;
     background: var(--myat-azure);
 }
+
+/* ---------- Driver fuel receipts (phone first) ---------- */
+
+.myat-fuel {
+    display: grid;
+    gap: 0.55rem;
+}
+
+.myat-fuel-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.myat-fuel-amount {
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+    color: var(--myat-navy);
+}
+
+.dark .myat-fuel-amount {
+    color: #fff;
+}
+
+.myat-fuel-date {
+    margin-top: 0.1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: capitalize;
+}
+
+.myat-fuel-status {
+    padding: 0.25rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    white-space: nowrap;
+    color: var(--tone);
+    background: var(--tone-bg);
+}
+
+.myat-fuel-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.myat-fuel-vehicle {
+    padding: 0.2rem 0.55rem;
+    border-radius: 0.45rem;
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #fff;
+    background: var(--myat-navy);
+}
+
+.myat-fuel-file {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    min-height: 2.25rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--myat-azure);
+}
+
+.myat-fuel-file-icon {
+    width: 1rem;
+    height: 1rem;
+}
+
+.myat-fuel-nofile {
+    font-size: 0.8rem;
+    color: #94a3b8;
+}
+
+.myat-fuel-reason {
+    padding: 0.45rem 0.6rem;
+    border-radius: 0.5rem;
+    font-size: 0.82rem;
+    color: #9f1239;
+    background: rgb(244 63 94 / 0.08);
+}
+
+.dark .myat-fuel-reason {
+    color: #fda4af;
+}
+
+/* the amount field: big, easy to type on a phone */
+.myat-fuel-input {
+    font-size: 1.35rem !important;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+}
