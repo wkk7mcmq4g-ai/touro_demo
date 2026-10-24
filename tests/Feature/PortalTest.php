@@ -260,12 +260,15 @@ class PortalTest extends TestCase
     public function test_suppliers_edit_only_until_48_hours_before_pickup_as_phprunner(): void
     {
         $this->actingAs($this->makeLegacyUser('Supplier', ['SupplierID' => $this->ours]));
-        $soon = $this->transfer($this->ours, ['TransferDate' => Carbon::tomorrow()->toDateString(), 'TransferTime' => '23:00']);
-        $past = $this->transfer($this->ours, ['TransferDate' => Carbon::today()->subDays(3)->toDateString()]);
-        $later = $this->transfer($this->ours, ['TransferDate' => Carbon::today()->addDays(3)->toDateString(), 'TransferTime' => '10:00']);
+        // Dates from the database's clock: the rule is SQL, and the database may not be on Athens time.
+        $db = DB::selectOne("SELECT DATE(NOW() + INTERVAL 30 HOUR) AS soonDate, DATE_FORMAT(NOW() + INTERVAL 30 HOUR, '%H:%i') AS soonTime, CURRENT_DATE AS today");
+        $today = Carbon::parse($db->today);
+        $soon = $this->transfer($this->ours, ['TransferDate' => $db->soonDate, 'TransferTime' => $db->soonTime]);
+        $past = $this->transfer($this->ours, ['TransferDate' => $today->copy()->subDays(3)->toDateString()]);
+        $later = $this->transfer($this->ours, ['TransferDate' => $today->copy()->addDays(3)->toDateString(), 'TransferTime' => '10:00']);
         // No real time: editable only while the date is more than 2 days away.
-        $tbdNear = $this->transfer($this->ours, ['TransferDate' => Carbon::today()->addDays(2)->toDateString(), 'TransferTime' => 'TBD']);
-        $tbdFar = $this->transfer($this->ours, ['TransferDate' => Carbon::today()->addDays(3)->toDateString(), 'TransferTime' => 'TBD']);
+        $tbdNear = $this->transfer($this->ours, ['TransferDate' => $today->copy()->addDays(2)->toDateString(), 'TransferTime' => 'TBD']);
+        $tbdFar = $this->transfer($this->ours, ['TransferDate' => $today->copy()->addDays(3)->toDateString(), 'TransferTime' => 'TBD']);
 
         if (! MyTransferResource::canEdit($later)) {
             $this->markTestSkipped('The Supplier group has no edit right on transfers in this copy.');
