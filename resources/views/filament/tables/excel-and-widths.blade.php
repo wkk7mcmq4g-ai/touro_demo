@@ -124,6 +124,135 @@
         css();
     };
 
+    /* ---------------- Excel export (choose columns, saved exports) and saved filters ---------------- */
+    const panelClose = () => { document.querySelector('.myat-panel-wrap')?.remove(); };
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') panelClose(); });
+
+    const openExport = async (btn) => {
+        const c = comp(btn), w = wire(c);
+        panelClose();
+        const wrap = document.createElement('div');
+        wrap.className = 'myat-panel-wrap';
+        wrap.innerHTML = `<div class="myat-panel-backdrop"></div>
+            <aside class="myat-panel" role="dialog" aria-modal="true" aria-labelledby="myat-exp-title">
+                <header class="myat-panel-head"><h2 id="myat-exp-title">Εξαγωγή σε Excel</h2>
+                    <button type="button" class="myat-panel-x" aria-label="Κλείσιμο">&times;</button></header>
+                <div class="myat-panel-body"><div class="myat-xf-loading">…</div></div>
+            </aside>`;
+        document.body.appendChild(wrap);
+        wrap.querySelector('.myat-panel-backdrop').onclick = panelClose;
+        wrap.querySelector('.myat-panel-x').onclick = panelClose;
+
+        let cols, presets;
+        try { [cols, presets] = await Promise.all([w.call('exportColumns'), w.call('tablePresets', 'export')]); } catch (e) { cols = []; presets = []; }
+        const body = wrap.querySelector('.myat-panel-body');
+        if (! cols?.length) { body.innerHTML = '<p class="myat-xf-loading">Δεν υπάρχουν στήλες για εξαγωγή.</p>'; return; }
+        const sel = new Set(cols.filter((x) => x.visible).map((x) => x.name));
+        const title = (document.querySelector('.fi-header-heading')?.innerText || 'export').trim();
+
+        body.innerHTML = `
+            <label class="myat-panel-field"><span>Αποθηκευμένες εξαγωγές</span>
+                <span class="myat-panel-row"><select class="myat-panel-input myat-exp-preset"><option value="">—</option>
+                ${presets.map((p) => `<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select>
+                <button type="button" class="myat-zb-btn myat-exp-del" title="Διαγραφή" aria-label="Διαγραφή αποθηκευμένης εξαγωγής">&times;</button></span></label>
+            <div class="myat-panel-row myat-exp-quick">
+                <button type="button" class="myat-zb-btn" data-q="visible">Ορατές στήλες</button>
+                <button type="button" class="myat-zb-btn" data-q="all">Όλες</button>
+                <button type="button" class="myat-zb-btn" data-q="none">Καμία</button>
+                <span class="myat-exp-count"></span>
+            </div>
+            <input type="search" class="myat-panel-input myat-exp-search" placeholder="Αναζήτηση στήλης…">
+            <div class="myat-exp-list">${cols.map((x) => `<label><input type="checkbox" value="${esc(x.name)}"> ${esc(x.label)}</label>`).join('')}</div>
+            <p class="myat-panel-note">Εξάγονται οι γραμμές που δείχνει ο πίνακας τώρα (καρτέλα, αναζήτηση, φίλτρα), όλες οι σελίδες.</p>
+            <div class="myat-panel-row"><input type="text" class="myat-panel-input myat-exp-name" placeholder="Όνομα για αποθήκευση…" maxlength="80">
+                <button type="button" class="myat-zb-btn myat-exp-save">Αποθήκευση</button></div>`;
+        const foot = document.createElement('footer');
+        foot.className = 'myat-panel-foot';
+        foot.innerHTML = '<button type="button" class="myat-xf-cancel">Άκυρο</button><button type="button" class="myat-xf-ok myat-exp-go">Λήψη Excel</button>';
+        wrap.querySelector('.myat-panel').appendChild(foot);
+        foot.querySelector('.myat-xf-cancel').onclick = panelClose;
+
+        const boxes = () => [...body.querySelectorAll('.myat-exp-list input')];
+        const sync = () => { boxes().forEach((b) => b.checked = sel.has(b.value)); body.querySelector('.myat-exp-count').textContent = `${sel.size} / ${cols.length}`; foot.querySelector('.myat-exp-go').disabled = sel.size === 0; };
+        sync();
+        body.querySelector('.myat-exp-list').addEventListener('change', (e) => { e.target.checked ? sel.add(e.target.value) : sel.delete(e.target.value); sync(); });
+        body.querySelectorAll('[data-q]').forEach((b) => b.onclick = () => {
+            sel.clear();
+            if (b.dataset.q === 'all') cols.forEach((x) => sel.add(x.name));
+            if (b.dataset.q === 'visible') cols.filter((x) => x.visible).forEach((x) => sel.add(x.name));
+            sync();
+        });
+        const search = body.querySelector('.myat-exp-search');
+        search.oninput = () => { const q = search.value.toLowerCase(); body.querySelectorAll('.myat-exp-list label').forEach((l) => l.hidden = q && ! l.innerText.toLowerCase().includes(q)); };
+        const presetSel = body.querySelector('.myat-exp-preset');
+        presetSel.onchange = () => {
+            const p = presets.find((x) => String(x.id) === presetSel.value);
+            if (! p) return;
+            sel.clear(); (p.data.columns || []).forEach((n) => cols.some((x) => x.name === n) && sel.add(n));
+            body.querySelector('.myat-exp-name').value = p.name; sync();
+        };
+        body.querySelector('.myat-exp-del').onclick = async () => {
+            const id = presetSel.value; if (! id) return;
+            await w.call('deletePreset', 'export', +id);
+            presets = presets.filter((x) => String(x.id) !== id); presetSel.querySelector(`option[value="${id}"]`)?.remove(); presetSel.value = '';
+        };
+        body.querySelector('.myat-exp-save').onclick = async () => {
+            const name = body.querySelector('.myat-exp-name').value.trim(); if (! name || ! sel.size) return;
+            const ordered = cols.map((x) => x.name).filter((n) => sel.has(n));
+            const id = await w.call('savePreset', 'export', name, ordered);
+            presets = presets.filter((x) => x.id !== id).concat([{ id, name, data: { columns: ordered } }]);
+            presetSel.innerHTML = '<option value="">—</option>' + presets.map((p) => `<option value="${p.id}">${esc(p.name)}</option>`).join('');
+            presetSel.value = String(id);
+        };
+        foot.querySelector('.myat-exp-go').onclick = async (e) => {
+            const go = e.currentTarget; go.disabled = true; go.textContent = 'Ετοιμάζεται…';
+            try {
+                const url = await w.call('exportTable', cols.map((x) => x.name).filter((n) => sel.has(n)), title);
+                if (url) { window.location.href = url; panelClose(); }
+            } catch (err) { go.disabled = false; go.textContent = 'Λήψη Excel'; }
+        };
+    };
+
+    const openSaved = async (btn) => {
+        const c = comp(btn), w = wire(c);
+        close();
+        pop = document.createElement('div');
+        pop.className = 'myat-xf-pop myat-saved-pop'; pop.dataset.for = '__saved';
+        pop.innerHTML = '<div class="myat-xf-loading">…</div>';
+        document.body.appendChild(pop);
+        const r = btn.getBoundingClientRect();
+        pop.style.top = (scrollY + r.bottom + 6) + 'px';
+        pop.style.left = Math.max(8, Math.min(scrollX + r.right - 288, scrollX + document.documentElement.clientWidth - 300)) + 'px';
+        let presets = [];
+        try { presets = await w.call('tablePresets', 'filters'); } catch (e) {}
+        const render = () => {
+            pop.innerHTML = `<div class="myat-xf-head">Αποθηκευμένα φίλτρα</div>
+                <div class="myat-saved-list">${presets.length ? presets.map((p) => `<div class="myat-saved-item"><button type="button" class="myat-saved-apply" data-id="${p.id}">${esc(p.name)}</button><button type="button" class="myat-saved-del" data-id="${p.id}" aria-label="Διαγραφή ${esc(p.name)}">&times;</button></div>`).join('') : '<div class="myat-xf-loading">Δεν έχετε αποθηκεύσει φίλτρα σε αυτόν τον πίνακα.</div>'}</div>
+                <div class="myat-panel-row" style="margin-top:.5rem"><input type="text" class="myat-panel-input myat-saved-name" placeholder="Όνομα…" maxlength="80"><button type="button" class="myat-xf-ok myat-saved-save">Αποθήκευση</button></div>
+                <div class="myat-panel-note">Αποθηκεύει την καρτέλα, την αναζήτηση, τα φίλτρα και τα φίλτρα στηλών που ισχύουν τώρα.</div>`;
+            pop.querySelectorAll('.myat-saved-apply').forEach((b) => b.onclick = async () => {
+                close();
+                const active = await w.call('applyFilterPreset', +b.dataset.id);
+                T.active[sessKey(nameOf(c))] = Array.isArray(active) ? active : [];
+                inject();
+            });
+            pop.querySelectorAll('.myat-saved-del').forEach((b) => b.onclick = async () => { await w.call('deletePreset', 'filters', +b.dataset.id); presets = presets.filter((p) => String(p.id) !== b.dataset.id); render(); });
+            pop.querySelector('.myat-saved-save').onclick = async () => {
+                const name = pop.querySelector('.myat-saved-name').value.trim(); if (! name) return;
+                const id = await w.call('savePreset', 'filters', name);
+                presets = presets.filter((p) => p.id !== id).concat([{ id, name }]).sort((a, b) => a.name.localeCompare(b.name)); render();
+            };
+        };
+        render();
+    };
+
+    document.addEventListener('click', (e) => {
+        const ex = e.target.closest?.('[data-myat-export]');
+        if (ex) { e.preventDefault(); return openExport(ex); }
+        const sv = e.target.closest?.('[data-myat-saved]');
+        if (sv) { e.preventDefault(); if (pop && pop.dataset.for === '__saved') return close(); return openSaved(sv); }
+    });
+
     /* ---------------- Excel-style filters ---------------- */
     const inject = () => {
         document.querySelectorAll('.fi-ta-table thead th.fi-ta-header-cell').forEach((th) => {

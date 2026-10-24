@@ -29,3 +29,13 @@ Route::get('/files/loads/{id}', [TransferFileController::class, 'download'])
 Route::get('/documents/vouchers/{page}/{transfer}', [VoucherController::class, 'show'])
     ->whereNumber('transfer')
     ->name('vouchers.show');
+
+// A table export made a moment ago by the signed-in user (App\Support\TableExports); used once.
+Route::get('/exports/{token}', function (string $token) {
+    $export = session()->pull("myat.exports.{$token}");
+    abort_unless(auth()->check() && is_array($export) && is_file($export['path'] ?? ''), 404);
+
+    return response()->download($export['path'], $export['name'], [
+        'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ])->deleteFileAfterSend();
+})->where('token', '[A-Za-z0-9]{40}')->middleware('web')->name('table-exports.download');

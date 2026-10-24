@@ -7,12 +7,16 @@ use App\Filament\Resources\Dispatch\DispatchResource;
 use Filament\Actions\Action;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Builder;
 
 class ListDailyTransfers extends ListRecords
 {
     protected static string $resource = DailyTransfersResource::class;
+
+    /** Wide like the other lists: tables use the whole width of the screen. */
+    protected Width|string|null $maxContentWidth = Width::Full;
 
     /** One tab per day the dispatch view covers (today and the next four days). */
     public function getTabs(): array

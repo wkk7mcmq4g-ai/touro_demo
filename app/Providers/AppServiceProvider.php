@@ -7,6 +7,9 @@ use App\Filament\Resources\Transfers\Pages\ListTransfers;
 use App\Listeners\LogAccess;
 use App\Support\ExcelFilters;
 use App\Support\ImmersiveTables;
+use App\Support\SavedFilters;
+use App\Support\TableExports;
+use App\Support\TablePresets;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
@@ -16,6 +19,7 @@ use Filament\Tables\Columns\Column;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Table;
+use Filament\Tables\View\TablesRenderHook;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
@@ -87,13 +91,14 @@ class AppServiceProvider extends ServiceProvider
 
         // The header funnels and column widths talk to the table's own Livewire component.
         \Livewire\on('call', function ($component, string $method, array $params, $context, $returnEarly) {
-            if (! $component instanceof HasTable || ! in_array($method, ['excelFilterValues', 'applyExcelFilter', 'clearExcelFilters', 'saveColumnWidths'], true)) {
+            if (! $component instanceof HasTable || ! in_array($method, ['excelFilterValues', 'applyExcelFilter', 'clearExcelFilters', 'saveColumnWidths',
+                'exportColumns', 'exportTable', 'tablePresets', 'savePreset', 'deletePreset', 'applyFilterPreset'], true)) {
                 return;
             }
 
             // Reading a column's values or saving widths changes nothing on screen: answer without
             // re-rendering the whole table (that re-render was most of the wait).
-            if (in_array($method, ['excelFilterValues', 'saveColumnWidths'], true)) {
+            if (in_array($method, ['excelFilterValues', 'saveColumnWidths', 'exportColumns', 'exportTable', 'tablePresets', 'savePreset', 'deletePreset'], true)) {
                 $component->skipRender();
             }
 
@@ -102,10 +107,29 @@ class AppServiceProvider extends ServiceProvider
                 'applyExcelFilter' => $returnEarly(self::filtered($component, fn () => ExcelFilters::set($component, (string) ($params[0] ?? ''), is_array($params[1] ?? null) ? $params[1] : null))),
                 'clearExcelFilters' => $returnEarly(self::filtered($component, fn () => ExcelFilters::clear($component))),
                 'saveColumnWidths' => $returnEarly(self::saveColumnWidths($component, $params[0] ?? [])),
+                // Excel export with chosen columns, saved exports and saved filters (per user).
+                'exportColumns' => $returnEarly(TableExports::allowed($component) ? TableExports::columns($component) : []),
+                'exportTable' => $returnEarly(TableExports::export($component, array_values((array) ($params[0] ?? [])), (string) ($params[1] ?? ''))),
+                'tablePresets' => $returnEarly(TablePresets::list(($params[0] ?? '') === 'export' ? TablePresets::EXPORT : TablePresets::FILTERS, SavedFilters::key($component))),
+                'savePreset' => $returnEarly(($params[0] ?? '') === 'export'
+                    ? TablePresets::save(TablePresets::EXPORT, SavedFilters::key($component), (string) ($params[1] ?? ''), ['columns' => array_values(array_filter((array) ($params[2] ?? []), 'is_string'))])
+                    : TablePresets::save(TablePresets::FILTERS, SavedFilters::key($component), (string) ($params[1] ?? ''), SavedFilters::current($component))),
+                'deletePreset' => $returnEarly(TablePresets::delete(($params[0] ?? '') === 'export' ? TablePresets::EXPORT : TablePresets::FILTERS, SavedFilters::key($component), (int) ($params[1] ?? 0))),
+                'applyFilterPreset' => $returnEarly(self::filtered($component, fn () => ($preset = TablePresets::find(TablePresets::FILTERS, SavedFilters::key($component), (int) ($params[0] ?? 0)))
+                    ? SavedFilters::apply($component, $preset['data']) : abort(404)) ?? array_keys(ExcelFilters::active($component))),
             };
         });
 
         FilamentView::registerRenderHook(PanelsRenderHook::BODY_END, fn () => auth()->check() ? view('filament.tables.excel-and-widths').view('filament.tables.immersive') : '');
+
+        // Every table's toolbar: Excel export (chosen columns, saved exports) and saved filters.
+        FilamentView::registerRenderHook(TablesRenderHook::TOOLBAR_END, function (): string {
+            $component = Livewire::current();
+
+            return $component instanceof HasTable && auth()->check()
+                ? view('filament.tables.export-and-saved', ['canExport' => TableExports::allowed($component), 'hasFilters' => TableExports::columns($component) !== []])->render()
+                : '';
+        });
 
         // Wide tables that get Full screen + zoom (phones sideways, tablets, computers).
         ImmersiveTables::register([ListTransfers::class]);
