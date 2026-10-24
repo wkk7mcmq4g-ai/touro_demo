@@ -42,7 +42,8 @@ class DailyTransfersTest extends TestCase
         $this->driverWithJobs('Nikos', null, 2);
         $this->driverWithJobs('Kostas', null, 1);
 
-        $page = Livewire::test(ListDailyTransfers::class)->assertSee('Nikos')->assertSee('Kostas');
+        $page = Livewire::test(ListDailyTransfers::class)->assertSee('Nikos')->assertSee('Kostas')
+            ->assertSeeHtml('data-myat-imm="enter"'); // full screen + zoom
         $recipients = DailyRecipient::source()->orderBy('Fullname')->get();
         $this->assertSame([1, 2], $recipients->pluck('Transfers')->all());
 
