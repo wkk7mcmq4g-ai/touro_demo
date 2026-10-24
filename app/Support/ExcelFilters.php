@@ -128,12 +128,17 @@ class ExcelFilters
     /**
      * The values to tick for a column: what the table shows with the other filters on.
      *
-     * @return array{type: string, values: list<array{v: string, label: string}>, selected: list<string>|null, truncated: bool}
+     * @return array{type: string, values: list<array{v: string, label: string}>|null, selected: list<string>|null, truncated: bool}
      */
     public static function values(HasTable&Component $livewire, string $name): array
     {
+        // A column that is not in the database (e.g. worked out per row) cannot be filtered: say so
+        // in the popover, without an error (an error status made Livewire show "Error while loading").
+        $none = ['type' => 'none', 'values' => null, 'selected' => null, 'truncated' => false];
         $column = self::column($livewire, $name);
-        abort_unless($column !== null, 422, 'This column cannot be filtered.');
+        if ($column === null) {
+            return $none;
+        }
 
         $active = self::active($livewire);
 
@@ -158,7 +163,7 @@ class ExcelFilters
                     ->limit(self::MAX_VALUES + 1)->pluck($name);
             }
         } catch (Throwable) {
-            abort(422, 'This column cannot be filtered.');
+            return $none;
         } finally {
             session()->put(self::key($livewire), $active);
         }

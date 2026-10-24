@@ -278,6 +278,8 @@
     const inject = () => {
         document.querySelectorAll('.fi-ta-table thead th.fi-ta-header-cell').forEach((th) => {
             const key = th.dataset.myatCol, c = comp(th);
+            // Columns worked out per row (not in the database) have no filter button.
+            if (th.dataset.myatNofilter || th.querySelector('[data-myat-nofilter]')) return;
             if (! key || ! c || ! /^[A-Za-z0-9_ ]+(\.[A-Za-z0-9_]+)?$/.test(key)) return;
             let btn = th.querySelector('.myat-xf-btn');
             if (! btn) {

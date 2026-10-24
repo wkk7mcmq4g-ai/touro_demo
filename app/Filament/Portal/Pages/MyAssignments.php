@@ -36,11 +36,28 @@ class MyAssignments extends ListReport
 
     protected static ?string $slug = 'assignments';
 
+    /**
+     * The transfers assigned to this user's coach company, as the view v_transfers2 picks them
+     * (not cancelled, from 2026, coach = the company's CoachName) and with the same values. Read
+     * from the tables: the view numbers rows and looks up review links for every transfer since
+     * 2026 before anything can be filtered, which made this page slow.
+     */
+    public static function assigned(?int $userId): Builder
+    {
+        return DB::table('transfers as t')
+            ->join('counterparties as cnt', 'cnt.CoachName', '=', DB::raw("if(t.CoachCompanyID = '', 'xxx', t.CoachCompanyID)"))
+            ->where('cnt.UserID', $userId ?? -1)
+            ->where('t.Status', '<>', 'Cancelled')
+            ->where('t.TransferDate', '>=', '2026-01-01');
+    }
+
     protected function source(): Builder
     {
-        return DB::table('v_transfers2')->where('UserID', auth()->id() ?? -1)
-            ->select(['TransferID', 'Status', 'CarType', 'Pax', 'TransferDate', 'TransferType', 'TransferTime', 'From', 'To', 'Flight_Ship_Num_From',
-                'Assistant', 'PassengerName', 'LeadName', 'LeadPhone', 'Notes', 'PurchasePrice', 'InvoicedRcvd', 'ReferencePeriod']);
+        return self::assigned(auth()->id())
+            ->leftJoin('counterparties as cnt2', 'cnt2.AssistantName', '=', DB::raw("if(ifnull(t.Assistant, '') = '', 'xxx', t.Assistant)"))
+            ->select(['t.TransferID', 't.Status', 't.CarTypeID as CarType', 't.Pax', 't.TransferDate', 't.TransferType', 't.TransferTime', 't.From', 't.To',
+                't.Flight_Ship_Num_From', 't.PassengerName', 't.LeadName', 't.LeadPhone', 't.DriverNotes as Notes', 't.PurchasePrice', 't.InvoicedRcvd', 't.ReferencePeriod'])
+            ->selectRaw("ifnull(concat(cnt2.CounterShortName, ' - ', cnt2.Phones), t.Assistant) AS Assistant");
     }
 
     protected function defaultSort(): ?array
@@ -75,6 +92,7 @@ class MyAssignments extends ListReport
                 ->visible(fn (): bool => Permissions::allows(auth()->user(), 'myat_coach_files', 'view'))
                 ->state(fn ($record): ?HtmlString => $this->filesLinks((int) $record->TransferID))
                 ->placeholder('—')
+                ->extraHeaderAttributes(['data-myat-nofilter' => '1'])
                 ->wrap(),
         ];
     }
@@ -88,7 +106,7 @@ class MyAssignments extends ListReport
         $this->sharedFiles ??= DB::table('myat_transfers_files as m')
             ->join('optionvalues as o', 'o.OptionID', '=', 'm.Type')
             ->where('o.PartnerView', 1)
-            ->whereIn('m.TransferID', DB::table('v_transfers2')->where('UserID', auth()->id() ?? -1)->select('TransferID'))
+            ->whereIn('m.TransferID', self::assigned(auth()->id())->select('t.TransferID'))
             ->orderBy('m.ID')
             ->get(['m.ID', 'm.TransferID', 'm.Flnm', 'o.Value as TypeName'])
             ->groupBy('TransferID')->map(fn ($files) => $files->all())->all();

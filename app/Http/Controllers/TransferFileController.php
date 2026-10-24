@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Filament\Portal\Pages\MyAssignments;
 use App\Models\MyatPartnerFile;
 use App\Models\MyatTransfersFile;
 use App\Models\MyatTransfersLoadFile;
@@ -50,7 +51,7 @@ class TransferFileController extends Controller
         // drivers those of their jobs (and the customer's files the office shares with drivers).
         if ($kind === 'assignments') {
             $shared = (int) DB::table('optionvalues')->where('OptionID', $file->Type)->value('PartnerView') === 1;
-            $assigned = $backOffice || DB::table('v_transfers2')->where('UserID', $user->getKey())->where('TransferID', $file->TransferID)->exists();
+            $assigned = $backOffice || MyAssignments::assigned($user->getKey())->where('t.TransferID', $file->TransferID)->exists();
             abort_unless($shared && $assigned, 404);
         } elseif (! $backOffice && $user->group()?->isDriver()) {
             $mine = VTransfer::query()->where('username', $user->username);
