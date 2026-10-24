@@ -81,19 +81,32 @@ class LoginTest extends TestCase
         $this->assertGuest();
     }
 
-    public function test_partner_driver_and_supplier_logins_do_not_get_into_the_back_office(): void
+    public function test_one_login_takes_portal_users_to_the_portal(): void
     {
         foreach (['Partner', 'Drivers', 'Supplier', 'Coach'] as $group) {
             $user = $this->makeLegacyUser($group);
 
+            // Signing in on the back-office login page works and lands in the portal.
             Livewire::test(Login::class)
                 ->set('data.username', $user->username)
                 ->set('data.password', 'secret-pass')
                 ->call('authenticate')
-                ->assertHasErrors(['data.username']);
+                ->assertHasNoErrors()
+                ->assertRedirect(url('/portal'));
 
-            $this->assertGuest();
+            $this->assertAuthenticatedAs($user);
+            // Typing the other panel's address leads back to their own instead of "403".
+            $this->get('/admin')->assertRedirect(url('/portal'));
+            $this->get('/')->assertRedirect('/portal');
+            auth()->logout();
         }
+
+        $office = $this->makeLegacyUser('Entry');
+        $this->actingAs($office)->get('/portal')->assertRedirect(url('/admin'));
+        $this->get('/')->assertRedirect('/admin');
+        auth()->logout();
+        $this->get('/')->assertRedirect('/login');
+        $this->get('/login')->assertRedirect('/admin/login');
     }
 
     public function test_a_non_bcrypt_hash_is_refused_instead_of_crashing(): void
@@ -111,25 +124,17 @@ class LoginTest extends TestCase
 
     public function test_refusals_say_why_once_the_password_is_right(): void
     {
-        $driver = $this->makeLegacyUser('Drivers');
-        Livewire::test(Login::class)->set('data.username', $driver->username)->set('data.password', 'secret-pass')
-            ->call('authenticate')->assertSee('please sign in to the portal');
-
         $stranger = $this->makeLegacyUser('Guest');
         Livewire::test(Login::class)->set('data.username', $stranger->username)->set('data.password', 'secret-pass')
-            ->call('authenticate')->assertSee('Only Admin and Entry users');
-
-        $partner = $this->makeLegacyUser('Partner');
-        Livewire::test(Login::class)->set('data.username', $partner->username)->set('data.password', 'secret-pass')
-            ->call('authenticate')->assertSee('please sign in to the portal');
+            ->call('authenticate')->assertSee('has no access to this app');
 
         $inactive = $this->makeLegacyUser('Entry', ['active' => 0]);
         Livewire::test(Login::class)->set('data.username', $inactive->username)->set('data.password', 'secret-pass')
             ->call('authenticate')->assertSee('not active');
 
         // A wrong password never reveals anything about the account.
-        Livewire::test(Login::class)->set('data.username', $driver->username)->set('data.password', 'wrong')
-            ->call('authenticate')->assertDontSee('please sign in to the portal');
+        Livewire::test(Login::class)->set('data.username', $stranger->username)->set('data.password', 'wrong')
+            ->call('authenticate')->assertDontSee('has no access');
         $this->assertGuest();
     }
 

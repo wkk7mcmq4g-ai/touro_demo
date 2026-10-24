@@ -83,6 +83,16 @@ class User extends Authenticatable implements FilamentUser, HasName
         return Permissions::allows($this, $table, $ability);
     }
 
+    /** The panel this account works in: the back office (Admin, Entry) or the portal (everyone else). */
+    public function homePanelId(): ?string
+    {
+        if (! $this->isActive() || ! $this->group()) {
+            return null;
+        }
+
+        return $this->group()->usesBackOffice() ? 'admin' : 'portal';
+    }
+
     public function canAccessPanel(Panel $panel): bool
     {
         if (! $this->isActive()) {

@@ -4,8 +4,8 @@ namespace App\Providers\Filament;
 
 use App\Filament\Pages\Auth\Login;
 use App\Filament\Theme;
+use App\Http\Middleware\SendToHomePanel;
 use App\Http\Middleware\SyncTableLayouts;
-use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -55,7 +55,7 @@ class AdminPanelProvider extends PanelProvider
                 SyncTableLayouts::class,
             ])
             ->authMiddleware([
-                Authenticate::class,
+                SendToHomePanel::class,
             ]);
     }
 }

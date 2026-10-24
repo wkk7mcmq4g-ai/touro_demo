@@ -4,7 +4,13 @@ use App\Http\Controllers\TransferFileController;
 use App\Http\Controllers\VoucherController;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/admin');
+// One way in for everyone: the login sends office users to /admin and everyone else to /portal.
+Route::get('/', fn () => redirect()->to(match (auth()->user()?->homePanelId()) {
+    'admin' => '/admin',
+    'portal' => '/portal',
+    default => '/login',
+}));
+Route::redirect('/login', '/admin/login')->name('login');
 
 // Transfer files are stored in the database (myat_transfers_files.Attachment).
 Route::get('/files/transfers/{id}', [TransferFileController::class, 'download'])

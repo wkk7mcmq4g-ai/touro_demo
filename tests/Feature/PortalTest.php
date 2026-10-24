@@ -62,13 +62,14 @@ class PortalTest extends TestCase
     {
         $this->actingAs($this->makeLegacyUser('Partner'));
         $this->get('/portal/transfers')->assertOk();
-        $this->get('/admin/transfers')->assertForbidden();
+        // The back office is not theirs: they are sent to their own panel.
+        $this->get('/admin/transfers')->assertRedirect(url('/portal'));
     }
 
     public function test_office_users_cannot_use_the_portal(): void
     {
         $this->actingAs($this->makeLegacyUser('Admin'));
-        $this->get('/portal/transfers')->assertForbidden();
+        $this->get('/portal/transfers')->assertRedirect(url('/admin'));
     }
 
     /** A job for the driver of $user today, through the vehicle assigned to them (as v_transfers works). */

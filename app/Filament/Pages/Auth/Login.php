@@ -3,6 +3,7 @@
 namespace App\Filament\Pages\Auth;
 
 use App\Models\User;
+use Filament\Auth\Http\Responses\Contracts\LoginResponse;
 use Filament\Auth\Pages\Login as BaseLogin;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\TextInput;
@@ -13,9 +14,28 @@ use SensitiveParameter;
 
 /**
  * Same credentials as the PHPRunner app: username + password.
+ *
+ * One login for everyone: whichever login page is used (/login, /admin/login or /portal/login),
+ * office users end up in the back office and drivers, partners, suppliers and hotels in the portal.
  */
 class Login extends BaseLogin
 {
+    public function authenticate(): ?LoginResponse
+    {
+        // Right username and password for an account of the other panel: sign in there instead.
+        $provider = Auth::guard(Filament::getAuthGuard())->getProvider();
+        $user = $provider->retrieveByCredentials(['username' => $this->data['username'] ?? null]);
+
+        if ($user instanceof User && $provider->validateCredentials($user, ['password' => $this->data['password'] ?? null])
+            && ($home = $user->homePanelId()) && $home !== Filament::getCurrentPanel()?->getId()) {
+            Filament::setCurrentPanel(Filament::getPanel($home));
+            // A page of the other panel asked before signing in would only refuse them.
+            session()->forget('url.intended');
+        }
+
+        return parent::authenticate();
+    }
+
     protected function getEmailFormComponent(): Component
     {
         return TextInput::make('username')
@@ -61,14 +81,6 @@ class Login extends BaseLogin
 
         $group = $user->group()?->getLabel() ?? ($user->groupid ?: 'no group');
 
-        if (Filament::getCurrentPanel()?->getId() === 'portal') {
-            return $user->group()?->usesBackOffice()
-                ? 'Office accounts sign in to the back office at '.url('/admin').'.'
-                : "This account (group \"{$group}\") cannot use the portal yet.";
-        }
-
-        return $user->group()?->usesPortal()
-            ? "This account is in the group \"{$group}\": please sign in to the portal at ".url('/portal').'.'
-            : "Only Admin and Entry users can use the back office. This account is in the group \"{$group}\".";
+        return "This account (group \"{$group}\") has no access to this app yet.";
     }
 }
