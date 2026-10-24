@@ -520,8 +520,8 @@ class TransfersTest extends TestCase
             ->assertHasFormErrors(['ImportDate' => 'required']);
         preg_match_all('/<button[^>]*fi-tabs-item.*?<\/button>/s', $page->html(), $tabs);
         $labels = array_map(fn (string $tab): string => trim(preg_replace('/\s+/', ' ', strip_tags($tab))), $tabs[0]);
-        $this->assertContains('Trip !', $labels);
-        $this->assertContains('Pricing', $labels);
+        $this->assertContains('Transfer Details !', $labels);
+        $this->assertContains('Financials', $labels);
     }
 
     public function test_editing_keeps_old_dates_but_cannot_move_a_transfer_into_the_past(): void

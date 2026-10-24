@@ -6,8 +6,7 @@ use App\Filament\Resources\Transfers\TransferResource;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Schemas\Components\Component;
-use Filament\Schemas\Components\Livewire;
-use Filament\Schemas\Components\Tabs;
+use Filament\Schemas\Components\Group;
 use Livewire\Attributes\On;
 
 class EditTransfer extends EditRecord
@@ -35,29 +34,12 @@ class EditTransfer extends EditRecord
     }
 
     /**
-     * The tabs under the form (Notes, Price lines, Charges...) switch in the browser: Filament's own
-     * tabs asked the server to redraw the whole page, form included, on every click. Each list loads
-     * on its own (lazily) the first time its tab is opened; the open tab is kept in the URL.
+     * The lists (notes, products, charges, files, driver comments) are inside the form's tabs, as on
+     * PHPRunner's page (TransferForm), so nothing is drawn under the form.
      */
     public function getRelationManagersContentComponent(): Component
     {
-        $managers = $this->getCachedRelationManagers();
-        $data = $this->getRelationManagerLivewireData();
-
-        return Tabs::make()
-            ->key('relationManagerTabs')
-            ->contained(false)
-            ->persistTabInQueryString('relation')
-            ->tabs(collect($managers)->map(function (string $manager, string|int $key) use ($data) {
-                $class = $this->normalizeRelationManagerClass($manager);
-
-                return $class::getTabComponent($this->getRecord(), static::class)
-                    ->schema([
-                        Livewire::make($class, [...$data, ...$class::getDefaultProperties()])
-                            ->key($class)
-                            ->lazy(),
-                    ]);
-            })->all());
+        return Group::make()->hidden();
     }
 
     /**

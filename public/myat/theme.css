@@ -3080,3 +3080,26 @@ html.myat-immersive .myat-day-sub {
 }
 
 .dark .myat-board-toggle { color: #cbd5e1; }
+
+/* Transfer form: PHPRunner-style section bars (Transfer Details, From, Licensed Tour Guide, ...) */
+.myat-form-section > .fi-section {
+    overflow: hidden;
+}
+
+.myat-form-section > .fi-section > .fi-section-header {
+    padding-block: 0.55rem;
+    background: linear-gradient(135deg, #0a3d68, var(--myat-navy-deep));
+}
+
+.myat-form-section > .fi-section > .fi-section-header .fi-section-header-heading {
+    color: #fff;
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+.myat-form-section .fi-fieldset > legend {
+    font-weight: 700;
+    color: var(--myat-navy);
+}
+
+.dark .myat-form-section .fi-fieldset > legend { color: #e2e8f0; }
