@@ -710,4 +710,25 @@ class TransfersTest extends TestCase
         $this->assertSame('application/octet-stream', $response->headers->get('Content-Type'));
         $this->assertStringStartsWith('attachment', $response->headers->get('Content-Disposition'));
     }
+
+    public function test_quick_toggle_hides_and_shows_cancelled_transfers(): void
+    {
+        $this->actingAs($this->makeLegacyUser('Entry'));
+        $live = $this->transfer(['TransferDate' => Carbon::today(), 'Status' => 'Pending', 'SalePrice' => 100]);
+        $gone = $this->transfer(['TransferDate' => Carbon::today(), 'Status' => 'Cancelled', 'SalePrice' => 40]);
+
+        $page = Livewire::test(ListTransfers::class)
+            ->assertSeeHtml('myat-quick-toggle is-on')       // shown by default
+            ->assertCanSeeTableRecords([$live, $gone]);
+        $this->assertSame(1, $page->instance()->cancelledCount());
+
+        $page->call('toggleCancelled')
+            ->assertCanSeeTableRecords([$live])->assertCanNotSeeTableRecords([$gone])
+            ->assertDontSeeHtml('myat-quick-toggle is-on');
+        $this->assertTrue(session(ListTransfers::HIDE_CANCELLED));
+
+        // the choice stays for the next visit, then switches back
+        Livewire::test(ListTransfers::class)->assertCanNotSeeTableRecords([$gone])
+            ->call('toggleCancelled')->assertCanSeeTableRecords([$live, $gone]);
+    }
 }

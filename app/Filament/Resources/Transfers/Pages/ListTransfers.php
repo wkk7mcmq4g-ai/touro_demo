@@ -46,6 +46,37 @@ class ListTransfers extends ListRecords
     #[Session]
     public bool $inlineEditing = false;
 
+    /**
+     * Quick toggle "Ακυρωμένα": cancelled transfers shown (default) or left out, on every tab, in the
+     * totals above the list and in the tab counts. Kept in the session directly (not #[Session]) so
+     * the totals widget, which rebuilds this page to read its query, sees the same choice.
+     */
+    public const HIDE_CANCELLED = 'myat.transfers.hide_cancelled';
+
+    public function showsCancelled(): bool
+    {
+        return ! session(self::HIDE_CANCELLED, false);
+    }
+
+    public function toggleCancelled(): void
+    {
+        session()->put(self::HIDE_CANCELLED, $this->showsCancelled());
+        $this->resetPage();
+    }
+
+    /** Cancelled transfers in the open tab, for the toggle's label. */
+    public function cancelledCount(): int
+    {
+        return parent::modifyQueryWithActiveTab(TransferResource::getEloquentQuery())->where('Status', 'Cancelled')->count();
+    }
+
+    protected function modifyQueryWithActiveTab(Builder $query, bool $isResolvingRecord = false): Builder
+    {
+        $query = parent::modifyQueryWithActiveTab($query, $isResolvingRecord);
+
+        return $isResolvingRecord || $this->showsCancelled() ? $query : $query->where('Status', '<>', 'Cancelled');
+    }
+
     /** At most 50 editable rows per page, whatever was chosen before switching editing on. */
     public function getTableRecordsPerPage(): int|string|null
     {
@@ -147,18 +178,20 @@ class ListTransfers extends ListRecords
     private function tabCounts(): array
     {
         $today = Carbon::today();
-        $compute = function () use ($today): array {
+        $hide = ! $this->showsCancelled();
+        $compute = function () use ($today, $hide): array {
             [$d0, $d1, $d4, $d7] = [$today->toDateString(), $today->copy()->addDay()->toDateString(), $today->copy()->addDays(4)->toDateString(), $today->copy()->addDays(7)->toDateString()];
-            $row = Transfer::query()->toBase()->where('TransferDate', '>=', $d0)
+            $row = Transfer::query()->toBase()->where('TransferDate', '>=', $d0)->when($hide, fn ($q) => $q->where('Status', '<>', 'Cancelled'))
                 ->selectRaw('SUM(TransferDate = ?) AS today, SUM(TransferDate = ?) AS tomorrow, SUM(TransferDate <= ?) AS next5, SUM(Status = ?) AS pending', [$d0, $d1, $d4, 'Pending'])
                 ->first();
 
             return [
                 'today' => (int) $row->today, 'tomorrow' => (int) $row->tomorrow, 'next5' => (int) $row->next5, 'pending' => (int) $row->pending,
-                'issues' => Transfer::query()->withOpenIssues()->where('TransferDate', '>=', $d0)->where('TransferDate', '<=', $d7)->count(),
+                'issues' => Transfer::query()->withOpenIssues()->where('TransferDate', '>=', $d0)->where('TransferDate', '<=', $d7)
+                    ->when($hide, fn ($q) => $q->where('Status', '<>', 'Cancelled'))->count(),
             ];
         };
 
-        return app()->runningUnitTests() ? $compute() : Cache::remember('myat:transfer-tab-counts:'.$today->toDateString(), 60, $compute);
+        return app()->runningUnitTests() ? $compute() : Cache::remember('myat:transfer-tab-counts:'.$today->toDateString().($hide ? ':nc' : ''), 60, $compute);
     }
 }
