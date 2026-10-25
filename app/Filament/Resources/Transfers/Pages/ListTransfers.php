@@ -2,10 +2,12 @@
 
 namespace App\Filament\Resources\Transfers\Pages;
 
+use App\Filament\Concerns\CopiesPhpRunnerLayout;
 use App\Filament\Resources\Transfers\Actions\TransferActions;
 use App\Filament\Resources\Transfers\TransferResource;
 use App\Filament\Resources\Transfers\Widgets\TransferTotals;
 use App\Models\Transfer;
+use App\Support\PhpRunnerLayouts;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\CreateAction;
@@ -21,6 +23,7 @@ use Livewire\Attributes\Session;
 
 class ListTransfers extends ListRecords
 {
+    use CopiesPhpRunnerLayout;
     use ExposesTableToWidgets;
 
     protected static string $resource = TransferResource::class;
@@ -69,6 +72,19 @@ class ListTransfers extends ListRecords
                 ->color('gray')
                 ->tooltip('Drag the edge of a column title to resize it; double-click the edge to reset that column.')
                 ->alpineClickHandler('window.myatResetColumnWidths?.()'),
+            Action::make('phprunnerLayout')
+                ->label('Στήλες από PHPRunner')
+                ->icon(Heroicon::OutlinedArrowDownOnSquare)
+                ->color('gray')
+                ->visible(fn (): bool => PhpRunnerLayouts::read(static::class, (string) auth()->user()?->username) !== null)
+                ->requiresConfirmation()
+                ->modalHeading('Στήλες όπως στο PHPRunner')
+                ->modalDescription('Η σειρά, οι εμφανείς στήλες και τα πλάτη παίρνουν τις ρυθμίσεις σας από την παλιά εφαρμογή. Οι τωρινές σας ρυθμίσεις εδώ αντικαθίστανται.')
+                ->modalSubmitActionLabel('Εφαρμογή')
+                ->action(function (): void {
+                    PhpRunnerLayouts::apply($this, (string) auth()->user()?->username);
+                    $this->redirect(static::getUrl(['activeTab' => $this->activeTab]));
+                }),
             ActionGroup::make([TransferActions::incomingPayment()])
                 ->label('Τιμολόγηση')
                 ->icon(Heroicon::OutlinedBanknotes)
