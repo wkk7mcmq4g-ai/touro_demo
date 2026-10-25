@@ -2068,12 +2068,13 @@ html.myat-immersive .fi-header {
     color: #fff;
 }
 
-/* Phones: one slim strip (transfers · sales); tapping it opens the other totals underneath. */
+/* Phones, and phones / tablets held sideways: one slim strip (transfers · sales); tapping it opens the
+   other totals underneath. */
 .myat-totals-strip {
     display: none;
 }
 
-@media (max-width: 639px) {
+@media (max-width: 639px), (orientation: landscape) and (pointer: coarse), (orientation: landscape) and (max-height: 500px) {
     .myat-totals-strip {
         display: flex;
         align-items: center;
@@ -2150,9 +2151,27 @@ html.myat-immersive .fi-header {
     .myat-totals-strip-icon { transition: none; }
 }
 
-html.myat-immersive .fi-page-header-widgets:not(:has(.myat-daytotals)),
-html.myat-immersive .fi-wi:has(.myat-totals) {
+/* sideways the opened totals sit in one row */
+@media (orientation: landscape) and (pointer: coarse), (orientation: landscape) and (max-height: 500px) {
+    .myat-totals-wrap.is-open .myat-totals {
+        grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    }
+}
+
+/* Full screen: other header widgets go; the transfers totals stay as the slim strip */
+html.myat-immersive .fi-page-header-widgets:not(:has(.myat-daytotals)):not(:has(.myat-totals)) {
     display: none;
+}
+
+html.myat-immersive .fi-page-header-widgets:has(.myat-totals) {
+    margin-bottom: 0.25rem;
+}
+
+/* ...on touch screens; a computer in full screen keeps the whole height for the table */
+@media (pointer: fine) and (min-height: 501px) {
+    html.myat-immersive .fi-page-header-widgets:has(.myat-totals) {
+        display: none;
+    }
 }
 
 /* ---------- Dispatch: totals of each day ---------- */
