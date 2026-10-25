@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Filament\Resources\Transfers\Pages\ListTransfers;
+use App\Filament\Resources\Transfers\Tables\TransfersTable;
 use Filament\Tables\Contracts\HasTable;
 use Illuminate\Support\Facades\DB;
 
@@ -22,6 +23,8 @@ class PhpRunnerLayouts
         ListTransfers::class => [
             'table' => 'transfers',
             'rename' => ['cID_Customer' => 'customer.SupplierName'],
+            // new-app columns that PHPRunner did not have and that stay first (the open-items badges)
+            'first' => [TransfersTable::FLAGS],
             'cells' => [
                 'headcell_field' => 'TransferID', 'headcell_field2' => 'cID_Customer', 'headcell_field3' => 'SupplierCode',
                 'headcell_field4' => 'Pax', 'headcell_field5' => 'TransferType', 'headcell_field6' => 'TransferDate',
@@ -113,6 +116,11 @@ class PhpRunnerLayouts
         if ($layout['order'] !== null) {
             $position = array_flip($layout['order']);
             $state = $state->sortBy(fn (array $item, string $name): int => $position[$name] ?? 1000 + array_search($name, $state->keys()->all(), true));
+        }
+
+        $first = self::PAGES[$page::class]['first'] ?? [];
+        if ($first !== []) {
+            $state = $state->only($first)->merge($state->except($first));
         }
 
         if ($layout['hidden'] !== null) {

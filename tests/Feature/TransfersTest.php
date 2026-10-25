@@ -12,6 +12,7 @@ use App\Filament\Resources\Transfers\RelationManagers\FilesRelationManager;
 use App\Filament\Resources\Transfers\RelationManagers\NotesRelationManager;
 use App\Filament\Resources\Transfers\RelationManagers\PriceLinesRelationManager;
 use App\Filament\Resources\Transfers\RelationManagers\TaxiFilesRelationManager;
+use App\Filament\Resources\Transfers\Tables\TransfersTable;
 use App\Filament\Resources\Transfers\Widgets\TransferTotals;
 use App\Models\MyatTransfersFile;
 use App\Models\Transfer;
@@ -103,7 +104,7 @@ class TransfersTest extends TestCase
         $this->actingAs($this->makeLegacyUser('Entry'));
 
         $phprunnerColumns = [
-            'OpenExpensesFlag', 'OpenCharges', 'OperationalIssues', 'FinancialIssues', 'TransferID', 'customer.SupplierName',
+            'flags', /* Exp. / Chg. / Ops / Fin. as badges */ 'TransferID', 'customer.SupplierName',
             'SupplierCode', 'Pax', 'TransferType', 'TransferDate', 'TransferTime', 'From', 'To', 'Flight_Ship_Num_From', 'OLP',
             'TicketsRequested', 'AssistantStatus', 'Assistant_Price', 'CarTypeID', 'CoachCompanyID', 'Notes', 'LesseeName',
             'LeadName', 'LeadPhone', 'PassengerName', 'Status', 'PlatformPrice', 'Assets', 'Liabilities', 'CashRegister',
@@ -730,5 +731,29 @@ class TransfersTest extends TestCase
         // the choice stays for the next visit, then switches back
         Livewire::test(ListTransfers::class)->assertCanNotSeeTableRecords([$gone])
             ->call('toggleCancelled')->assertCanSeeTableRecords([$live, $gone]);
+    }
+
+    public function test_open_items_are_coloured_badges_first_with_an_explanation_on_hover(): void
+    {
+        $this->actingAs($this->makeLegacyUser('Entry'));
+        $busy = $this->transfer();
+        DB::table('transfers')->where('TransferID', $busy->TransferID)->update(['OpenExpensesFlag' => 1, 'OpenCharges' => 2, 'OperationalIssues' => 1]);
+        $quiet = $this->transfer();
+
+        $flags = TransfersTable::flags($busy->fresh());
+        $this->assertSame(['exp', 'chg', 'ops'], array_column($flags, 'key'));
+        $this->assertStringContainsString('2 ανοιχτές πρόσθετες χρεώσεις', $flags[1]['tip']);
+        $this->assertSame([], TransfersTable::flags($quiet));
+
+        $page = Livewire::test(ListTransfers::class)
+            ->assertSeeHtml('myat-flag myat-flag-chg')
+            ->assertSeeHtml('x-tooltip.raw="Ops: 1 ανοιχτές λειτουργικές σημειώσεις')
+            ->assertDontSeeHtml('myat-flag-fin');
+        $this->assertSame('flags', $page->instance()->tableColumns[0]['name']);
+
+        // a saved layout with the badges elsewhere still gets them first
+        $columns = $page->instance()->tableColumns;
+        $page->call('applyTableColumnManager', [...array_slice($columns, 1), $columns[0]], true);
+        $this->assertSame('flags', Livewire::test(ListTransfers::class)->instance()->tableColumns[0]['name']);
     }
 }

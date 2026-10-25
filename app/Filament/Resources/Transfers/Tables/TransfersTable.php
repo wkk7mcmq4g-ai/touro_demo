@@ -24,6 +24,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\HtmlString;
 
 /**
  * The PHPRunner transfers list: the same 57 columns in the same order with the same
@@ -32,6 +33,31 @@ use Illuminate\Support\Carbon;
  */
 class TransfersTable
 {
+    /** The open-items column (Exp. / Chg. / Ops / Fin. badges); kept first by PinsFlagsColumn. */
+    public const FLAGS = 'flags';
+
+    /**
+     * @return list<array{key: string, short: string, count: int, tip: string}> the transfer's open items
+     */
+    public static function flags(Transfer $record): array
+    {
+        $items = [
+            ['key' => 'exp', 'short' => 'Exp.', 'count' => (int) $record->OpenExpensesFlag === 1 ? 1 : 0,
+                'tip' => 'Exp.: έξοδα που δεν έχουν παραληφθεί (Πρόσθετες χρεώσεις → Έξοδα, «Expense received» = Όχι)'],
+            ['key' => 'chg', 'short' => 'Chg.', 'count' => (int) $record->OpenCharges,
+                'tip' => 'Chg.: %d ανοιχτές πρόσθετες χρεώσεις χωρίς κατάσταση πληρωμής'],
+            ['key' => 'ops', 'short' => 'Ops', 'count' => (int) $record->OperationalIssues,
+                'tip' => 'Ops: %d ανοιχτές λειτουργικές σημειώσεις (Notes, κατηγορία Operational, χωρίς κατάσταση)'],
+            ['key' => 'fin', 'short' => 'Fin.', 'count' => (int) $record->FinancialIssues,
+                'tip' => 'Fin.: %d ανοιχτές οικονομικές σημειώσεις (Notes, κατηγορία Financial, χωρίς κατάσταση)'],
+        ];
+
+        return array_values(array_map(
+            fn (array $f): array => ['tip' => sprintf($f['tip'], $f['count'])] + $f,
+            array_filter($items, fn (array $f): bool => $f['count'] > 0),
+        ));
+    }
+
     public static function configure(Table $table): Table
     {
         // "Edit in list" (PHPRunner inline edit): the columns in config/transfers.php become editable.
@@ -105,26 +131,21 @@ class TransfersTable
             ->sortable()
             ->toggleable();
 
-        // Issue counters PHPRunner shows only when there is something to see.
-        $counter = fn (string $name, string $label, string $color): TextColumn => TextColumn::make($name)
-            ->label($label)
-            ->badge()
-            ->color($color)
-            ->formatStateUsing(fn ($state): ?string => (int) $state > 0 ? (string) (int) $state : null)
-            ->placeholder('')
-            ->alignCenter()
-            ->toggleable();
-
         return [
-            IconColumn::make('OpenExpensesFlag')
-                ->label('Exp.')
-                ->getStateUsing(fn (Transfer $record): bool => (int) $record->OpenExpensesFlag === 1)
-                ->icon(fn (bool $state) => $state ? Heroicon::ExclamationCircle : null)
-                ->color('danger')
+            // Open items on the transfer, as small coloured badges right after the row buttons, no
+            // header: expenses not received (Exp.), open charges (Chg.), open operational and
+            // financial notes (Ops / Fin.). Counted by the database's transfer_charges and
+            // transfer_notes triggers; hover a badge for what it means.
+            TextColumn::make(self::FLAGS)
+                ->label('Ενδείξεις')
+                ->state(fn (Transfer $record): string => collect(self::flags($record))->map(fn (array $f): string => $f['short'].($f['count'] > 1 || $f['key'] !== 'exp' ? ' '.$f['count'] : ''))->implode(' · '))
+                ->formatStateUsing(fn (Transfer $record): HtmlString => new HtmlString(collect(self::flags($record))
+                    ->map(fn (array $f): string => '<span class="myat-flag myat-flag-'.$f['key'].'" x-tooltip.raw="'.e($f['tip']).'" aria-label="'.e($f['tip']).'" tabindex="0">'.($f['key'] === 'exp' ? '!' : $f['count']).'</span>')
+                    ->implode('')))
+                ->placeholder('')
+                ->extraHeaderAttributes(['class' => 'myat-flags-head', 'data-myat-nofilter' => '1'], merge: true)
+                ->extraCellAttributes(['class' => 'myat-flags-cell'])
                 ->toggleable(),
-            $counter('OpenCharges', 'Chg.', 'warning'),
-            $counter('OperationalIssues', 'Ops', 'danger'),
-            $counter('FinancialIssues', 'Fin.', 'warning'),
             TextColumn::make('TransferID')
                 ->label('ID')
                 ->searchable()

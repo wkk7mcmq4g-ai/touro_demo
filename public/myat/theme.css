@@ -3325,3 +3325,14 @@ html.myat-immersive .myat-day-sub {
    a row-by-row grid wraps at any length (order still reads left to right, top to bottom). */
 .fi-ta-col-manager-modal .fi-ta-col-manager-items { display:grid !important; grid-template-columns:repeat(auto-fill, minmax(13rem, 1fr)) !important; grid-template-rows:none !important; grid-auto-flow:row !important; columns:auto; }
 .fi-ta-col-manager-modal .fi-ta-col-manager-items > p { grid-column:1 / -1; }
+
+/* Transfers: open-items badges after the row buttons (no header) */
+.myat-flags-head { font-size:0 !important; color:transparent !important; width:1%; padding-inline:.25rem !important; }
+.myat-flags-cell { padding-inline:.25rem !important; }
+.myat-flags-cell .fi-ta-text { padding:0 !important; }
+.myat-flag { display:inline-grid; place-items:center; min-width:1.375rem; height:1.375rem; margin:.0625rem; padding:0 .3rem; border-radius:999px; font-size:.6875rem; font-weight:800; line-height:1; color:#fff; cursor:help; box-shadow:0 1px 2px rgb(0 0 0 / .15); }
+.myat-flag-exp { background:#dc2626; }   /* expenses not received */
+.myat-flag-chg { background:#d97706; }   /* open charges */
+.myat-flag-ops { background:#db2777; }   /* operational notes */
+.myat-flag-fin { background:#7c3aed; }   /* financial notes */
+.myat-flag:focus-visible { outline:2px solid var(--primary-500); outline-offset:1px; }

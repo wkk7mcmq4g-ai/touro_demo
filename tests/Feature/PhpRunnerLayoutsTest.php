@@ -51,7 +51,7 @@ class PhpRunnerLayoutsTest extends TestCase
 
         $key = Livewire::test(ListTransfers::class)->instance()->getTableColumnsSessionKey();
         $columns = collect(session($key));
-        $this->assertSame(['TransferDate', 'TransferID', 'customer.SupplierName', 'LeadName'], $columns->pluck('name')->take(4)->all());
+        $this->assertSame(['TransferDate', 'TransferID', 'customer.SupplierName', 'LeadName'], $columns->pluck('name')->reject(fn ($n) => $n === 'flags')->values()->take(4)->all());
         $this->assertFalse($columns->firstWhere('name', 'Pax')['isToggled']);
         $this->assertTrue($columns->firstWhere('name', 'SupplierCode')['isToggled']);
         $this->assertSame(['transfer-i-d' => 64, 'customer.-supplier-name' => 150], session('myat.widths')[ListTransfers::class]);
@@ -67,10 +67,10 @@ class PhpRunnerLayoutsTest extends TestCase
         session()->forget($key);
 
         $page = Livewire::test(ListTransfers::class);
-        $this->assertNotSame('TransferDate', collect(session($key))->pluck('name')->first()); // not copied automatically
+        $this->assertNotSame('TransferDate', collect(session($key))->pluck('name')->reject(fn ($n) => $n === 'flags')->values()->first()); // not copied automatically
 
         $page->callAction(TestAction::make('phprunnerLayout'))->assertRedirect();
-        $this->assertSame('TransferDate', collect(session($key))->pluck('name')->first());
+        $this->assertSame('TransferDate', collect(session($key))->pluck('name')->reject(fn ($n) => $n === 'flags')->values()->first());
     }
 
     public function test_admin_copies_every_users_layout_at_once(): void
@@ -91,9 +91,9 @@ class PhpRunnerLayoutsTest extends TestCase
 
         $saved = fn (string $user) => json_decode((string) DB::table('MyAthensTransfersAPP_settings')
             ->where('TYPE', TableLayouts::TYPE)->where('USERNAME', $user)->where('TABLENAME', $key)->value('SEARCH'), true);
-        $this->assertSame(['LeadName', 'TransferID'], collect($saved($other->username))->pluck('name')->take(2)->all());
+        $this->assertSame(['LeadName', 'TransferID'], collect($saved($other->username))->pluck('name')->reject(fn ($n) => $n === 'flags')->values()->take(2)->all());
         $this->assertSame([], $saved($third->username)); // kept: has a layout of their own
-        $this->assertSame(['TransferDate', 'TransferID'], collect(session($key))->pluck('name')->take(2)->all()); // admin's own, also in this session
+        $this->assertSame(['TransferDate', 'TransferID'], collect(session($key))->pluck('name')->reject(fn ($n) => $n === 'flags')->values()->take(2)->all()); // admin's own, also in this session
 
         // overwrite: the third user gets the old layout too
         Livewire::test(ListTransfers::class)->callAction(TestAction::make('phprunnerLayoutAll'), ['overwrite' => true]);
@@ -101,7 +101,7 @@ class PhpRunnerLayoutsTest extends TestCase
 
         // the copied user sees it when they sign in
         $this->actingAs($other)->withSession([])->get('/admin/transfers')->assertOk();
-        $this->assertSame(['LeadName', 'TransferID'], collect(session($key))->pluck('name')->take(2)->all());
+        $this->assertSame(['LeadName', 'TransferID'], collect(session($key))->pluck('name')->reject(fn ($n) => $n === 'flags')->values()->take(2)->all());
 
         // nobody else gets the menu, not even other Admins (their copy comes on first visit)
         $this->actingAs($this->makeLegacyUser('Admin'));

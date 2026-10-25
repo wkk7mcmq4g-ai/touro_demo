@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Transfers\Pages;
 
 use App\Filament\Concerns\CopiesPhpRunnerLayout;
+use App\Filament\Concerns\PinsFlagsColumn;
 use App\Filament\Resources\Transfers\Actions\TransferActions;
 use App\Filament\Resources\Transfers\TransferResource;
 use App\Filament\Resources\Transfers\Widgets\TransferTotals;
@@ -27,6 +28,7 @@ class ListTransfers extends ListRecords
 {
     use CopiesPhpRunnerLayout;
     use ExposesTableToWidgets;
+    use PinsFlagsColumn;
 
     protected static string $resource = TransferResource::class;
 
