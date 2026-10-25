@@ -130,6 +130,23 @@ class DailyRecipient extends Model
         ]))->implode("\r\n\r\n");
     }
 
+    /**
+     * The SMS window's text and phone: the same day text as Telegram (line breaks as \n for
+     * SMS/WhatsApp), to the driver's mobile (drivers.MobilePhone through v_transfers) or the
+     * guide's phone (counterparties.Phones by their e-mail).
+     *
+     * @return array{text: string, phone: string}
+     */
+    public function sms(): array
+    {
+        $text = str_replace(["\r\n", "\r"], "\n", $this->telegramText());
+        $phone = $this->Type === 'Driver'
+            ? (string) $this->jobs()->pluck('DriverPhone')->first(fn ($p): bool => filled($p))
+            : (filled($this->Email) ? (string) DB::table('counterparties')->where('Email', $this->Email)->whereNotNull('Phones')->where('Phones', '<>', '')->value('Phones') : '');
+
+        return ['text' => $text, 'phone' => $phone];
+    }
+
     /** PHPRunner "Read" (New_Button87): the driver confirmed they read the day's transfers. */
     public function markRead(): void
     {

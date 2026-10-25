@@ -18,6 +18,7 @@ use Filament\Schemas\Components\Text;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -51,24 +52,38 @@ class TransferActions
      */
     public static function sms(): Action
     {
-        return Action::make('sms')
+        return self::smsWindow(
+            Action::make('sms')->tooltip('SMS / WhatsApp για τον οδηγό')
+                ->visible(fn (): bool => auth()->user()?->group() === UserGroup::Admin),
+            fn (Transfer $record): array => $record->smsForDriver(),
+        );
+    }
+
+    /**
+     * The SMS window shared by Transfers and Αποστολή Transfers: the text ready to copy, a copy
+     * button and a WhatsApp link to the phone. $sms(record) returns ['text' => ..., 'phone' => ...].
+     *
+     * @param  Closure(Model): array{text: string, phone: string}  $sms
+     * @param  list<Action>  $footer  more buttons next to Αντιγραφή
+     */
+    public static function smsWindow(Action $action, Closure $sms, string|Closure $heading = 'Κείμενο για τον οδηγό', array $footer = []): Action
+    {
+        return $action
             ->label('SMS')
-            ->tooltip('SMS / WhatsApp για τον οδηγό')
             ->icon(Heroicon::OutlinedChatBubbleLeftEllipsis)
             ->color('gray')
-            ->visible(fn (): bool => auth()->user()?->group() === UserGroup::Admin)
-            ->modalHeading('Κείμενο για τον οδηγό')
+            ->modalHeading($heading)
             ->modalWidth(Width::Large)
-            ->fillForm(fn (Transfer $record): array => ['text' => $record->smsForDriver()['text']])
-            ->schema(fn (Transfer $record): array => [
+            ->fillForm(fn (Model $record): array => ['text' => $sms($record)['text']])
+            ->schema(fn (Model $record): array => [
                 Textarea::make('text')->hiddenLabel()->rows(13)->readOnly()
                     ->extraInputAttributes(['onclick' => 'this.select()', 'class' => 'myat-sms-text']),
-                Text::make(function () use ($record) {
-                    $sms = $record->smsForDriver();
-                    $digits = preg_replace('/\D/', '', $sms['phone']);
+                Text::make(function () use ($record, $sms) {
+                    $message = $sms($record);
+                    $link = self::whatsAppUrl($message['phone'], $message['text']);
 
-                    return filled($digits)
-                        ? str('<a class="myat-sms-wa" target="_blank" rel="noopener" href="https://wa.me/'.(strlen($digits) === 10 ? '30'.$digits : $digits).'?text='.rawurlencode($sms['text']).'">Άνοιγμα στο WhatsApp</a>')->toHtmlString()
+                    return $link
+                        ? str('<a class="myat-sms-wa" target="_blank" rel="noopener" href="'.e($link).'">Άνοιγμα στο WhatsApp</a>')->toHtmlString()
                         : 'Δεν υπάρχει τηλέφωνο οδηγού για αυτή την ημέρα.';
                 }),
             ])
@@ -76,8 +91,20 @@ class TransferActions
             ->extraModalFooterActions([
                 Action::make('copySms')->label('Αντιγραφή')->icon(Heroicon::OutlinedClipboardDocument)
                     ->alpineClickHandler("navigator.clipboard.writeText(document.querySelector('.myat-sms-text')?.value ?? ''); \$tooltip('Αντιγράφηκε', { timeout: 1500 })"),
+                ...$footer,
             ])
             ->modalCancelActionLabel('Κλείσιμο');
+    }
+
+    /** wa.me link for a Greek or international number (10 digits = Greek, +30 added), or null without one. */
+    public static function whatsAppUrl(?string $phone, string $text): ?string
+    {
+        $digits = preg_replace('/\D/', '', (string) $phone);
+        if ($digits === '') {
+            return null;
+        }
+
+        return 'https://wa.me/'.(strlen($digits) === 10 ? '30'.$digits : $digits).'?text='.rawurlencode($text);
     }
 
     /** "Κλείσιμο Πωλήσεων" (New_Button32): received = sale price on the selected transfers. */

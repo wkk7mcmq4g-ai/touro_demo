@@ -4,6 +4,7 @@ namespace App\Filament\Resources\DailyTransfers;
 
 use App\Filament\Concerns\UsesPhpRunnerPermissions;
 use App\Filament\Resources\DailyTransfers\Pages\ListDailyTransfers;
+use App\Filament\Resources\Transfers\Actions\TransferActions;
 use App\Mail\DailyTransfers;
 use App\Models\DailyRecipient;
 use App\Services\Dispatch\TelegramClient;
@@ -111,20 +112,26 @@ class DailyTransfersResource extends Resource
                     ->schema([$passengers])
                     ->modalSubmitActionLabel('Send')
                     ->action(fn (DailyRecipient $record, array $data) => self::sendEmails([$record], (bool) ($data['withPassengers'] ?? false))),
-                Action::make('telegram')->label('Telegram')->icon(Heroicon::OutlinedChatBubbleOvalLeft)->color('info')
-                    ->visible(fn (DailyRecipient $record): bool => (int) $record->TelegramID !== 0)
-                    ->requiresConfirmation()
-                    ->modalHeading(fn (DailyRecipient $record): string => 'Telegram to '.$record->Fullname)
-                    ->modalDescription(fn (DailyRecipient $record) => str(e($record->telegramText()))->replace("\n", '<br>')->toHtmlString())
-                    ->modalSubmitActionLabel('Send')
-                    ->action(function (DailyRecipient $record): void {
-                        try {
-                            app(TelegramClient::class)->send((int) $record->TelegramID, $record->telegramText(), (int) $record->ID, $record->TransferDate->toDateString());
-                            Notification::make()->success()->title('Message sent')->send();
-                        } catch (Throwable $e) {
-                            Notification::make()->danger()->title('Not sent')->body($e->getMessage())->persistent()->send();
-                        }
-                    }),
+                // PHPRunner's Telegram button, now the same SMS window as on Transfers (copy / WhatsApp);
+                // drivers with Telegram linked can still be sent the text from it.
+                TransferActions::smsWindow(
+                    Action::make('sms')->tooltip('SMS / WhatsApp με τα δρομολόγια της ημέρας'),
+                    fn (DailyRecipient $record): array => $record->sms(),
+                    fn (DailyRecipient $record): string => 'Δρομολόγια '.$record->TransferDate->format('d/m').' · '.$record->Fullname,
+                    [
+                        Action::make('sendTelegram')->label('Αποστολή Telegram')->icon(Heroicon::OutlinedPaperAirplane)->color('info')
+                            ->visible(fn (DailyRecipient $record): bool => (int) $record->TelegramID !== 0)
+                            ->requiresConfirmation()->modalHeading('Αποστολή στο Telegram;')
+                            ->action(function (DailyRecipient $record): void {
+                                try {
+                                    app(TelegramClient::class)->send((int) $record->TelegramID, $record->telegramText(), (int) $record->ID, $record->TransferDate->toDateString());
+                                    Notification::make()->success()->title('Message sent')->send();
+                                } catch (Throwable $e) {
+                                    Notification::make()->danger()->title('Not sent')->body($e->getMessage())->persistent()->send();
+                                }
+                            }),
+                    ],
+                ),
                 Action::make('read')->label('Read')->icon(Heroicon::OutlinedCheck)->color('success')
                     ->tooltip('The driver confirmed reading the transfers')
                     ->visible(fn (DailyRecipient $record): bool => $record->SendStatus !== 'Read')

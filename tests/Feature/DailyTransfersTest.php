@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Resources\DailyTransfers\Pages\ListDailyTransfers;
+use App\Filament\Resources\Transfers\Actions\TransferActions;
 use App\Mail\DailyTransfers;
 use App\Models\DailyRecipient;
 use Filament\Actions\Testing\TestAction;
@@ -27,7 +28,7 @@ class DailyTransfersTest extends TestCase
     private function driverWithJobs(string $name, ?int $telegram, int $jobs): void
     {
         $vehicle = DB::table('vehicles')->insertGetId(['VehicleName' => "VAN {$name}", 'VehicleLicence' => 'IKE'], 'VehicleID');
-        $driver = DB::table('drivers')->insertGetId(['Fullname' => $name, 'Email' => strtolower($name).'@example.test', 'TelegramID' => $telegram, 'Active' => 1], 'DriverID');
+        $driver = DB::table('drivers')->insertGetId(['Fullname' => $name, 'Email' => strtolower($name).'@example.test', 'TelegramID' => $telegram, 'Active' => 1, 'MobilePhone' => '6971234567'], 'DriverID');
         DB::table('vehicle_assignments')->insert(['VehicleID' => $vehicle, 'DriverID' => $driver, 'AssignmentDate' => Carbon::today()]);
         for ($i = 0; $i < $jobs; $i++) {
             DB::table('transfers')->insert(['ImportDate' => Carbon::today(), 'TransferDate' => Carbon::today(), 'TransferTime' => "1{$i}:00", 'TransferType' => 'Arrival',
@@ -71,13 +72,33 @@ class DailyTransfersTest extends TestCase
         Http::fake(['api.telegram.org/*' => Http::response(['ok' => true, 'result' => ['message_id' => 77]])]);
 
         config(['services.telegram.enabled' => false]);
-        Livewire::test(ListDailyTransfers::class)->callAction(TestAction::make('telegram')->table($nikos));
+        Livewire::test(ListDailyTransfers::class)->callAction([TestAction::make('sms')->table($nikos), TestAction::make('sendTelegram')]);
         Http::assertNothingSent();
 
         config(['services.telegram.enabled' => true, 'services.telegram.token' => 'TEST']);
-        Livewire::test(ListDailyTransfers::class)->callAction(TestAction::make('telegram')->table($nikos));
+        Livewire::test(ListDailyTransfers::class)->callAction([TestAction::make('sms')->table($nikos), TestAction::make('sendTelegram')]);
         Http::assertSent(fn ($request) => $request['chat_id'] == 555 && str_contains($request['text'], 'Lead Nikos 0'));
         $this->assertSame([77, 'out'], [(int) DB::table('telegram_messages')->value('telegram_msg_id'), DB::table('telegram_messages')->value('direction')]);
+    }
+
+    public function test_sms_window_has_the_day_text_copy_and_whatsapp_like_transfers(): void
+    {
+        $this->driverWithJobs('Nikos', null, 2);
+        $nikos = DailyRecipient::source()->firstOrFail();
+
+        $sms = $nikos->sms();
+        $this->assertSame('6971234567', $sms['phone']);
+        $this->assertStringContainsString('*Συνολικά Δρομολόγια:* 2', $sms['text']);
+        $this->assertStringNotContainsString("\r", $sms['text']);
+
+        $page = Livewire::test(ListDailyTransfers::class)
+            ->assertActionVisible(TestAction::make('sms')->table($nikos))
+            ->assertActionHidden([TestAction::make('sms')->table($nikos), TestAction::make('sendTelegram')]) // no Telegram linked
+            ->mountAction(TestAction::make('sms')->table($nikos))
+            ->assertOk();
+        $this->assertStringContainsString('Lead Nikos 1', $page->get('mountedActions.0.data.text'));
+        $this->assertSame('https://wa.me/306971234567?text=a%0Ab', TransferActions::whatsAppUrl('697 123 4567', "a\nb"));
+        $this->assertNull(TransferActions::whatsAppUrl('', 'x'));
     }
 
     public function test_entry_users_cannot_send(): void
