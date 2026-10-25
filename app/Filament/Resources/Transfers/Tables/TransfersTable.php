@@ -144,7 +144,7 @@ class TransfersTable
             $text('SupplierCode', 'Sup Code')->searchable(),
             $text('Pax', 'Pax'),
             $dot('TransferType', 'Type', 'TransferType'),
-            TextColumn::make('TransferDate')->label('Transfer Date')->date('D d/m/Y')->sortable()->toggleable(),
+            TextColumn::make('TransferDate')->label('Transfer Date')->date('d/m/Y')->sortable()->toggleable(),
             $text('TransferTime', 'Transfer Time')->sortable(query: fn (Builder $query, string $direction) => $query->orderBy('TransferTime_sort', $direction)),
             $text('From', 'From', 40)->searchable()->sortable(),
             $text('To', 'To', 40)->searchable()->sortable(),
