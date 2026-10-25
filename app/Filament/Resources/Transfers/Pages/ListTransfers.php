@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\Transfers\Pages;
 
-use App\Enums\UserGroup;
 use App\Filament\Concerns\CopiesPhpRunnerLayout;
 use App\Filament\Resources\Transfers\Actions\TransferActions;
 use App\Filament\Resources\Transfers\TransferResource;
@@ -110,8 +109,7 @@ class ListTransfers extends ListRecords
                 Action::make('phprunnerLayout')
                     ->label('Τις δικές μου στήλες')
                     ->icon(Heroicon::OutlinedUser)
-                    ->visible(fn (): bool => auth()->user()?->group() === UserGroup::Admin
-                        && PhpRunnerLayouts::read(static::class, (string) auth()->user()?->username) !== null)
+                    ->visible(fn (): bool => self::isAdminLogin() && PhpRunnerLayouts::read(static::class, (string) auth()->user()?->username) !== null)
                     ->requiresConfirmation()
                     ->modalHeading('Στήλες όπως στο PHPRunner')
                     ->modalDescription('Η σειρά, οι εμφανείς στήλες και τα πλάτη παίρνουν τις ρυθμίσεις σας από την παλιά εφαρμογή. Οι τωρινές σας ρυθμίσεις εδώ αντικαθίστανται.')
@@ -124,7 +122,7 @@ class ListTransfers extends ListRecords
                 Action::make('phprunnerLayoutAll')
                     ->label('Για όλους τους χρήστες')
                     ->icon(Heroicon::OutlinedUserGroup)
-                    ->visible(fn (): bool => auth()->user()?->group() === UserGroup::Admin)
+                    ->visible(fn (): bool => self::isAdminLogin())
                     ->modalHeading('Στήλες από PHPRunner για όλους')
                     ->modalDescription('Κάθε χρήστης παίρνει τη σειρά, τις εμφανείς στήλες και τα πλάτη που είχε στο PHPRunner. Όσοι είναι συνδεδεμένοι τώρα τα βλέπουν στην επόμενη σύνδεση.')
                     ->schema([
@@ -153,7 +151,7 @@ class ListTransfers extends ListRecords
                 ->label('Στήλες από PHPRunner')
                 ->icon(Heroicon::OutlinedArrowDownOnSquare)
                 ->color('gray')
-                ->visible(fn (): bool => auth()->user()?->group() === UserGroup::Admin) // the switch-over tool is for admins only
+                ->visible(fn (): bool => self::isAdminLogin()) // the switch-over tool is only for the login "admin"
                 ->button(),
             ActionGroup::make([TransferActions::incomingPayment()])
                 ->label('Τιμολόγηση')
@@ -167,6 +165,12 @@ class ListTransfers extends ListRecords
     /**
      * The quick date buttons of the PHPRunner list (Today, Tomorrow, Next five days, ...).
      */
+    /** The PHPRunner column copy (a switch-over tool) is only for the login called "admin". */
+    private static function isAdminLogin(): bool
+    {
+        return strtolower((string) auth()->user()?->username) === 'admin';
+    }
+
     public function getTabs(): array
     {
         $today = Carbon::today();

@@ -19,7 +19,7 @@ class PhpRunnerLayoutsTest extends TestCase
     {
         parent::setUp();
         $this->emptyTables(['MyAthensTransfersAPP_settings']);
-        $user = $this->makeLegacyUser('Admin');
+        $user = $this->makeLegacyUser('Admin', ['username' => 'admin']); // the copy menu is only for this login
         $this->username = $user->username;
         $this->actingAs($user);
 
@@ -103,7 +103,9 @@ class PhpRunnerLayoutsTest extends TestCase
         $this->actingAs($other)->withSession([])->get('/admin/transfers')->assertOk();
         $this->assertSame(['LeadName', 'TransferID'], collect(session($key))->pluck('name')->take(2)->all());
 
-        // non-admins don't get the menu at all, not even their own copy (theirs comes on first visit)
+        // nobody else gets the menu, not even other Admins (their copy comes on first visit)
+        $this->actingAs($this->makeLegacyUser('Admin'));
+        Livewire::test(ListTransfers::class)->assertDontSee('Στήλες από PHPRunner');
         $this->actingAs($other);
         Livewire::test(ListTransfers::class)->assertActionHidden(TestAction::make('phprunnerLayoutAll'))
             ->assertActionHidden(TestAction::make('phprunnerLayout'))->assertDontSee('Στήλες από PHPRunner');
