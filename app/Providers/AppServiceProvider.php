@@ -19,6 +19,7 @@ use Filament\Support\Facades\FilamentAsset;
 use Filament\Support\Facades\FilamentView;
 use Filament\Tables\Columns\Column;
 use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Enums\ColumnManagerLayout;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Filters\SelectFilter;
@@ -93,6 +94,14 @@ class AppServiceProvider extends ServiceProvider
             ->filtersFormWidth(Width::Medium)
             ->filtersFormColumns(1)
             ->reorderableColumns()
+            // Long tables (Transfers has 57 columns): the column picker opens as a wide window with
+            // the columns in a grid and a search box, instead of one long dropdown list.
+            ->columnManagerLayout(fn (Table $table): ColumnManagerLayout => self::hasManyColumns($table) ? ColumnManagerLayout::Modal : ColumnManagerLayout::Dropdown)
+            ->columnManagerColumns(fn (Table $table): int|array => self::hasManyColumns($table) ? ['default' => 1, 'sm' => 2, 'lg' => 3, 'xl' => 4] : 1)
+            ->columnManagerWidth(fn (Table $table): ?Width => self::hasManyColumns($table) ? Width::FiveExtraLarge : null)
+            ->columnManagerTriggerAction(fn (Action $action) => $action
+                ->modalHeading('Στήλες')
+                ->modalContent(view('filament.tables.column-search')))
             ->persistColumnsInSession()
             ->modifyQueryUsing(fn (Builder $query, $livewire, bool $isResolvingRecord = false): Builder => $livewire instanceof Component
                 ? ExcelFilters::apply($query, $livewire, $isResolvingRecord)
@@ -186,6 +195,12 @@ class AppServiceProvider extends ServiceProvider
         $component->dispatch('myat-table-filtered');
 
         return null;
+    }
+
+    /** Tables whose column picker needs room: more columns than fit a dropdown comfortably. */
+    private static function hasManyColumns(Table $table): bool
+    {
+        return count($table->getColumns()) > 14;
     }
 
     /** Column widths dragged in a table's header, per user and table (saved by TableLayouts). */

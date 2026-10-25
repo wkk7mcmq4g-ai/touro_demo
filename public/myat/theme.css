@@ -3274,3 +3274,54 @@ html.myat-immersive .myat-day-sub {
 .dark .myat-quick-toggle-count { background:var(--gray-800); color:var(--gray-300); }
 .myat-quick-toggle:not(.is-on) { color:var(--gray-500); }
 @media (prefers-reduced-motion: reduce) { .myat-quick-toggle-track, .myat-quick-toggle-track span { transition:none; } }
+
+/* Dashboard tone for partner jobs */
+.myat-tone-teal { --tone: #0f766e; --tone-bg: rgb(20 184 166 / 0.14); }
+.dark .myat-tone-teal { --tone: #5eead4; }
+
+/* ---- Partner jobs: direction switch + partner tabs ---- */
+.myat-pj-nav { display:flex; flex-direction:column; gap:.875rem; }
+.myat-pj-dir { display:inline-flex; align-self:flex-start; padding:.25rem; gap:.25rem; border-radius:.75rem; background:var(--gray-100); box-shadow:inset 0 1px 2px rgb(0 0 0 / .05); }
+.dark .myat-pj-dir { background:var(--gray-800); }
+.myat-pj-dir button { display:inline-flex; align-items:center; gap:.5rem; height:2.25rem; padding:0 1rem; border-radius:.5rem; font-size:.875rem; font-weight:600; color:var(--gray-600); transition:background-color .15s, color .15s, box-shadow .15s; }
+.dark .myat-pj-dir button { color:var(--gray-300); }
+.myat-pj-dir button:hover:not(.is-active) { color:var(--gray-900); }
+.dark .myat-pj-dir button:hover:not(.is-active) { color:#fff; }
+.myat-pj-dir button.is-active { background:#fff; color:var(--gray-950); box-shadow:0 1px 3px rgb(0 0 0 / .1), 0 0 0 1px rgb(0 0 0 / .04); }
+.dark .myat-pj-dir button.is-active { background:var(--gray-900); color:#fff; }
+.myat-pj-partners { display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; }
+.myat-pj-partner { display:inline-flex; align-items:center; gap:.5rem; height:2.5rem; padding:0 .875rem 0 .375rem; border:1px solid var(--gray-200); border-radius:999px; background:#fff; font-size:.875rem; font-weight:600; color:var(--gray-700); transition:border-color .15s, background-color .15s, box-shadow .15s, transform .15s; }
+.dark .myat-pj-partner { border-color:var(--gray-700); background:var(--gray-900); color:var(--gray-200); }
+.myat-pj-partner:hover { border-color:var(--gray-300); box-shadow:0 2px 6px rgb(0 0 0 / .06); transform:translateY(-1px); }
+.dark .myat-pj-partner:hover { border-color:var(--gray-600); }
+.myat-pj-partner:focus-visible, .myat-pj-dir button:focus-visible { outline:2px solid var(--primary-500); outline-offset:2px; }
+.myat-pj-avatar { display:inline-grid; place-items:center; width:1.75rem; height:1.75rem; border-radius:999px; background:var(--gray-100); color:var(--gray-600); font-size:.75rem; font-weight:800; }
+.dark .myat-pj-avatar { background:var(--gray-800); color:var(--gray-300); }
+.myat-pj-partner.is-active { border-color:var(--primary-600); background:var(--primary-600); color:#fff; box-shadow:0 4px 12px rgb(var(--primary-600-rgb, 2 132 199) / .25); }
+.myat-pj-partner.is-active .myat-pj-avatar { background:rgb(255 255 255 / .2); color:#fff; }
+.myat-pj-partner.has-new:not(.is-active) { border-color:#f59e0b; background:#fffbeb; color:#92400e; }
+.dark .myat-pj-partner.has-new:not(.is-active) { border-color:#b45309; background:rgb(245 158 11 / .12); color:#fcd34d; }
+.myat-pj-partner.has-new:not(.is-active) .myat-pj-avatar { background:#fde68a; color:#92400e; }
+.myat-pj-partner.is-offline:not(.is-active) { opacity:.55; }
+.myat-pj-count { display:inline-flex; align-items:center; gap:.3rem; height:1.375rem; padding:0 .5rem; border-radius:999px; background:#f59e0b; color:#fff; font-size:.6875rem; font-weight:700; }
+.myat-pj-partner.is-active .myat-pj-count { background:#fff; color:#b45309; }
+.myat-pj-dot { width:.4rem; height:.4rem; border-radius:999px; background:currentColor; animation:myat-pj-pulse 1.6s ease-in-out infinite; }
+@keyframes myat-pj-pulse { 0%, 100% { opacity:1; } 50% { opacity:.3; } }
+@media (prefers-reduced-motion: reduce) { .myat-pj-dot { animation:none; } .myat-pj-partner:hover { transform:none; } }
+
+/* Column picker window (long tables): search box + compact grid */
+.myat-colsearch { margin-bottom:.75rem; }
+.myat-colsearch-box { display:flex; align-items:center; gap:.5rem; height:2.5rem; padding:0 .75rem; border:1px solid var(--gray-300); border-radius:.625rem; background:#fff; }
+.dark .myat-colsearch-box { border-color:var(--gray-700); background:var(--gray-900); }
+.myat-colsearch-box:focus-within { border-color:var(--primary-500); box-shadow:0 0 0 3px rgb(14 165 233 / .15); }
+.myat-colsearch-box input { flex:1; border:0; outline:none; background:transparent; font-size:.875rem; color:inherit; padding:0; }
+.myat-colsearch-box input:focus { box-shadow:none; }
+.myat-colsearch-none { margin-top:.75rem; font-size:.875rem; color:var(--gray-500); }
+.fi-ta-col-manager-modal .fi-ta-col-manager-items { row-gap:.125rem; column-gap:1.5rem; }
+.fi-ta-col-manager-modal .fi-ta-col-manager-item { padding:.3rem .375rem; border-radius:.375rem; break-inside:avoid; }
+.fi-ta-col-manager-modal .fi-ta-col-manager-item:hover { background:var(--gray-50); }
+.dark .fi-ta-col-manager-modal .fi-ta-col-manager-item:hover { background:var(--gray-800); }
+/* Filament's column-direction grid fixes the rows and spills extra columns out of the window;
+   a row-by-row grid wraps at any length (order still reads left to right, top to bottom). */
+.fi-ta-col-manager-modal .fi-ta-col-manager-items { display:grid !important; grid-template-columns:repeat(auto-fill, minmax(13rem, 1fr)) !important; grid-template-rows:none !important; grid-auto-flow:row !important; columns:auto; }
+.fi-ta-col-manager-modal .fi-ta-col-manager-items > p { grid-column:1 / -1; }
