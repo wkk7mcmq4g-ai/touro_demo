@@ -110,7 +110,8 @@ class ListTransfers extends ListRecords
                 Action::make('phprunnerLayout')
                     ->label('Τις δικές μου στήλες')
                     ->icon(Heroicon::OutlinedUser)
-                    ->visible(fn (): bool => PhpRunnerLayouts::read(static::class, (string) auth()->user()?->username) !== null)
+                    ->visible(fn (): bool => auth()->user()?->group() === UserGroup::Admin
+                        && PhpRunnerLayouts::read(static::class, (string) auth()->user()?->username) !== null)
                     ->requiresConfirmation()
                     ->modalHeading('Στήλες όπως στο PHPRunner')
                     ->modalDescription('Η σειρά, οι εμφανείς στήλες και τα πλάτη παίρνουν τις ρυθμίσεις σας από την παλιά εφαρμογή. Οι τωρινές σας ρυθμίσεις εδώ αντικαθίστανται.')
@@ -152,6 +153,7 @@ class ListTransfers extends ListRecords
                 ->label('Στήλες από PHPRunner')
                 ->icon(Heroicon::OutlinedArrowDownOnSquare)
                 ->color('gray')
+                ->visible(fn (): bool => auth()->user()?->group() === UserGroup::Admin) // the switch-over tool is for admins only
                 ->button(),
             ActionGroup::make([TransferActions::incomingPayment()])
                 ->label('Τιμολόγηση')

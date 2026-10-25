@@ -103,7 +103,9 @@ class PhpRunnerLayoutsTest extends TestCase
         $this->actingAs($other)->withSession([])->get('/admin/transfers')->assertOk();
         $this->assertSame(['LeadName', 'TransferID'], collect(session($key))->pluck('name')->take(2)->all());
 
+        // non-admins don't get the menu at all, not even their own copy (theirs comes on first visit)
         $this->actingAs($other);
-        Livewire::test(ListTransfers::class)->assertActionHidden(TestAction::make('phprunnerLayoutAll'));
+        Livewire::test(ListTransfers::class)->assertActionHidden(TestAction::make('phprunnerLayoutAll'))
+            ->assertActionHidden(TestAction::make('phprunnerLayout'))->assertDontSee('Στήλες από PHPRunner');
     }
 }
