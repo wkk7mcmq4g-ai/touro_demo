@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Transfers\Pages;
 
+use App\Enums\UserGroup;
 use App\Filament\Concerns\CopiesPhpRunnerLayout;
 use App\Filament\Resources\Transfers\Actions\TransferActions;
 use App\Filament\Resources\Transfers\TransferResource;
@@ -11,6 +12,8 @@ use App\Support\PhpRunnerLayouts;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\CreateAction;
+use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Pages\Concerns\ExposesTableToWidgets;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -103,19 +106,53 @@ class ListTransfers extends ListRecords
                 ->color('gray')
                 ->tooltip('Drag the edge of a column title to resize it; double-click the edge to reset that column.')
                 ->alpineClickHandler('window.myatResetColumnWidths?.()'),
-            Action::make('phprunnerLayout')
+            ActionGroup::make([
+                Action::make('phprunnerLayout')
+                    ->label('Τις δικές μου στήλες')
+                    ->icon(Heroicon::OutlinedUser)
+                    ->visible(fn (): bool => PhpRunnerLayouts::read(static::class, (string) auth()->user()?->username) !== null)
+                    ->requiresConfirmation()
+                    ->modalHeading('Στήλες όπως στο PHPRunner')
+                    ->modalDescription('Η σειρά, οι εμφανείς στήλες και τα πλάτη παίρνουν τις ρυθμίσεις σας από την παλιά εφαρμογή. Οι τωρινές σας ρυθμίσεις εδώ αντικαθίστανται.')
+                    ->modalSubmitActionLabel('Εφαρμογή')
+                    ->action(function (): void {
+                        PhpRunnerLayouts::apply($this, (string) auth()->user()?->username);
+                        $this->redirect(static::getUrl(['activeTab' => $this->activeTab]));
+                    }),
+                // One-off for the switch-over: every user's old Transfers columns, without waiting for their first visit.
+                Action::make('phprunnerLayoutAll')
+                    ->label('Για όλους τους χρήστες')
+                    ->icon(Heroicon::OutlinedUserGroup)
+                    ->visible(fn (): bool => auth()->user()?->group() === UserGroup::Admin)
+                    ->modalHeading('Στήλες από PHPRunner για όλους')
+                    ->modalDescription('Κάθε χρήστης παίρνει τη σειρά, τις εμφανείς στήλες και τα πλάτη που είχε στο PHPRunner. Όσοι είναι συνδεδεμένοι τώρα τα βλέπουν στην επόμενη σύνδεση.')
+                    ->schema([
+                        Toggle::make('overwrite')->label('Και όσοι έχουν ήδη αλλάξει στήλες εδώ')
+                            ->helperText('Αλλιώς, όσοι έχουν δικές τους ρυθμίσεις στη νέα εφαρμογή μένουν όπως είναι.'),
+                    ])
+                    ->modalSubmitActionLabel('Αντιγραφή')
+                    ->action(function (array $data): void {
+                        $result = PhpRunnerLayouts::copyForAllUsers($this, (bool) ($data['overwrite'] ?? false));
+                        $me = (string) auth()->user()?->username;
+                        if (in_array($me, $result['copied'], true)) {
+                            PhpRunnerLayouts::apply($this, $me); // keep this session from saving the old layout back
+                        }
+                        Notification::make()->success()
+                            ->title('Αντιγράφηκαν '.count($result['copied']).' χρήστες')
+                            ->body(collect([
+                                $result['copied'] ? 'Αντιγράφηκαν: '.implode(', ', $result['copied']) : null,
+                                $result['skipped'] ? 'Έμειναν ως είχαν: '.implode(', ', $result['skipped']) : null,
+                            ])->filter()->implode("\n"))
+                            ->persistent()->send();
+                        if (in_array($me, $result['copied'], true)) {
+                            $this->redirect(static::getUrl(['activeTab' => $this->activeTab]));
+                        }
+                    }),
+            ])
                 ->label('Στήλες από PHPRunner')
                 ->icon(Heroicon::OutlinedArrowDownOnSquare)
                 ->color('gray')
-                ->visible(fn (): bool => PhpRunnerLayouts::read(static::class, (string) auth()->user()?->username) !== null)
-                ->requiresConfirmation()
-                ->modalHeading('Στήλες όπως στο PHPRunner')
-                ->modalDescription('Η σειρά, οι εμφανείς στήλες και τα πλάτη παίρνουν τις ρυθμίσεις σας από την παλιά εφαρμογή. Οι τωρινές σας ρυθμίσεις εδώ αντικαθίστανται.')
-                ->modalSubmitActionLabel('Εφαρμογή')
-                ->action(function (): void {
-                    PhpRunnerLayouts::apply($this, (string) auth()->user()?->username);
-                    $this->redirect(static::getUrl(['activeTab' => $this->activeTab]));
-                }),
+                ->button(),
             ActionGroup::make([TransferActions::incomingPayment()])
                 ->label('Τιμολόγηση')
                 ->icon(Heroicon::OutlinedBanknotes)

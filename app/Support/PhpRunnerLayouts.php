@@ -99,16 +99,15 @@ class PhpRunnerLayouts
     }
 
     /**
-     * Puts the PHPRunner layout on a table page: column order and shown/hidden in Filament's column
-     * manager, widths in the drag-to-resize widths. Returns false when the user has none.
+     * The new app's layout for a page from a PHPRunner one: Filament's column manager state
+     * (default columns reordered, isToggled from the hidden list) and the drag widths keyed like
+     * the header cells (str($column)->camel()->kebab()).
+     *
+     * @param  array{order: list<string>|null, hidden: list<string>|null, widths: array<string, int>}  $layout
+     * @return array{columns: list<array<string, mixed>>, reordered: bool, widths: array<string, int>}
      */
-    public static function apply(HasTable $page, string $username): bool
+    public static function build(HasTable $page, array $layout): array
     {
-        $layout = self::read($page::class, $username);
-        if ($layout === null) {
-            return false;
-        }
-
         $state = collect($page->getDefaultTableColumnState())->keyBy('name');
 
         if ($layout['order'] !== null) {
@@ -122,18 +121,92 @@ class PhpRunnerLayouts
                 : $item);
         }
 
-        $page->applyTableColumnManager($state->values()->all(), wasReordered: $layout['order'] !== null);
+        return [
+            'columns' => $state->values()->all(),
+            'reordered' => $layout['order'] !== null,
+            'widths' => collect($layout['widths'])->mapWithKeys(fn (int $px, string $name): array => [(string) str($name)->camel()->kebab() => $px])->all(),
+        ];
+    }
+
+    /**
+     * Puts the PHPRunner layout on a table page for the signed-in user (session; saved by
+     * TableLayouts at the end of the request). Returns false when the user has none.
+     */
+    public static function apply(HasTable $page, string $username): bool
+    {
+        $layout = self::read($page::class, $username);
+        if ($layout === null) {
+            return false;
+        }
+
+        $new = self::build($page, $layout);
+        $page->applyTableColumnManager($new['columns'], wasReordered: $new['reordered']);
 
         $widths = (array) session('myat.widths', []);
-        $keyed = collect($layout['widths'])->mapWithKeys(fn (int $px, string $name): array => [(string) str($name)->camel()->kebab() => $px])->all();
-        if ($keyed === []) {
+        if ($new['widths'] === []) {
             unset($widths[$page->getName()]);
         } else {
-            $widths[$page->getName()] = $keyed;
+            $widths[$page->getName()] = $new['widths'];
         }
         session()->put('myat.widths', $widths);
 
         return true;
+    }
+
+    /**
+     * Copies every user's PHPRunner layout for this page straight into their saved layouts (the
+     * TYPE 100 rows TableLayouts loads at sign-in). Users who already arranged the page in the new
+     * app are skipped unless $overwrite. Users signed in now see it at their next sign-in.
+     *
+     * @return array{copied: list<string>, skipped: list<string>}
+     */
+    public static function copyForAllUsers(HasTable $page, bool $overwrite = false): array
+    {
+        $map = self::PAGES[$page::class] ?? null;
+        if ($map === null) {
+            return ['copied' => [], 'skipped' => []];
+        }
+
+        $usernames = DB::table('MyAthensTransfersAPP_settings')
+            ->where('TABLENAME', $map['table'])->whereIn('TYPE', [2, 3, 4])
+            ->whereNotNull('USERNAME')->where('USERNAME', '<>', '')
+            ->distinct()->orderBy('USERNAME')->pluck('USERNAME');
+
+        $copied = $skipped = [];
+        foreach ($usernames as $username) {
+            $username = (string) $username;
+            $layout = self::read($page::class, $username);
+            if ($layout === null || (! $overwrite && self::hasNewLayout($page, $username))) {
+                $skipped[] = $username;
+
+                continue;
+            }
+
+            $new = self::build($page, $layout);
+            $rows = [
+                $page->getTableColumnsSessionKey() => $new['columns'],
+                $page->getHasReorderedTableColumnsSessionKey() => $new['reordered'],
+            ];
+            foreach ($rows as $key => $value) {
+                self::saveRow($username, $key, $value);
+            }
+            $widthsKey = 'myat.widths:'.$page->getName();
+            $new['widths'] === []
+                ? DB::table('MyAthensTransfersAPP_settings')->where('TYPE', TableLayouts::TYPE)->where('USERNAME', $username)->where('TABLENAME', $widthsKey)->delete()
+                : self::saveRow($username, $widthsKey, $new['widths']);
+
+            $copied[] = $username;
+        }
+
+        return ['copied' => $copied, 'skipped' => $skipped];
+    }
+
+    private static function saveRow(string $username, string $key, mixed $value): void
+    {
+        DB::table('MyAthensTransfersAPP_settings')->updateOrInsert(
+            ['TYPE' => TableLayouts::TYPE, 'USERNAME' => $username, 'TABLENAME' => $key],
+            ['SEARCH' => json_encode($value, JSON_UNESCAPED_UNICODE), 'NAME' => 'table layout'],
+        );
     }
 
     /** True once the user has a layout of their own for this page in the new app. */
