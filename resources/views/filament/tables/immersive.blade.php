@@ -3,10 +3,11 @@
     Active only on pages that show the controls (App\Support\ImmersiveTables).
 
     - Full screen hides the menus (sidebar, phone menu button, bottom tab bar, breadcrumbs) and gives the
-      page the whole screen. Turning a phone sideways enters it by itself; the button enters it anywhere
+      page the whole screen. Turning a phone, tablet or foldable sideways (a touch screen wider than tall;
+      any screen under 500px tall) enters it by itself; the button enters it anywhere
       (on Android also browser full screen, without the address bar). Exit or Esc leaves; if left while
       sideways it stays off until the phone is upright again.
-    - Zoom (only in full screen): sideways phones fit the table to the width (until zoomed by hand),
+    - Zoom (only in full screen): sideways touch screens fit the table to the width (until zoomed by hand),
       upright phones start at 57%, others at 100%. −/+ buttons, % resets; ctrl+wheel / trackpad pinch;
       two-finger pinch zooms only the table (scaled while the fingers move, laid out once at the end, the
       content under the fingers kept in place). Zoom 25–160%.
@@ -24,10 +25,12 @@
     const bar = () => document.querySelector('.myat-zoombar');
     const table = () => bar()?.closest('.fi-ta-ctn')?.querySelector('.fi-ta-content-ctn table.fi-ta-table');
     const scroller = () => table()?.parentElement;
-    const phoneLandscape = () => innerHeight < 500 && innerWidth > innerHeight;
-    const phoneUpright = () => innerWidth < 640 && innerHeight >= innerWidth;
     const touch = matchMedia('(pointer: coarse)').matches;
-    let landscape = phoneLandscape();
+    // Held sideways: a phone (under 500px tall), or any touch screen wider than tall (tablets, foldables,
+    // dual-screen phones opened up). Computers with a mouse keep the page as it is.
+    const sideways = () => innerWidth > innerHeight && (innerHeight < 500 || touch);
+    const phoneUpright = () => innerWidth < 640 && innerHeight >= innerWidth;
+    let landscape = sideways();
 
     const apply = () => {
         css.textContent = S.active
@@ -43,7 +46,7 @@
     const setZoom = (z, manual) => { S.zoom = clamp(z, MIN, MAX); if (manual) S.manual = true; apply(); };
     const defaultZoom = () => (landscape ? 1 : phoneUpright() ? START_UPRIGHT : 1);
 
-    // Sideways phone: fit the table to the width. Cells re-wrap at each zoom, so the result can flip
+    // Held sideways: fit the table to the width. Cells re-wrap at each zoom, so the result can flip
     // between two values: when a value comes back, settle on the smaller one.
     const fit = () => {
         const t = table(), w = scroller();
@@ -94,7 +97,7 @@
     };
 
     const onTurn = () => {
-        const was = landscape; landscape = phoneLandscape();
+        const was = landscape; landscape = sideways();
         if (! landscape) S.optedOut = false;
         if (was !== landscape && S.active) { S.manual = false; S.hist = []; S.zoom = defaultZoom(); }
         update();
