@@ -70,6 +70,30 @@ class PartnerJob extends Model
         return static::query()->fromSub($jobs, 'partner_jobs');
     }
 
+    /**
+     * New jobs from a partner: upcoming (today on), not cancelled, not yet copied into our
+     * transfers. Null when their database cannot be read from here.
+     */
+    public static function newCount(string $partner): ?int
+    {
+        $p = config("partners.{$partner}");
+        if (! is_array($p)) {
+            return null;
+        }
+
+        try {
+            return (int) DB::table(self::database($partner).'.v_transfers2 as v')
+                ->where('v.CoachCompanyID', $p['coach'])
+                ->where('v.TransferDate', '>=', now()->toDateString())
+                ->whereRaw("IFNULL(v.Status, '') <> 'Cancelled'")
+                ->whereNotExists(fn ($q) => $q->selectRaw('1')->from('transfers as t')
+                    ->whereRaw('t.SupplierCode = CONCAT(?, v.TransferID)', [$p['prefix']]))
+                ->count();
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
     /** Whether we can read that partner's database at all (it may be on another server or not granted). */
     public static function reachable(string $partner): bool
     {

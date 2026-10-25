@@ -18,6 +18,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Url;
 use UnitEnum;
@@ -67,6 +68,23 @@ class PartnerJobs extends Page implements HasTable
         return $direction === 'by-us' ? "myat_jobs_{$key}" : ($key === 'ls' ? 'lstours' : $key).'_jobs';
     }
 
+    /**
+     * New jobs per partner the user may see (PartnerJob::newCount), kept a minute: the dashboard
+     * polls it and each partner is a query on another database. Unreadable partners are left out.
+     *
+     * @return array<string, int> partner key => new jobs
+     */
+    public static function newCounts(): array
+    {
+        $partners = array_keys(self::partners('for-us'));
+        $compute = fn (): array => collect($partners)
+            ->mapWithKeys(fn (string $key): array => [$key => PartnerJob::newCount($key)])
+            ->filter(fn (?int $count): bool => $count !== null)
+            ->all();
+
+        return app()->runningUnitTests() ? $compute() : Cache::remember('myat:partner-new:'.implode(',', $partners), 60, $compute);
+    }
+
     public static function canAccess(): bool
     {
         return self::partners() !== [] || self::partners('by-us') !== [];
@@ -87,6 +105,14 @@ class PartnerJobs extends Page implements HasTable
         $this->partner = $partner;
         $this->direction = $direction;
         $this->resetTable();
+    }
+
+    /** The direction switch: stays on the same partner when it exists in the other direction. */
+    public function switchDirection(string $direction): void
+    {
+        $partners = self::partners($direction);
+        abort_unless($partners !== [], 403);
+        $this->show(array_key_exists((string) $this->partner, $partners) ? (string) $this->partner : (string) array_key_first($partners), $direction);
     }
 
     public function reachable(): bool

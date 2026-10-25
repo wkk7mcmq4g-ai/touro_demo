@@ -149,7 +149,10 @@ class OperationsScreensTest extends TestCase
             CarTypeID TEXT, PassengerName TEXT, SalePrice DOUBLE)");
         $job = fn (int $id, string $coach) => ['TransferID' => $id, 'Status' => 'Pending', 'Pax' => 2, 'TransferDate' => Carbon::tomorrow()->toDateString(),
             'TransferType' => 'Arrival', 'From' => 'Piraeus', 'To' => 'Hotel', 'LeadName' => "Lead {$id}", 'PurchasePrice' => 40, 'CoachCompanyID' => $coach];
-        DB::table("{$db}.v_transfers2")->insert([$job(1, 'MyAthensTransfers'), $job(2, 'MyAthensTransfers'), $job(3, 'Someone else')]);
+        DB::table("{$db}.v_transfers2")->insert([$job(1, 'MyAthensTransfers'), $job(2, 'MyAthensTransfers'), $job(3, 'Someone else'),
+            ['Status' => 'Cancelled'] + $job(4, 'MyAthensTransfers'),                                            // cancelled: not new
+            ['TransferDate' => Carbon::yesterday()->toDateString(), 'LeadName' => 'Past'] + $job(5, 'MyAthensTransfers'), // past: not new
+        ]);
         DB::table("{$db}.transfers")->insert(['TransferID' => 9, 'cID_Customer' => 71, 'TransferDate' => Carbon::today()->toDateString(), 'LeadName' => 'Ours', 'SupplierCode' => 'S9']);
         $copied = $this->transfer(['SupplierCode' => 'LS - 2']);
         config(['partners.ls.database' => $db]);
@@ -167,9 +170,16 @@ class OperationsScreensTest extends TestCase
             $this->assertSame(['New', 'Copied'], [$jobs[1]->MyatStatus, $jobs[2]->MyatStatus]);
             $this->assertSame($copied, (int) $jobs[2]->OurTransferID);
 
+            // something new from a partner: counted, badge on its tab, line on the dashboard
+            $this->assertSame(1, PartnerJob::newCount('ls'));
+            $this->assertSame(['ls' => 1], PartnerJobs::newCounts());
+            $page->assertSeeHtml('has-new')->assertSee('1 νέα');
+            $this->get('/admin')->assertOk()->assertSee('Νέες αναθέσεις συνεργατών')->assertSee('LS Tours 1');
+
             $page->callTableBulkAction('moveToMyTransfers', $jobs->values());
             $this->assertSame(1, DB::table('transfers')->where('SupplierCode', 'LS - 1')->count());
             $this->assertSame(1, DB::table('transfers')->where('SupplierCode', 'LS - 2')->count());
+            $this->assertSame(0, PartnerJob::newCount('ls')); // copied: nothing new any more
 
             Livewire::test(PartnerJobs::class)->call('show', 'ls', 'by-us')->assertSee('Ours');
         } finally {

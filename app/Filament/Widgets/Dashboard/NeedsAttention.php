@@ -2,6 +2,7 @@
 
 namespace App\Filament\Widgets\Dashboard;
 
+use App\Filament\Pages\PartnerJobs;
 use App\Filament\Resources\DailyTransfers\DailyTransfersResource;
 use App\Filament\Resources\Transfers\TransferResource;
 use App\Filament\Resources\TransfersToSort\TransferToSortResource;
@@ -36,6 +37,16 @@ class NeedsAttention extends Widget
         if (TransferToSortResource::canAccess()) {
             $items[] = ['label' => 'Προς διαλογή', 'hint' => 'Κρατήσεις συνεργατών που περιμένουν', 'count' => DashboardData::toSort(),
                 'tone' => 'azure', 'icon' => 'heroicon-o-inbox-arrow-down', 'url' => TransferToSortResource::getUrl()];
+        }
+        if (PartnerJobs::partners('for-us') !== []) {
+            // Jobs partners gave us in their own apps that are not in our transfers yet.
+            $new = array_filter(PartnerJobs::newCounts());
+            arsort($new);
+            $labels = PartnerJobs::partners('for-us');
+            $items[] = ['label' => 'Νέες αναθέσεις συνεργατών', 'count' => array_sum($new), 'tone' => 'teal', 'icon' => 'heroicon-o-arrows-right-left',
+                'hint' => $new === [] ? 'Όλες έχουν περαστεί στα δρομολόγια'
+                    : collect($new)->map(fn (int $n, string $key): string => $labels[$key].' '.$n)->implode(' · '),
+                'url' => PartnerJobs::getUrl(['partner' => array_key_first($new) ?? array_key_first($labels), 'direction' => 'for-us'])];
         }
         if (DailyTransfersResource::canAccess()) {
             try {
