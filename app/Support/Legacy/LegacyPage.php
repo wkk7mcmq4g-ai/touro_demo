@@ -123,18 +123,24 @@ class LegacyPage
         $html = preg_replace('#<(script|style)\b[^>]*>.*?</\1>#is', '', $html) ?? '';
         $html = preg_replace('/\son\w+\s*=\s*("[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', $html) ?? '';
 
-        return strip_tags($html, '<p><br><strong><b><em><i><u><span><h1><h2><h3><h4><h5><h6><ul><ol><li><a><sub><sup>');
+        $html = strip_tags($html, '<p><br><strong><b><em><i><u><span><h1><h2><h3><h4><h5><h6><ul><ol><li><a><sub><sup>');
+
+        // The business's details, written in the page definitions as {business.<key>}.
+        return preg_replace_callback('/\{business\.([a-z_.]+)\}/', fn (array $m): string => e((string) config('business.'.$m[1])), $html) ?? '';
     }
 
     private function image(string $file): string
     {
-        $path = resource_path('legacy/images/'.basename($file));
+        // "business:<key>": the business's own image (config/business.php `documents`).
+        $path = str_starts_with($file, 'business:')
+            ? resource_path((string) config('business.documents.'.substr($file, 9)))
+            : resource_path('legacy/images/'.basename($file));
 
         if ($file === '' || ! is_file($path)) {
             return '';
         }
 
-        $mime = str_ends_with(strtolower($file), '.png') ? 'image/png' : 'image/jpeg';
+        $mime = str_ends_with(strtolower($path), '.png') ? 'image/png' : 'image/jpeg';
 
         return '<img src="data:'.$mime.';base64,'.base64_encode((string) file_get_contents($path)).'" alt="">';
     }

@@ -12,6 +12,21 @@ Route::get('/', fn () => redirect()->to(match (auth()->user()?->homePanelId()) {
 }));
 Route::redirect('/login', '/admin/login')->name('login');
 
+// The portal's web app manifest ("Add to Home Screen"), named and coloured from config/business.php.
+Route::get('/portal.webmanifest', fn () => response()->json([
+    'name' => config('business.name'),
+    'short_name' => config('business.short_name'),
+    'start_url' => '/portal',
+    'scope' => '/portal',
+    'display' => 'standalone',
+    'background_color' => config('business.colors.page'),
+    'theme_color' => config('business.colors.navy'),
+    'icons' => [
+        ['src' => asset(config('business.logo.icon_192')), 'sizes' => '192x192', 'type' => 'image/png'],
+        ['src' => asset(config('business.logo.icon_512')), 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'any maskable'],
+    ],
+], 200, ['Content-Type' => 'application/manifest+json'], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE))->name('portal.manifest');
+
 // Transfer files are stored in the database (myat_transfers_files.Attachment).
 Route::get('/files/transfers/{id}', [TransferFileController::class, 'download'])
     ->whereNumber('id')

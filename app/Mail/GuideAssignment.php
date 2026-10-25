@@ -21,8 +21,8 @@ class GuideAssignment extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            from: new Address(config('mail.from.address'), 'MyAthensTransfers'),
-            replyTo: [config('dispatch.reply_to')],
+            from: new Address(config('mail.from.address'), config('mail.from.name')),
+            replyTo: [config('dispatch.reply_to') ?: config('business.operations.email')],
             subject: 'Εντολή Ανάθεσης Ξενάγησης'.($this->job->TransferDate ? ' · '.$this->job->TransferDate->format('d/m/Y') : ''),
         );
     }

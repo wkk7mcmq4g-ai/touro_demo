@@ -1,4 +1,4 @@
-myAthensTransfers · Εντολή δρομολογίων
+{{ config('business.name') }} · Εντολή δρομολογίων
 {{ $recipient->TransferDate->copy()->locale('el')->translatedFormat('l j F Y') }} · {{ $jobs->count() }} δρομολόγια{{ $recipient->Type === 'Driver' && filled($recipient->VehicleName) ? ' · '.$recipient->VehicleName : '' }}
 
 @foreach ($jobs as $job)
@@ -27,7 +27,7 @@ Review link: {{ $job->ReviewLink }}
 @endif
 
 @endforeach
-Εντολέας: My Athens Transfers IKE · ΜΗ.Τ.Ε 0261E60000721601
+Εντολέας: {{ \App\Support\Business::legalLine() }}
 Τρόπος πληρωμής: Πληρωμή με πίστωση βάσει ιδιωτικού συμφωνητικού
 
-Παρακαλούμε μην απαντήσετε σε αυτό το μήνυμα. Για απορίες: {{ config('dispatch.operations_phone') }}
+Παρακαλούμε μην απαντήσετε σε αυτό το μήνυμα. Για απορίες: {{ config('business.operations.phone') }}

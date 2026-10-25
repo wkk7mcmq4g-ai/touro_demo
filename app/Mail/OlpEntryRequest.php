@@ -21,7 +21,7 @@ class OlpEntryRequest extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            from: new Address(config('mail.from.address'), 'MyAthensTransfers'),
+            from: new Address(config('mail.from.address'), config('mail.from.name')),
             replyTo: $this->replyToAddress ? [$this->replyToAddress] : [],
             subject: implode(' · ', array_filter(['Άδεια εισόδου παραλαβής & αποβίβασης', $this->job->TransferDate?->format('d/m/Y'), trim((string) $this->job->Flight_Ship_Num_From)])),
         );

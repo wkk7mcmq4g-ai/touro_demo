@@ -1,14 +1,22 @@
 /*
- * MyAthens Transfers theme for the Filament panel.
- * Colours come from the myAthensTransfers logo: navy #08345A, azure #0096FF, mint #34ECA6.
- * Plain CSS on Filament's fi-* classes, loaded after Filament's own styles: no build step.
+ * Theme for the Filament panel. Plain CSS on Filament's fi-* classes, loaded after
+ * Filament's own styles: no build step.
+ * Brand colours are the --myat-* variables below; App\Filament\Theme sets them from
+ * config/business.php right after this file. The values here are MyAT's (navy, azure, mint).
  */
 
 :root {
     --myat-navy: #08345a;
+    --myat-navy-light: #0a3d68;
     --myat-navy-deep: #051f38;
+    --myat-navy-rgb: 8 52 90;
     --myat-azure: #0096ff;
+    --myat-azure-light: #0aa2ff;
+    --myat-azure-dark: #0077d9;
+    --myat-azure-soft: #e6f2ff;
+    --myat-azure-rgb: 0 150 255;
     --myat-mint: #34eca6;
+    --myat-mint-rgb: 52 236 166;
     --myat-page: #f3f6fa;
     --myat-line: rgb(15 23 42 / 0.07);
     --myat-shadow: 0 1px 2px rgb(16 24 40 / 0.04), 0 6px 20px -8px rgb(16 24 40 / 0.08);
@@ -83,14 +91,14 @@
 /* ---------- Sidebar: full height, navy ---------- */
 
 .fi-sidebar {
-    background: linear-gradient(180deg, #0a3d68 0%, var(--myat-navy) 35%, var(--myat-navy-deep) 100%);
+    background: linear-gradient(180deg, var(--myat-navy-light) 0%, var(--myat-navy) 35%, var(--myat-navy-deep) 100%);
     color: rgb(255 255 255 / 0.78);
 }
 
 @media (min-width: 64rem) {
     .fi-sidebar,
     .fi-sidebar:where(.dark, .dark *) {
-        background: linear-gradient(180deg, #0a3d68 0%, var(--myat-navy) 35%, var(--myat-navy-deep) 100%);
+        background: linear-gradient(180deg, var(--myat-navy-light) 0%, var(--myat-navy) 35%, var(--myat-navy-deep) 100%);
     }
 }
 
@@ -169,7 +177,7 @@
 
 .fi-sidebar-item.fi-active > .fi-sidebar-item-btn,
 .fi-sidebar-item.fi-active > .fi-sidebar-item-btn:where(.dark, .dark *) {
-    background: linear-gradient(90deg, rgb(0 150 255 / 0.28), rgb(0 150 255 / 0.1));
+    background: linear-gradient(90deg, rgb(var(--myat-azure-rgb) / 0.28), rgb(var(--myat-azure-rgb) / 0.1));
     box-shadow: inset 3px 0 0 var(--myat-mint);
 }
 
@@ -290,11 +298,11 @@
 }
 
 .fi-ta-row:hover {
-    background-color: rgb(0 150 255 / 0.04);
+    background-color: rgb(var(--myat-azure-rgb) / 0.04);
 }
 
 .fi-ta-row:hover:where(.dark, .dark *) {
-    background-color: rgb(0 150 255 / 0.08);
+    background-color: rgb(var(--myat-azure-rgb) / 0.08);
 }
 
 .fi-ta-summary-row {
@@ -358,7 +366,7 @@
 }
 
 .fi-btn.fi-color-primary:not(.fi-outlined):not([aria-pressed='false']):not(input:not(:checked) + .fi-btn) {
-    background-image: linear-gradient(135deg, #0aa2ff 0%, #0077d9 100%);
+    background-image: linear-gradient(135deg, var(--myat-azure-light) 0%, var(--myat-azure-dark) 100%);
     box-shadow: 0 1px 2px rgb(0 80 160 / 0.25), 0 4px 12px -4px rgb(0 120 230 / 0.45);
     border: 0;
 }
@@ -379,9 +387,9 @@
 
 .fi-simple-layout {
     background:
-        radial-gradient(60rem 40rem at 85% -10%, rgb(0 150 255 / 0.45), transparent 60%),
-        radial-gradient(50rem 35rem at -10% 110%, rgb(52 236 166 / 0.3), transparent 60%),
-        linear-gradient(160deg, #0a3d68 0%, var(--myat-navy-deep) 100%);
+        radial-gradient(60rem 40rem at 85% -10%, rgb(var(--myat-azure-rgb) / 0.45), transparent 60%),
+        radial-gradient(50rem 35rem at -10% 110%, rgb(var(--myat-mint-rgb) / 0.3), transparent 60%),
+        linear-gradient(160deg, var(--myat-navy-light) 0%, var(--myat-navy-deep) 100%);
     justify-content: center;
 }
 
@@ -434,8 +442,8 @@
     padding: 1.75rem 2rem;
     color: #fff;
     background:
-        radial-gradient(30rem 14rem at 100% 0%, rgb(52 236 166 / 0.35), transparent 70%),
-        linear-gradient(135deg, #0a3d68 0%, var(--myat-navy-deep) 100%);
+        radial-gradient(30rem 14rem at 100% 0%, rgb(var(--myat-mint-rgb) / 0.35), transparent 70%),
+        linear-gradient(135deg, var(--myat-navy-light) 0%, var(--myat-navy-deep) 100%);
     box-shadow: var(--myat-shadow);
 }
 
@@ -558,7 +566,7 @@
 
 .myat-pivot tbody tr:hover td,
 .myat-pivot tbody tr:hover th {
-    background: rgb(0 150 255 / 0.05);
+    background: rgb(var(--myat-azure-rgb) / 0.05);
 }
 
 .myat-pivot .myat-pivot-total,
@@ -639,7 +647,7 @@
 
     .fi-panel-portal .myat-tabbar-active {
         color: #fff;
-        background: rgb(0 150 255 / 0.22);
+        background: rgb(var(--myat-azure-rgb) / 0.22);
     }
 
     .fi-panel-portal .myat-tabbar-active .myat-tabbar-icon {
@@ -709,7 +717,7 @@
     border-radius: 999px;
     color: #fff;
     background: var(--myat-azure);
-    box-shadow: 0 4px 12px -4px rgb(0 150 255 / 0.6);
+    box-shadow: 0 4px 12px -4px rgb(var(--myat-azure-rgb) / 0.6);
 }
 
 .myat-job-count span {
@@ -766,7 +774,7 @@
 
 .myat-job-tag-soft {
     color: var(--myat-navy);
-    background: #e6f2ff;
+    background: var(--myat-azure-soft);
 }
 
 .myat-job-tag-warn {
@@ -858,7 +866,7 @@
     font-weight: 800;
     letter-spacing: 0.01em;
     color: #fff;
-    background: linear-gradient(135deg, #0a3d68, var(--myat-navy));
+    background: linear-gradient(135deg, var(--myat-navy-light), var(--myat-navy));
 }
 
 .myat-job-id {
@@ -868,8 +876,8 @@
     font-weight: 800;
     font-variant-numeric: tabular-nums;
     color: var(--myat-navy);
-    background: rgb(52 236 166 / 0.25);
-    border: 1px solid rgb(52 236 166 / 0.6);
+    background: rgb(var(--myat-mint-rgb) / 0.25);
+    border: 1px solid rgb(var(--myat-mint-rgb) / 0.6);
 }
 
 .dark .myat-job-id {
@@ -921,7 +929,7 @@
 
 .myat-xf-btn:hover {
     color: var(--myat-azure);
-    background: rgb(0 150 255 / 0.1);
+    background: rgb(var(--myat-azure-rgb) / 0.1);
 }
 
 .myat-xf-btn.myat-xf-on {
@@ -974,7 +982,7 @@
 
 .myat-xf-search:focus {
     border-color: var(--myat-azure);
-    box-shadow: 0 0 0 3px rgb(0 150 255 / 0.15);
+    box-shadow: 0 0 0 3px rgb(var(--myat-azure-rgb) / 0.15);
 }
 
 .myat-xf-list {
@@ -994,7 +1002,7 @@
 }
 
 .myat-xf-pop label:hover {
-    background: rgb(0 150 255 / 0.06);
+    background: rgb(var(--myat-azure-rgb) / 0.06);
 }
 
 .myat-xf-pop summary {
@@ -1083,7 +1091,7 @@
 
 .myat-tone-amber { --tone: #b45309; --tone-bg: rgb(245 158 11 / 0.14); }
 .myat-tone-rose { --tone: #be123c; --tone-bg: rgb(244 63 94 / 0.12); }
-.myat-tone-azure { --tone: #0369a1; --tone-bg: rgb(0 150 255 / 0.12); }
+.myat-tone-azure { --tone: #0369a1; --tone-bg: rgb(var(--myat-azure-rgb) / 0.12); }
 .myat-tone-violet { --tone: #6d28d9; --tone-bg: rgb(139 92 246 / 0.12); }
 .myat-tone-green { --tone: #047857; --tone-bg: rgb(16 185 129 / 0.14); }
 
@@ -1113,7 +1121,7 @@
 
 a.myat-kpi:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 28px -12px rgb(16 24 40 / 0.25), 0 0 0 1px rgb(0 150 255 / 0.35);
+    box-shadow: 0 10px 28px -12px rgb(16 24 40 / 0.25), 0 0 0 1px rgb(var(--myat-azure-rgb) / 0.35);
 }
 
 a.myat-kpi:focus-visible,
@@ -1178,16 +1186,16 @@ a.myat-kpi:focus-visible,
 .myat-kpi-hero {
     color: #fff;
     background:
-        radial-gradient(120% 140% at 100% 0%, rgb(52 236 166 / 0.28) 0%, transparent 55%),
-        linear-gradient(135deg, #0a3d68 0%, var(--myat-navy-deep) 100%);
-    box-shadow: 0 12px 30px -14px rgb(8 52 90 / 0.65);
+        radial-gradient(120% 140% at 100% 0%, rgb(var(--myat-mint-rgb) / 0.28) 0%, transparent 55%),
+        linear-gradient(135deg, var(--myat-navy-light) 0%, var(--myat-navy-deep) 100%);
+    box-shadow: 0 12px 30px -14px rgb(var(--myat-navy-rgb) / 0.65);
 }
 
 .dark .myat-kpi-hero {
     color: #fff;
     background:
-        radial-gradient(120% 140% at 100% 0%, rgb(52 236 166 / 0.22) 0%, transparent 55%),
-        linear-gradient(135deg, #0a3d68 0%, #041627 100%);
+        radial-gradient(120% 140% at 100% 0%, rgb(var(--myat-mint-rgb) / 0.22) 0%, transparent 55%),
+        linear-gradient(135deg, var(--myat-navy-light) 0%, #041627 100%);
 }
 
 .myat-kpi-hero .myat-kpi-label,
@@ -1273,7 +1281,7 @@ a.myat-kpi:focus-visible,
 }
 
 a.myat-tl-link:hover {
-    background: rgb(0 150 255 / 0.06);
+    background: rgb(var(--myat-azure-rgb) / 0.06);
 }
 
 .myat-tl-row + .myat-tl-row .myat-tl-link {
@@ -1393,8 +1401,8 @@ a.myat-tl-link:hover {
 }
 
 .myat-attention-item:hover {
-    background: rgb(0 150 255 / 0.05);
-    box-shadow: 0 0 0 1px rgb(0 150 255 / 0.3);
+    background: rgb(var(--myat-azure-rgb) / 0.05);
+    box-shadow: 0 0 0 1px rgb(var(--myat-azure-rgb) / 0.3);
 }
 
 .myat-attention-icon {
@@ -1616,7 +1624,7 @@ a.myat-tl-link:hover {
 .myat-day-next {
     color: #fff;
     background: var(--myat-azure);
-    box-shadow: 0 6px 16px -8px rgb(0 150 255 / 0.8);
+    box-shadow: 0 6px 16px -8px rgb(var(--myat-azure-rgb) / 0.8);
 }
 
 .myat-day-done {
@@ -1652,7 +1660,7 @@ a.myat-tl-link:hover {
 }
 
 .fi-ta-record:has(.myat-job.is-next) {
-    box-shadow: 0 0 0 2px var(--myat-azure), 0 14px 30px -14px rgb(0 150 255 / 0.55) !important;
+    box-shadow: 0 0 0 2px var(--myat-azure), 0 14px 30px -14px rgb(var(--myat-azure-rgb) / 0.55) !important;
 }
 
 /* jobs already started today: only the number and the time step back, the rest stays readable */
@@ -1794,7 +1802,7 @@ html.myat-immersive .myat-zb-enter {
 
 .myat-zb-btn:hover {
     color: var(--myat-azure);
-    background: rgb(0 150 255 / 0.06);
+    background: rgb(var(--myat-azure-rgb) / 0.06);
 }
 
 .myat-zb-btn:focus-visible {
@@ -2048,7 +2056,7 @@ html.myat-immersive .fi-header {
 
 .myat-total:first-child {
     color: #fff;
-    background: linear-gradient(135deg, #0a3d68, var(--myat-navy-deep));
+    background: linear-gradient(135deg, var(--myat-navy-light), var(--myat-navy-deep));
     box-shadow: none;
 }
 
@@ -2078,7 +2086,7 @@ html.myat-immersive .fi-header {
         font-variant-numeric: tabular-nums;
         color: rgb(255 255 255 / 0.8);
         text-align: start;
-        background: linear-gradient(135deg, #0a3d68, var(--myat-navy-deep));
+        background: linear-gradient(135deg, var(--myat-navy-light), var(--myat-navy-deep));
         cursor: pointer;
     }
 
@@ -2207,7 +2215,7 @@ html.myat-immersive .fi-wi:has(.myat-totals) {
 }
 
 .myat-day-today {
-    background: linear-gradient(135deg, #0a3d68, var(--myat-navy-deep));
+    background: linear-gradient(135deg, var(--myat-navy-light), var(--myat-navy-deep));
     box-shadow: none;
 }
 
@@ -2414,7 +2422,7 @@ html.myat-immersive .myat-day-sub {
 .myat-panel-input:focus {
     outline: none;
     border-color: var(--myat-azure);
-    box-shadow: 0 0 0 3px rgb(0 150 255 / 0.15);
+    box-shadow: 0 0 0 3px rgb(var(--myat-azure-rgb) / 0.15);
 }
 
 .myat-exp-quick {
@@ -2450,7 +2458,7 @@ html.myat-immersive .myat-day-sub {
 }
 
 .myat-exp-list label:hover {
-    background: rgb(0 150 255 / 0.06);
+    background: rgb(var(--myat-azure-rgb) / 0.06);
 }
 
 .myat-exp-list input,
@@ -2488,7 +2496,7 @@ html.myat-immersive .myat-day-sub {
 
 .myat-saved-apply:hover {
     color: var(--myat-azure);
-    background: rgb(0 150 255 / 0.06);
+    background: rgb(var(--myat-azure-rgb) / 0.06);
 }
 
 .myat-saved-del {
@@ -2685,8 +2693,8 @@ html.myat-immersive .myat-day-sub {
     padding: 0.2rem 0.3rem 0.2rem 0.7rem;
     border-radius: 999px;
     font-size: 0.8rem;
-    background: rgb(0 150 255 / 0.08);
-    box-shadow: inset 0 0 0 1px rgb(0 150 255 / 0.22);
+    background: rgb(var(--myat-azure-rgb) / 0.08);
+    box-shadow: inset 0 0 0 1px rgb(var(--myat-azure-rgb) / 0.22);
 }
 
 .myat-rep-chip-k {
@@ -2783,11 +2791,11 @@ html.myat-immersive .myat-day-sub {
 
 .myat-rep-kpi-main {
     color: #fff;
-    background: linear-gradient(135deg, #0a3d68, var(--myat-navy-deep));
+    background: linear-gradient(135deg, var(--myat-navy-light), var(--myat-navy-deep));
     box-shadow: none;
 }
 
-.dark .myat-rep-kpi-main { background: linear-gradient(135deg, #0a3d68, var(--myat-navy-deep)); }
+.dark .myat-rep-kpi-main { background: linear-gradient(135deg, var(--myat-navy-light), var(--myat-navy-deep)); }
 
 .myat-rep-kpi-main .myat-rep-kpi-label,
 .myat-rep-kpi-main .myat-rep-kpi-sub { color: rgb(255 255 255 / 0.75); }
@@ -2847,7 +2855,7 @@ html.myat-immersive .myat-day-sub {
 }
 
 .myat-rep-bar {
-    fill: rgb(0 150 255 / 0.45);
+    fill: rgb(var(--myat-azure-rgb) / 0.45);
     transition: fill 0.15s;
 }
 
@@ -2920,7 +2928,7 @@ html.myat-immersive .myat-day-sub {
     display: block;
     height: 100%;
     border-radius: inherit;
-    background: linear-gradient(90deg, var(--myat-azure), #0a3d68);
+    background: linear-gradient(90deg, var(--myat-azure), var(--myat-navy-light));
 }
 
 .myat-rep-rank-fill.is-neg { background: #e11d48; }
@@ -3088,7 +3096,7 @@ html.myat-immersive .myat-day-sub {
 
 .myat-form-section > .fi-section > .fi-section-header {
     padding-block: 0.55rem;
-    background: linear-gradient(135deg, #0a3d68, var(--myat-navy-deep));
+    background: linear-gradient(135deg, var(--myat-navy-light), var(--myat-navy-deep));
 }
 
 .myat-form-section > .fi-section > .fi-section-header .fi-section-header-heading {

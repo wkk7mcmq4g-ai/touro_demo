@@ -10,4 +10,4 @@
 Ευχαριστούμε εκ των προτέρων.
 
 Με εκτίμηση,
-{{ trim(html_entity_decode(strip_tags(str_replace(['<br>', '<br/>', '<br />', '</p>'], "\n", (string) config('dispatch.signature_html'))))) }}
+{{ \App\Support\Business::signatureText() }}

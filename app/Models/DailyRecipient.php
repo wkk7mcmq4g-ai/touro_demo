@@ -106,7 +106,7 @@ class DailyRecipient extends Model
         }
 
         $header = implode("\r\n\r\n", [
-            '*My Athens Transfers IKE: 0261E60000721601*',
+            '*'.config('business.legal_name').': '.config('business.mhte').'*',
             '*Ημερομηνία:* '.$this->TransferDate->format('d/m/Y'),
             '*Οδηγός:* '.$v($this->Fullname),
             '*Συνολικά Δρομολόγια:* '.$jobs->count(),

@@ -12,4 +12,4 @@
 Συνοδός - ξεναγός: {{ $job->Assistant }}
 Οδηγός: {{ $job->Fullname }} {{ $job->DriverPhone }}
 
-Παρακαλούμε μην απαντήσετε σε αυτό το μήνυμα. Για απορίες: {{ config('dispatch.operations_phone') }}
+Παρακαλούμε μην απαντήσετε σε αυτό το μήνυμα. Για απορίες: {{ config('business.operations.phone') }}

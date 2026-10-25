@@ -26,6 +26,6 @@
     <div class="mx-t" style="font-size:15px;line-height:1.7;color:#0f172a">
         <p style="margin:0 0 12px">Ευχαριστούμε εκ των προτέρων.</p>
         <p style="margin:0 0 4px">Με εκτίμηση,</p>
-        <div style="margin:0 0 12px">{!! config('dispatch.signature_html') !!}</div>
+        <div style="margin:0 0 12px">{!! \App\Support\Business::signatureHtml() !!}</div>
     </div>
 </x-mail.layout>

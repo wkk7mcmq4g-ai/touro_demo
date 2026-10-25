@@ -82,7 +82,7 @@ class BookingRequestResource extends Resource
             if ($date->lte(today())) {
                 $fail('Transfer date cannot be in the past');
             } elseif ($date->isSameDay(today()->addDay())) {
-                $fail('Transfer Bookings are not allowed for the following day. Please contact us by email at rsv@myathenstransfers.com');
+                $fail('Transfer Bookings are not allowed for the following day. Please contact us by email at '.config('business.reservations_email'));
             }
         };
     }

@@ -53,6 +53,9 @@ it (`public/deploy.php`). A deploy takes a minute or two. Set it up once:
    - `FTP_USERNAME` = the full login, e.g. `deploy@touro.gr`
    - `FTP_PASSWORD` = its password
    - `DEPLOY_TOKEN` = the same string as in the server's `.env`
+   Then the *Variables* tab → *New repository variable*:
+   - `DEPLOY_URL` = the site's deploy address, e.g. `https://new.myat.touro.gr/deploy.php`
+     (without it the package is still built, but not deployed)
 4. The first time only, `public/deploy.php` is not on the server yet: extract the newest
    package by hand once (*Updating by hand* below). After that every push deploys by itself.
 

@@ -27,13 +27,19 @@ Laravel 13 + Filament 5 rebuild of the PHPRunner app `Touro_MyAT_v2026`. It runs
 - **No outside calls**: no font CDNs, no ui-avatars (local initials avatar), nothing that sends staff or
   customer data to third parties.
 - **No secrets in git.** Elorus/Telegram/SMTP credentials go in `.env`.
+- **Business identity is config, not code.** Names, ΜΗ.Τ.Ε., contact details, colours, logo files and
+  voucher images come from `config/business.php` / `.env` (`BUSINESS_*`); voucher pages write them as
+  `{business.<key>}` and images as `business:<key>`. Never hard-code MyAT's details again
+  (`tests/Feature/BusinessConfigTest.php` checks). This repo is the baseline (`baseline-v1`) the other
+  businesses' apps are copied from.
 
 ## Layout
 
 - `app/Models/*` generated from the DB by `php artisan app:generate-models` (views use `ReadOnlyModel`).
 - `app/Filament/Resources/<Name>/` one folder per resource (`Schemas/`, `Tables/`, `Pages/`).
 - Theme: `public/myat/theme.css` (plain CSS over Filament's `fi-*` classes, no build step), Manrope in
-  `public/myat/fonts`, logo view `resources/views/filament/brand/logo.blade.php`; set up in `AdminPanelProvider`.
+  `public/myat/fonts`, logo view `resources/views/filament/brand/logo.blade.php` (inlines `business.logo.mark`); set up in
+  `App\Filament\Theme`, which also sets the theme's colour variables from `config/business.php`.
 - `database/legacy/schema.sql` structure-only export; `php artisan app:load-schema` loads it into an
   empty database.
 - Reference material for porting (pages, fields, lookups, events, button code) was extracted from the

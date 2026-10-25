@@ -26,7 +26,7 @@ class DailyTransfers extends Mailable
         $bcc = DB::table('optionvalues')->where('Option', 'EmailCC')->pluck('Value')->filter()->values()->all();
 
         return new Envelope(
-            from: new Address(config('mail.from.address'), 'MyAthensTransfers'),
+            from: new Address(config('mail.from.address'), config('mail.from.name')),
             bcc: $bcc,
             subject: $this->subjectLine(),
         );

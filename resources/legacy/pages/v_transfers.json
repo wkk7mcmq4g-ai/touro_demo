@@ -1482,7 +1482,7 @@
                 "image": {
                     "type": "image",
                     "image": {
-                        "image": "Myatlogo.png",
+                        "image": "business:logo",
                         "source": 2
                     }
                 },
@@ -1593,7 +1593,7 @@
                 "text4": {
                     "type": "text",
                     "label": {
-                        "text": "<p class=\"ql-align-center ql-direction-rtl\">Lessor/ Εκμισθωτής</p><p class=\"ql-align-center ql-direction-rtl\"><br></p><p class=\"ql-align-center\">MH.T.E. 0261E60000721601</p>",
+                        "text": "<p class=\"ql-align-center ql-direction-rtl\">Lessor/ Εκμισθωτής</p><p class=\"ql-align-center ql-direction-rtl\"><br></p><p class=\"ql-align-center\">MH.T.E. {business.mhte}</p>",
                         "type": 0
                     },
                     "editedByRte": true,
@@ -1870,7 +1870,7 @@
                 "image1": {
                     "type": "image",
                     "image": {
-                        "image": "Sfragida .png",
+                        "image": "business:stamp",
                         "source": 2
                     }
                 },
@@ -1915,7 +1915,7 @@
                 "image2": {
                     "type": "image",
                     "image": {
-                        "image": "MyatHeader_Voucher.JPG",
+                        "image": "business:voucher_header",
                         "source": 2
                     }
                 },
@@ -2857,7 +2857,7 @@
                 "image": {
                     "type": "image",
                     "image": {
-                        "image": "Myatlogo.png",
+                        "image": "business:logo",
                         "source": 2
                     }
                 },
@@ -2921,7 +2921,7 @@
                 "text4": {
                     "type": "text",
                     "label": {
-                        "text": "<p class=\"ql-align-center\">Lessor/ Εκμισθωτής</p><p class=\"ql-align-center\">MH.T.E. 0261E60000721601</p>",
+                        "text": "<p class=\"ql-align-center\">Lessor/ Εκμισθωτής</p><p class=\"ql-align-center\">MH.T.E. {business.mhte}</p>",
                         "type": 0
                     },
                     "editedByRte": true,
@@ -3047,7 +3047,7 @@
                 "image1": {
                     "type": "image",
                     "image": {
-                        "image": "Sfragida .png",
+                        "image": "business:stamp",
                         "source": 2
                     }
                 },
@@ -3062,7 +3062,7 @@
                 "image2": {
                     "type": "image",
                     "image": {
-                        "image": "MyatHeader_Voucher.JPG",
+                        "image": "business:voucher_header",
                         "source": 2
                     }
                 },
@@ -4584,7 +4584,7 @@
                 "image1": {
                     "type": "image",
                     "image": {
-                        "image": "Sfragida .png",
+                        "image": "business:stamp",
                         "source": 2
                     }
                 },
@@ -4640,7 +4640,7 @@
                     "type": "text",
                     "label": {
                         "type": 0,
-                        "text": "0261E60000721601"
+                        "text": "{business.mhte}"
                     },
                     "editedByRte": false
                 },
@@ -4660,7 +4660,7 @@
                     "type": "text",
                     "label": {
                         "type": 0,
-                        "text": "My Athens Transfers"
+                        "text": "{business.trade_name}"
                     },
                     "editedByRte": false
                 },
@@ -4676,7 +4676,7 @@
                     "type": "text",
                     "label": {
                         "type": 0,
-                        "text": "My Athens Transfers"
+                        "text": "{business.trade_name}"
                     },
                     "editedByRte": false
                 },
@@ -4787,7 +4787,7 @@
                     "type": "text",
                     "label": {
                         "type": 0,
-                        "text": "My Athens Transfers"
+                        "text": "{business.trade_name}"
                     },
                     "editedByRte": false
                 },
@@ -4819,7 +4819,7 @@
                     "type": "text",
                     "label": {
                         "type": 0,
-                        "text": "My Athens Transfers"
+                        "text": "{business.trade_name}"
                     },
                     "editedByRte": false
                 },
@@ -4847,7 +4847,7 @@
                     "type": "text",
                     "label": {
                         "type": 0,
-                        "text": "0261E60000721601"
+                        "text": "{business.mhte}"
                     },
                     "editedByRte": false
                 },
@@ -4898,7 +4898,7 @@
                 "image": {
                     "type": "image",
                     "image": {
-                        "image": "Sfragida .png",
+                        "image": "business:stamp",
                         "source": 2
                     }
                 },
@@ -5849,7 +5849,7 @@
                 "image": {
                     "type": "image",
                     "image": {
-                        "image": "Myatlogo.png",
+                        "image": "business:logo",
                         "source": 2
                     }
                 },
@@ -5884,7 +5884,7 @@
                 "text4": {
                     "type": "text",
                     "label": {
-                        "text": "<p class=\"ql-align-center ql-direction-rtl\">Lessor/ Εκμισθωτής</p><p class=\"ql-align-center ql-direction-rtl\"><br></p><p class=\"ql-align-center\">MH.T.E. 0261E60000721601</p>",
+                        "text": "<p class=\"ql-align-center ql-direction-rtl\">Lessor/ Εκμισθωτής</p><p class=\"ql-align-center ql-direction-rtl\"><br></p><p class=\"ql-align-center\">MH.T.E. {business.mhte}</p>",
                         "type": 0
                     },
                     "editedByRte": true,
@@ -5926,7 +5926,7 @@
                 "image1": {
                     "type": "image",
                     "image": {
-                        "image": "Sfragida .png",
+                        "image": "business:stamp",
                         "source": 2
                     }
                 },
@@ -5955,7 +5955,7 @@
                 "image2": {
                     "type": "image",
                     "image": {
-                        "image": "MyatHeader_Voucher.JPG",
+                        "image": "business:voucher_header",
                         "source": 2
                     }
                 },

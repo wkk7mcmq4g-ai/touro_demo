@@ -112,7 +112,7 @@ class PartnerJobs extends Page implements HasTable
             ->emptyStateHeading($reachable ? 'No jobs' : 'This partner\'s database cannot be read from here')
             ->columns(array_filter([
                 TextColumn::make('TransferID')->label('Their ID')->sortable(),
-                $forUs ? TextColumn::make('MyatStatus')->label('MyAT status')->badge()->color(fn (?string $state): string => $state === 'New' ? 'warning' : 'success')
+                $forUs ? TextColumn::make('MyatStatus')->label(config('business.short_name').' status')->badge()->color(fn (?string $state): string => $state === 'New' ? 'warning' : 'success')
                     ->url(fn (PartnerJob $r): ?string => $r->OurTransferID ? TransferResource::getUrl('edit', ['record' => $r->OurTransferID]) : null) : null,
                 TextColumn::make('Status')->badge()->color('gray'),
                 TextColumn::make('TransferDate')->label('Date')->date('D d/m/Y')->sortable(),
@@ -130,7 +130,7 @@ class PartnerJobs extends Page implements HasTable
                 TextColumn::make('Notes')->wrap()->limit(100)->toggleable(),
                 $forUs ? TextColumn::make('PurchasePrice')->label('Price')->money('EUR', locale: 'el') : TextColumn::make('SalePrice')->label('Price')->money('EUR', locale: 'el'),
             ]))
-            ->filters($forUs ? [SelectFilter::make('MyatStatus')->label('MyAT status')->options(['New' => 'New', 'Copied' => 'Copied'])] : [])
+            ->filters($forUs ? [SelectFilter::make('MyatStatus')->label(config('business.short_name').' status')->options(['New' => 'New', 'Copied' => 'Copied'])] : [])
             ->toolbarActions($forUs ? [
                 // PHPRunner "Μεταφορά στα δρομολόγια μου" (Move_To_My_Transfers).
                 BulkAction::make('moveToMyTransfers')

@@ -79,7 +79,7 @@
         @if ($map || filled($job->ReviewLink))
             <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-top:12px"><tr>
                 @if ($map)
-                    <td style="background:#0096ff;border-radius:8px"><a href="{{ $map }}" style="display:inline-block;padding:8px 14px;font-size:13px;font-weight:700;color:#ffffff;text-decoration:none;white-space:nowrap">Χάρτης παραλαβής</a></td>
+                    <td style="background:{{ config('business.colors.primary') }};border-radius:8px"><a href="{{ $map }}" style="display:inline-block;padding:8px 14px;font-size:13px;font-weight:700;color:#ffffff;text-decoration:none;white-space:nowrap">Χάρτης παραλαβής</a></td>
                 @endif
                 @if ($map && filled($job->ReviewLink))<td width="8" style="font-size:0">&nbsp;</td>@endif
                 @if (filled($job->ReviewLink))

@@ -27,7 +27,9 @@ class TransfersChart extends ChartWidget
     {
         $days = DashboardData::volume();
         $today = now()->toDateString();
-        $bar = fn (array $d): string => $d['date']->toDateString() === $today ? '#0096ff' : ($d['date']->isPast() ? 'rgba(148,163,184,0.45)' : 'rgba(0,150,255,0.35)');
+        $primary = (string) config('business.colors.primary');
+        [$r, $g, $b] = array_map('hexdec', str_split(ltrim($primary, '#'), 2));
+        $bar = fn (array $d): string => $d['date']->toDateString() === $today ? $primary : ($d['date']->isPast() ? 'rgba(148,163,184,0.45)' : "rgba({$r},{$g},{$b},0.35)");
 
         return [
             'datasets' => [
@@ -44,8 +46,8 @@ class TransfersChart extends ChartWidget
                     'type' => 'line',
                     'label' => 'Επιβάτες',
                     'data' => array_column($days, 'pax'),
-                    'borderColor' => '#08345a',
-                    'backgroundColor' => '#08345a',
+                    'borderColor' => config('business.colors.navy'),
+                    'backgroundColor' => config('business.colors.navy'),
                     'borderDash' => [4, 4],
                     'pointRadius' => 2,
                     'tension' => 0.35,

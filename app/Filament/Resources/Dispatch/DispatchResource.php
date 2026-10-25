@@ -136,8 +136,8 @@ class DispatchResource extends Resource
             ->schema([
                 TextInput::make('to')->label('ΟΛΠ 1')->email()->required()->default(config('dispatch.olp.to')),
                 TextInput::make('cc')->label('ΟΛΠ 2')->email()->default(config('dispatch.olp.cc')),
-                TextInput::make('reply_to')->label('Απάντηση σε')->email()->default(config('dispatch.reply_to')),
-                TextInput::make('bcc')->label('Κοινοποίηση σε')->email()->default(config('dispatch.olp.bcc'))
+                TextInput::make('reply_to')->label('Απάντηση σε')->email()->default(config('dispatch.reply_to') ?: config('business.operations.email')),
+                TextInput::make('bcc')->label('Κοινοποίηση σε')->email()->default(config('dispatch.olp.bcc') ?: config('business.email'))
                     ->helperText(fn (VTransfer $record): ?string => filled($record->Email) ? "The driver ({$record->Email}) also gets a copy." : null),
             ])
             ->modalSubmitActionLabel('Send')

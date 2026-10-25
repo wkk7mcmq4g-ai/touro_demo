@@ -1,6 +1,6 @@
 <x-filament-panels::page>
     <div class="flex flex-col gap-2">
-        @foreach (['for-us' => 'Αναθέσεις προς MyAT', 'by-us' => 'Αναθέσεις από MyAT'] as $direction => $heading)
+        @foreach (['for-us' => 'Αναθέσεις προς '.config('business.short_name'), 'by-us' => 'Αναθέσεις από '.config('business.short_name')] as $direction => $heading)
             @if (\App\Filament\Pages\PartnerJobs::partners($direction) !== [])
                 <div class="flex flex-wrap items-center gap-2">
                     <span class="w-44 text-sm font-medium text-gray-500 dark:text-gray-400">{{ $heading }}</span>

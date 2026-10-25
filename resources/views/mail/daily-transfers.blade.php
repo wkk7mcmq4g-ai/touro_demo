@@ -22,7 +22,7 @@
     <x-slot:footer>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="mx-soft" style="background:#f8fafc;border-radius:10px">
             <tr><td class="mx-m" style="padding:12px 14px;font-size:12px;line-height:1.7;color:#475569">
-                <strong class="mx-t" style="color:#0f172a">Εντολέας:</strong> My Athens Transfers IKE &middot; ΜΗ.Τ.Ε 0261E60000721601<br>
+                <strong class="mx-t" style="color:#0f172a">Εντολέας:</strong> {{ config('business.legal_name') }} &middot; ΜΗ.Τ.Ε {{ config('business.mhte') }}<br>
                 <strong class="mx-t" style="color:#0f172a">Τρόπος πληρωμής:</strong> Πληρωμή με πίστωση βάσει ιδιωτικού συμφωνητικού
             </td></tr>
         </table>

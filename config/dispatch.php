@@ -1,22 +1,21 @@
 <?php
 
 /*
-| Daily dispatch (PHPRunner v_transfers): addresses and texts from the PHPRunner buttons
-| New_Button66 (OLP request) and Send_Assistant_Email (tour guide assignment).
+| Daily dispatch (PHPRunner v_transfers): addresses from the PHPRunner buttons New_Button66
+| (OLP request) and Send_Assistant_Email (tour guide assignment). The business's own
+| addresses, phone and signature are in config/business.php.
 */
 return [
 
+    // Piraeus Port Authority (OLP) entry requests: the port's addresses, the same for every business.
     'olp' => [
         'to' => env('DISPATCH_OLP_TO', 'crsecurity@olp.gr'),
         'cc' => env('DISPATCH_OLP_CC', 'ksaveri@hcg.gr'),
-        'bcc' => env('DISPATCH_OLP_BCC', 'info@myathenstransfers.com'),
+        // Blind copy to the business; empty: the business's general mailbox.
+        'bcc' => env('DISPATCH_OLP_BCC'),
     ],
 
-    'reply_to' => env('DISPATCH_REPLY_TO', 'aris@myathenstransfers.com'),
-
-    'operations_phone' => '+30 6976 684 995',
-
-    'signature_html' => '<p><strong>Aris Biliktsis</strong><br>Operations Manager</p>'
-        .'<p>My Athens Transfers<br>Tour Operator<br>visit us: www.myathenstransfers.com<br>mob: +30 697 668 4995</p>',
+    // Replies to guide assignments and OLP requests; empty: the operations desk.
+    'reply_to' => env('DISPATCH_REPLY_TO'),
 
 ];
