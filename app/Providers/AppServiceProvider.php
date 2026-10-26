@@ -7,6 +7,7 @@ use App\Filament\Resources\Transfers\Pages\ListTransfers;
 use App\Listeners\LogAccess;
 use App\Navigation\PersonalNavigationManager;
 use App\Support\ExcelFilters;
+use App\Support\Help;
 use App\Support\ImmersiveTables;
 use App\Support\SavedFilters;
 use App\Support\TableExports;
@@ -173,6 +174,19 @@ class AppServiceProvider extends ServiceProvider
                 ? view('filament.tables.export-and-saved', ['canExport' => TableExports::allowed($component), 'hasFilters' => TableExports::columns($component) !== []])->render()
                 : '';
         });
+
+        // Βοήθεια: a "?" next to the buttons of every screen that has a help article, and the side
+        // panel it opens (App\Support\Help, resources/help).
+        FilamentView::registerRenderHook(PanelsRenderHook::PAGE_HEADER_ACTIONS_BEFORE, function (): string {
+            $page = Livewire::current();
+            $panel = filament()->getCurrentPanel()?->getId();
+            if (! $page || ! in_array($panel, Help::PANELS, true) || ! ($article = Help::forPage($panel, $page::class))) {
+                return '';
+            }
+
+            return view('filament.help.button', ['url' => route('help.content', ['panel' => $panel, 'slug' => $article['slug']])])->render();
+        });
+        FilamentView::registerRenderHook(PanelsRenderHook::BODY_END, fn (): string => auth()->check() ? view('filament.help.drawer')->render() : '');
 
         // Wide tables that get Full screen + zoom (phones sideways, tablets, computers).
         ImmersiveTables::register();

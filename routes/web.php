@@ -4,6 +4,7 @@ use App\Filament\Pages\DayTimeline;
 use App\Http\Controllers\TransferFileController;
 use App\Http\Controllers\VoucherController;
 use App\Models\MyatTaskFile;
+use App\Support\Help;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
@@ -71,6 +72,15 @@ Route::get('/files/tasks/{id}', function (int $id) {
         'X-Content-Type-Options' => 'nosniff',
     ]);
 })->whereNumber('id')->middleware('web')->name('task-files.download');
+
+// Βοήθεια: one article as JSON, for the "?" side panel (App\Support\Help).
+Route::get('/help-content/{panel}/{slug}', function (string $panel, string $slug) {
+    $user = auth()->user();
+    abort_unless($user && in_array($panel, Help::PANELS, true) && $user->canAccessPanel(filament()->getPanel($panel)), 403);
+    $article = Help::find($panel, $slug) ?? abort(404);
+
+    return response()->json(['title' => $article['title'], 'html' => Help::html($panel, $article)->toHtml(), 'url' => Help::url($panel, $slug)]);
+})->where(['panel' => 'admin|portal', 'slug' => '[a-z0-9-]+'])->middleware('web')->name('help.content');
 
 // Daily dispatch vouchers (PDF of the PHPRunner v_transfers voucher pages).
 Route::get('/documents/vouchers/{page}/{transfer}', [VoucherController::class, 'show'])
