@@ -3,8 +3,11 @@
 use App\Filament\Pages\DayTimeline;
 use App\Http\Controllers\TransferFileController;
 use App\Http\Controllers\VoucherController;
+use App\Models\MyatTaskFile;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 
 // One way in for everyone: the login sends office users to /admin and everyone else to /portal.
 Route::get('/', fn () => redirect()->to(match (auth()->user()?->homePanelId()) {
@@ -45,6 +48,25 @@ Route::get('/files/loads/{id}', [TransferFileController::class, 'download'])
     ->defaults('kind', 'loads')
     ->whereNumber('id')
     ->name('load-files.download');
+
+// Files attached to tasks (Εργασίες), kept in the database; for the office only.
+Route::get('/files/tasks/{id}', function (int $id) {
+    $user = auth()->user();
+    abort_unless($user && $user->canAccessPanel(filament()->getPanel('admin')), 403);
+    $file = MyatTaskFile::query()->findOrFail($id);
+    $name = str_replace(['/', '\\'], '_', $file->Flnm ?: "file-{$file->ID}");
+    $content = (string) $file->getRawOriginal('Attachment');
+    $mime = (new finfo(FILEINFO_MIME_TYPE))->buffer($content) ?: 'application/octet-stream';
+    $inline = in_array($mime, ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/webp'], true);
+
+    return response($content, 200, [
+        'Content-Type' => $inline ? $mime : 'application/octet-stream',
+        'Content-Length' => (string) strlen($content),
+        'Content-Disposition' => HeaderUtils::makeDisposition($inline ? 'inline' : 'attachment', $name,
+            preg_replace('/[^A-Za-z0-9._ ()-]/', '_', Str::ascii($name)) ?: "file-{$file->ID}"),
+        'X-Content-Type-Options' => 'nosniff',
+    ]);
+})->whereNumber('id')->middleware('web')->name('task-files.download');
 
 // Daily dispatch vouchers (PDF of the PHPRunner v_transfers voucher pages).
 Route::get('/documents/vouchers/{page}/{transfer}', [VoucherController::class, 'show'])

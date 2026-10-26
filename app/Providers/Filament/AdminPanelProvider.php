@@ -37,6 +37,7 @@ class AdminPanelProvider extends PanelProvider
             ->unsavedChangesAlerts()
             ->navigationGroups([
                 NavigationGroup::make('Operations'),
+                NavigationGroup::make('Εργασίες'),
                 NavigationGroup::make('Partner jobs'),
                 NavigationGroup::make('Finance'),
                 NavigationGroup::make('Reports'),
