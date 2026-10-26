@@ -23,6 +23,7 @@ class ElorusInvoicingTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        config(['elorus.buttons' => true]); // hidden in the Demo; the Elorus code itself stays tested
 
         $this->emptyTables(['transfers', 'transfer_charges', 'myat_transfers_files', 'counterparties', 'elorus_Settings', 'optionvalues', 'status_values']);
 

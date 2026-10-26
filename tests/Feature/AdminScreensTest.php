@@ -20,6 +20,7 @@ class AdminScreensTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        config(['elorus.buttons' => true]); // hidden in the Demo; the Elorus screens themselves stay tested
         $this->emptyTables(['elorus_Settings', 'optionvalues']);
         DB::table('elorus_Settings')->insert(['OrgID' => '111', 'apikey' => 'secret-key-123', 'PrivateIndividualID' => '5', 'DefaultProductID' => '9']);
         $this->actingAs($this->makeLegacyUser('Admin'));

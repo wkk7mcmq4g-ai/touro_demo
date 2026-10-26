@@ -39,7 +39,7 @@ class ElorusSettings extends Page
 
     public static function canAccess(): bool
     {
-        return Permissions::allows(auth()->user(), 'elorus_Settings', 'view');
+        return config('elorus.buttons') && Permissions::allows(auth()->user(), 'elorus_Settings', 'view');
     }
 
     public function mount(): void

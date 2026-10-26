@@ -71,7 +71,7 @@ class InvoicingActions
             ->modalHeading($label)
             ->modalSubmitActionLabel('Send to Elorus')
             ->schema($fields)
-            ->visible(fn (): bool => (bool) auth()->user()?->may($table, 'edit'))
+            ->visible(fn (): bool => config('elorus.buttons') && (bool) auth()->user()?->may($table, 'edit'))
             ->deselectRecordsAfterCompletion()
             ->action(function (Collection $records, array $data) use ($work, $guard): void {
                 $skipped = 0;

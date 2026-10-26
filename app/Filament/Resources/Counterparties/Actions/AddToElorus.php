@@ -22,7 +22,7 @@ class AddToElorus
             ->modalDescription('Creates an Elorus contact for each ticked partner and stores its Elorus ID.')
             ->schema([Toggle::make('again')->label('Also the ones already in Elorus')->default(false)])
             ->modalSubmitActionLabel('Send to Elorus')
-            ->visible(fn (): bool => (bool) auth()->user()?->may('counterparties', 'edit'))
+            ->visible(fn (): bool => config('elorus.buttons') && (bool) auth()->user()?->may('counterparties', 'edit'))
             ->deselectRecordsAfterCompletion()
             ->action(function (Collection $records, array $data): void {
                 if (! config('elorus.enabled')) {

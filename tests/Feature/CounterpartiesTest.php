@@ -94,7 +94,7 @@ class CounterpartiesTest extends TestCase
     public function test_add_to_elorus_stores_the_contact_id(): void
     {
         $this->actingAs($this->makeLegacyUser('Admin'));
-        config(['elorus.enabled' => true]);
+        config(['elorus.enabled' => true, 'elorus.buttons' => true]);
         DB::table('elorus_Settings')->insert(['OrgID' => 'ORG1', 'apikey' => 'KEY1', 'DefaultProductID' => 'PRD1']);
         Http::fake(['api.elorus.com/v1.2/contacts/' => Http::response(['id' => '2208819599999999999'])]);
         $new = $this->partner(['CounterShortName' => 'New Hotel']);

@@ -8,6 +8,13 @@ return [
     */
     'enabled' => (bool) env('ELORUS_ENABLED', false),
 
+    /*
+    | Demo showcase: no Elorus buttons or screens at all (invoicing actions in Transfers and
+    | Charges, "Προσθήκη στο Elorus" on partners, Elorus Settings / Contacts). Set
+    | ELORUS_BUTTONS=true to show them again.
+    */
+    'buttons' => (bool) env('ELORUS_BUTTONS', false),
+
     'url' => env('ELORUS_URL', 'https://api.elorus.com/v1.2/'),
 
     // Override the elorus_Settings table (OrgID / apikey) when set.
