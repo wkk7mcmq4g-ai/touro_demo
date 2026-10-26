@@ -166,7 +166,7 @@ class TransferActions
                 TextInput::make('amount')->label('Amount')->numeric()->prefix('€')->required(),
                 DatePicker::make('date')->label('Payment date')->default(now())->required(),
             ])
-            ->visible(fn (): bool => (bool) auth()->user()?->may('PaymentsReceived', 'add'))
+            ->visible(fn (): bool => config('transfers.incoming_payment') && (bool) auth()->user()?->may('PaymentsReceived', 'add'))
             ->action(function (array $data): void {
                 DB::table('PaymentsReceived')->insert([
                     'CID_Customer' => $data['customer'],

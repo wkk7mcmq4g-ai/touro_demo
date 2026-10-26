@@ -257,6 +257,7 @@ class TransfersTest extends TestCase
 
     public function test_incoming_payment_button(): void
     {
+        config(['transfers.incoming_payment' => true]); // hidden in the Demo; the action itself stays tested
         $user = $this->makeLegacyUser('Admin');
         $this->actingAs($user);
 

@@ -3,6 +3,13 @@
 return [
 
     /*
+    | Demo showcase: no "Εισερχόμενο έμβασμα" (incoming payment) button, and so no
+    | "Τιμολόγηση" button at the top of the Transfers list. TRANSFERS_INCOMING_PAYMENT=true
+    | shows it again.
+    */
+    'incoming_payment' => (bool) env('TRANSFERS_INCOMING_PAYMENT', false),
+
+    /*
     | Columns that can be edited directly in the transfers list ("Edit in list").
     | The equivalent of PHPRunner's inline-edit field setting; this list is exactly
     | the one from the PHPRunner project. Add or remove column names here.

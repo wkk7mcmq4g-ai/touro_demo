@@ -179,6 +179,7 @@ class ListTransfers extends ListRecords
                 ->label('Τιμολόγηση')
                 ->icon(Heroicon::OutlinedBanknotes)
                 ->color('gray')
+                ->visible(fn (): bool => (bool) config('transfers.incoming_payment')) // Demo: off, its only item is hidden
                 ->button(),
             CreateAction::make()->label('New transfer')->icon(Heroicon::OutlinedPlus),
         ];

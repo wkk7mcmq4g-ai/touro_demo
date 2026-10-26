@@ -10,7 +10,7 @@ use App\Filament\Resources\Transfers\Pages\ListTransfers;
 use Livewire\Livewire;
 use Tests\TestCase;
 
-/** Demo showcase: no Elorus buttons or screens (config elorus.buttons = false). */
+/** Demo showcase: no Elorus buttons or screens (elorus.buttons), no incoming payment button (transfers.incoming_payment). */
 class DemoElorusHiddenTest extends TestCase
 {
     protected function setUp(): void
@@ -50,5 +50,15 @@ class DemoElorusHiddenTest extends TestCase
         config(['elorus.buttons' => true]);
         Livewire::test(ListTransfers::class)->assertTableBulkActionVisible('invoiceTotal');
         $this->assertTrue(ElorusSettings::canAccess());
+    }
+
+    public function test_no_incoming_payment_button(): void
+    {
+        $this->assertFalse(config('transfers.incoming_payment'));
+        Livewire::test(ListTransfers::class)->assertActionHidden('incomingPayment');
+        $this->get('/admin/transfers')->assertOk()->assertDontSee('Εισερχόμενο έμβασμα');
+
+        config(['transfers.incoming_payment' => true]);
+        Livewire::test(ListTransfers::class)->assertActionVisible('incomingPayment');
     }
 }
