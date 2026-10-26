@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Middleware\LinkPreview;
 use App\Http\Middleware\SyncTableLayouts;
+use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -15,6 +17,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Livewire's update requests run in the web group; the panels add it to theirs.
         $middleware->web(append: [SyncTableLayouts::class]);
+        // Link previews answer before the sign-in check sends robots to the login page.
+        $middleware->prependToPriorityList(AuthenticatesRequests::class, LinkPreview::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

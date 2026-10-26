@@ -5,6 +5,7 @@ namespace App\Providers\Filament;
 use App\Filament\Pages\Auth\Login;
 use App\Filament\Pages\MyMenu;
 use App\Filament\Theme;
+use App\Http\Middleware\LinkPreview;
 use App\Http\Middleware\SendToHomePanel;
 use App\Http\Middleware\SyncTableLayouts;
 use Filament\Actions\Action;
@@ -50,6 +51,8 @@ class AdminPanelProvider extends PanelProvider
             ->userMenuItems([
                 Action::make('myMenu')->label('Το μενού μου')->icon(Heroicon::OutlinedSquares2x2)->url(fn (): string => MyMenu::getUrl()),
             ])
+            // The login page's own link preview: business name and logo.
+            ->renderHook(PanelsRenderHook::HEAD_END, fn (): string => auth()->check() ? '' : '<meta property="og:site_name" content="'.e(config('business.name')).'"><meta property="og:image" content="'.e(asset(config('business.logo.icon_512'))).'">')
             ->renderHook(PanelsRenderHook::SIDEBAR_NAV_END, fn (): string => view('filament.brand.edit-menu-link')->render())
             ->middleware([
                 EncryptCookies::class,
@@ -61,6 +64,8 @@ class AdminPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
+                // Link previews (WhatsApp, Viber, ...) show the page's name and logo, not "Login".
+                LinkPreview::class,
                 SyncTableLayouts::class,
             ])
             ->authMiddleware([

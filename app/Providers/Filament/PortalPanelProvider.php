@@ -5,6 +5,7 @@ namespace App\Providers\Filament;
 use App\Filament\Pages\Auth\Login;
 use App\Filament\Pages\Reports\VanTaxiReport;
 use App\Filament\Theme;
+use App\Http\Middleware\LinkPreview;
 use App\Http\Middleware\SendToHomePanel;
 use App\Http\Middleware\SyncTableLayouts;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -52,6 +53,8 @@ class PortalPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
+                // Link previews (WhatsApp, Viber, ...) show the page's name and logo, not "Login".
+                LinkPreview::class,
                 SyncTableLayouts::class,
             ])
             ->authMiddleware([
