@@ -4,7 +4,7 @@
         <ul class="myat-attention">
             @forelse ($items as $item)
                 <li>
-                    <a href="{{ $item['url'] }}" @class(['myat-attention-item', 'is-clear' => $item['count'] === 0])>
+                    <a href="{{ $item['url'] }}" @class(['myat-attention-item', 'is-clear' => $item['count'] === 0, 'is-urgent' => $item['urgent'] ?? false])>
                         <span class="myat-attention-icon myat-tone-{{ $item['count'] === 0 ? 'green' : $item['tone'] }}">
                             <x-filament::icon :icon="$item['count'] === 0 ? 'heroicon-o-check' : $item['icon']" />
                         </span>

@@ -118,7 +118,7 @@ class ListTransfers extends ListRecords
                     ->modalSubmitActionLabel('Εφαρμογή')
                     ->action(function (): void {
                         PhpRunnerLayouts::apply($this, (string) auth()->user()?->username);
-                        $this->redirect(static::getUrl(['activeTab' => $this->activeTab]));
+                        $this->redirect(static::getUrl(['tab' => $this->activeTab]));
                     }),
                 // One-off for the switch-over: every user's old Transfers columns, without waiting for their first visit.
                 Action::make('phprunnerLayoutAll')
@@ -146,7 +146,7 @@ class ListTransfers extends ListRecords
                             ])->filter()->implode("\n"))
                             ->persistent()->send();
                         if (in_array($me, $result['copied'], true)) {
-                            $this->redirect(static::getUrl(['activeTab' => $this->activeTab]));
+                            $this->redirect(static::getUrl(['tab' => $this->activeTab]));
                         }
                     }),
             ])

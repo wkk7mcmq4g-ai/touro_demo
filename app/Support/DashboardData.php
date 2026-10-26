@@ -55,10 +55,20 @@ class DashboardData
             ->where('TransferDate', '>=', $today)->where('TransferDate', '<=', $today->copy()->addDays($days))->count();
     }
 
-    public static function unassignedNextHours(): int
+    /**
+     * Jobs on a day with no vehicle yet, and the earliest pickup among them still to come
+     * (today: from now on; another day: the first of the day). Pickup null for TBD-only days.
+     *
+     * @return array{count: int, next: ?string}
+     */
+    public static function unassignedOn(Carbon $day): array
     {
-        return self::unassigned(self::active())
-            ->whereBetween('TransferDate', [Carbon::today(), Carbon::tomorrow()])->count();
+        $query = fn () => self::unassigned(self::active())->where('TransferDate', $day->toDateString());
+        $next = $query()->whereNotNull('TransferTime_sort')
+            ->when($day->isToday(), fn (Builder $q) => $q->where('TransferTime_sort', '>=', now()->format('H:i:s')))
+            ->min('TransferTime_sort');
+
+        return ['count' => $query()->count(), 'next' => $next ? substr((string) $next, 0, 5) : null];
     }
 
     public static function toSort(): int

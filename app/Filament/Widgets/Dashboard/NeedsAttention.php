@@ -9,6 +9,7 @@ use App\Filament\Resources\TransfersToSort\TransferToSortResource;
 use App\Models\DailyRecipient;
 use App\Support\DashboardData;
 use Filament\Widgets\Widget;
+use Illuminate\Support\Carbon;
 use Throwable;
 
 /** What someone has to act on: jobs without a vehicle, open issues, bookings to sort, unread sends. */
@@ -29,8 +30,18 @@ class NeedsAttention extends Widget
         $items = [];
 
         if (TransferResource::canAccess()) {
-            $items[] = ['label' => 'Χωρίς όχημα (σήμερα & αύριο)', 'hint' => 'Δεν έχει δοθεί όχημα', 'count' => DashboardData::unassignedNextHours(),
-                'tone' => 'amber', 'icon' => 'heroicon-o-truck', 'url' => TransferResource::getUrl('index', ['tab' => 'today'])];
+            // No vehicle yet: today on its own line, first and red when something is open (most urgent).
+            $today = DashboardData::unassignedOn(Carbon::today());
+            $items[] = ['label' => 'Χωρίς όχημα · Σήμερα', 'count' => $today['count'], 'tone' => 'rose', 'icon' => 'heroicon-o-truck',
+                'urgent' => $today['count'] > 0,
+                'hint' => $today['count'] === 0 ? 'Όλα τα σημερινά έχουν όχημα'
+                    : ($today['next'] ? 'Επόμενη παραλαβή χωρίς όχημα '.$today['next'] : 'Δεν έχει δοθεί όχημα'),
+                'url' => TransferResource::getUrl('index', ['tab' => 'today'])];
+            $tomorrow = DashboardData::unassignedOn(Carbon::tomorrow());
+            $items[] = ['label' => 'Χωρίς όχημα · Αύριο', 'count' => $tomorrow['count'], 'tone' => 'amber', 'icon' => 'heroicon-o-truck',
+                'hint' => $tomorrow['count'] === 0 ? 'Όλα τα αυριανά έχουν όχημα'
+                    : ($tomorrow['next'] ? 'Πρώτη παραλαβή '.$tomorrow['next'] : 'Δεν έχει δοθεί όχημα'),
+                'url' => TransferResource::getUrl('index', ['tab' => 'tomorrow'])];
             $items[] = ['label' => 'Θέματα (7 ημέρες)', 'hint' => 'TBD, κενή διαδρομή ή πτήση', 'count' => DashboardData::issuesNextDays(),
                 'tone' => 'rose', 'icon' => 'heroicon-o-exclamation-triangle', 'url' => TransferResource::getUrl('index', ['tab' => 'issues'])];
         }

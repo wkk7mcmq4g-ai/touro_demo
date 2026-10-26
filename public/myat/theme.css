@@ -3430,3 +3430,14 @@ html.myat-immersive .myat-day-sub {
 .myat-tl-k.is-clash { background:#fff; box-shadow:inset 0 0 0 2px #ef4444; }
 @media (max-width: 639px) { .myat-tl { --tl-label: 8rem; } .myat-tl-hint { display:none; } }
 @media (prefers-reduced-motion: reduce) { .myat-tl-job { transition:none; } .myat-tl-job:hover { transform:none; } }
+
+/* Needs attention: today's jobs without a vehicle stand out */
+.myat-attention-item.is-urgent { background:#fff1f2; box-shadow:0 0 0 1.5px #f43f5e; }
+.dark .myat-attention-item.is-urgent { background:rgb(244 63 94 / .12); box-shadow:0 0 0 1.5px #fb7185; }
+.myat-attention-item.is-urgent .myat-attention-count { color:#e11d48; }
+.dark .myat-attention-item.is-urgent .myat-attention-count { color:#fb7185; }
+.myat-attention-item.is-urgent .myat-attention-hint { color:#be123c; font-weight:600; }
+.dark .myat-attention-item.is-urgent .myat-attention-hint { color:#fda4af; }
+.myat-attention-item.is-urgent .myat-attention-icon { position:relative; }
+.myat-attention-item.is-urgent .myat-attention-icon::after { content:""; position:absolute; top:-3px; right:-3px; width:.6rem; height:.6rem; border-radius:999px; background:#e11d48; box-shadow:0 0 0 2px #fff; animation:myat-pj-pulse 1.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .myat-attention-item.is-urgent .myat-attention-icon::after { animation:none; } }
