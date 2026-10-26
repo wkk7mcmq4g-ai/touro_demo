@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Transfers\Pages;
 use App\Filament\Concerns\CopiesPhpRunnerLayout;
 use App\Filament\Concerns\PinsFlagsColumn;
 use App\Filament\Resources\Transfers\Actions\TransferActions;
+use App\Filament\Resources\Transfers\Tables\TransfersTable;
 use App\Filament\Resources\Transfers\TransferResource;
 use App\Filament\Resources\Transfers\Widgets\TransferTotals;
 use App\Models\Transfer;
@@ -66,6 +67,25 @@ class ListTransfers extends ListRecords
     {
         session()->put(self::HIDE_CANCELLED, $this->showsCancelled());
         $this->resetPage();
+    }
+
+    /**
+     * The toolbar's Ημερομηνίες menu (PHPRunner's "Φίλτρα" date shortcuts): over all transfers (tab
+     * All), as the Period filter, so it shows as a filter chip and clears like any filter. '' clears.
+     */
+    public function applyPeriod(string $key): void
+    {
+        abort_unless($key === '' || array_key_exists($key, TransfersTable::PERIODS), 422);
+        $this->activeTab = 'all';
+        $this->tableFilters['period'] = ['values' => $key === '' ? [] : [$key]];
+        $this->updatedTableFilters();
+    }
+
+    public function activePeriod(): ?string
+    {
+        $values = (array) ($this->tableFilters['period']['values'] ?? []);
+
+        return count($values) === 1 ? (string) reset($values) : null;
     }
 
     /** Cancelled transfers in the open tab, for the toggle's label. */

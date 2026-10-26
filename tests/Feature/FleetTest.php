@@ -7,6 +7,7 @@ use App\Filament\Resources\DriverLeaves\Pages\ListDriverLeaves;
 use App\Filament\Resources\Drivers\Pages\EditDriver;
 use App\Filament\Resources\FuelRegisters\Pages\ListFuelRegisters;
 use App\Filament\Resources\VehicleAssignments\Pages\CreateVehicleAssignment;
+use App\Filament\Resources\VehicleAssignments\Pages\ListVehicleAssignments;
 use App\Filament\Resources\Vehicles\Pages\CreateVehicle;
 use App\Filament\Resources\Vehicles\Pages\EditVehicle;
 use App\Filament\Resources\Vehicles\RelationManagers\KilometresRelationManager;
@@ -15,6 +16,7 @@ use App\Models\Driver;
 use App\Models\DriverLeaveEntry;
 use App\Models\FuelRegister;
 use App\Models\Vehicle;
+use App\Models\VehicleAssignment;
 use App\Models\VehiclesLog;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Http\UploadedFile;
@@ -241,5 +243,20 @@ class FleetTest extends TestCase
 
         $this->assertSame(1, Livewire::test(DriverCalendar::class)->instance()->clearMonth('2026-11', false));
         $this->assertSame(1, DB::table('schedule')->count());
+    }
+
+    public function test_vehicle_assignments_today_tomorrow_all_tabs(): void
+    {
+        $van = DB::table('vehicles')->insertGetId(['VehicleName' => 'VAN', 'VehicleLicence' => 'IKE'], 'VehicleID');
+        $d = DB::table('drivers')->insertGetId(['Fullname' => 'Nikos', 'Active' => 1], 'DriverID');
+        $mk = fn (Carbon $day) => VehicleAssignment::query()->find(
+            DB::table('vehicle_assignments')->insertGetId(['VehicleID' => $van, 'DriverID' => $d, 'AssignmentDate' => $day->toDateString()], 'ID'));
+        [$today, $tomorrow, $old] = [$mk(Carbon::today()), $mk(Carbon::tomorrow()), $mk(Carbon::today()->subDays(10))];
+
+        Livewire::test(ListVehicleAssignments::class)
+            ->assertSet('activeTab', 'today')->assertSee('Σήμερα')->assertSee('Αύριο')->assertSee('Όλες')
+            ->assertCanSeeTableRecords([$today])->assertCanNotSeeTableRecords([$tomorrow, $old])
+            ->set('activeTab', 'tomorrow')->assertCanSeeTableRecords([$tomorrow])->assertCanNotSeeTableRecords([$today])
+            ->set('activeTab', 'all')->assertCanSeeTableRecords([$today, $tomorrow, $old]);
     }
 }

@@ -3519,3 +3519,6 @@ html.myat-tl-full .fi-main { padding-top:.5rem; }
 .myat-tl-pdfbtn:hover, .myat-tl-fullbtn:hover { background:var(--gray-50); }
 .dark .myat-tl-pdfbtn:hover, .dark .myat-tl-fullbtn:hover { background:var(--gray-800); }
 .myat-tl-pdfbtn:focus-visible { outline:2px solid var(--primary-500); outline-offset:2px; }
+.myat-date-menu { gap:.4rem; padding:0 .625rem; }
+.myat-date-menu.is-on { border-color:var(--primary-500); background:rgb(14 165 233 / .08); color:var(--primary-700); }
+.dark .myat-date-menu.is-on { color:var(--primary-300); }

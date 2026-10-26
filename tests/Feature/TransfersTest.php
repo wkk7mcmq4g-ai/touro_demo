@@ -756,4 +756,44 @@ class TransfersTest extends TestCase
         $page->call('applyTableColumnManager', [...array_slice($columns, 1), $columns[0]], true);
         $this->assertSame('flags', Livewire::test(ListTransfers::class)->instance()->tableColumns[0]['name']);
     }
+
+    public function test_date_shortcuts_menu_like_phprunner_filters(): void
+    {
+        $this->actingAs($this->makeLegacyUser('Entry'));
+        $today = $this->transfer(['TransferDate' => Carbon::today()]);
+        $tomorrow = $this->transfer(['TransferDate' => Carbon::tomorrow()]);
+        $dayAfter = $this->transfer(['TransferDate' => Carbon::today()->addDays(2)]);
+        $yesterday = $this->transfer(['TransferDate' => Carbon::yesterday()]);
+        $issue = $this->transfer(['TransferDate' => Carbon::today()->addDays(3), 'TransferTime' => 'TBD']);
+
+        $page = Livewire::test(ListTransfers::class)
+            ->assertSee('Ημερομηνίες')->assertSee('Day After Tomorrow')->assertSee('Εκκρεμότητες 7 ημερών')
+            ->call('applyPeriod', 'day_after')
+            ->assertSet('activeTab', 'all')
+            ->assertCanSeeTableRecords([$dayAfter])->assertCanNotSeeTableRecords([$today, $tomorrow, $yesterday]);
+        $this->assertSame('day_after', $page->instance()->activePeriod());
+
+        $page->call('applyPeriod', 'yesterday')->assertCanSeeTableRecords([$yesterday])->assertCanNotSeeTableRecords([$today]);
+        $page->call('applyPeriod', 'next5')->assertCanSeeTableRecords([$today, $tomorrow, $dayAfter, $issue])->assertCanNotSeeTableRecords([$yesterday]);
+        $page->call('applyPeriod', 'issues7')->assertCanSeeTableRecords([$issue])->assertCanNotSeeTableRecords([$dayAfter]);
+        $page->call('applyPeriod', '')->assertCanSeeTableRecords([$today, $yesterday, $issue]);
+        $this->assertNull($page->instance()->activePeriod());
+    }
+
+    public function test_own_vehicle_filter_next_to_coach(): void
+    {
+        $this->actingAs($this->makeLegacyUser('Entry'));
+        DB::table('vehicles')->insert(['VehicleName' => 'OUR VITO', 'VehicleLicence' => 'IKE']);
+        $own = $this->transfer(['CoachCompanyID' => 'OUR VITO']);
+        $partner = $this->transfer(['CoachCompanyID' => 'PARTNER BUS']);
+        $none = $this->transfer(['CoachCompanyID' => '']);
+
+        $filters = array_keys(Livewire::test(ListTransfers::class)->instance()->getTable()->getFilters());
+        $this->assertSame(array_search('CoachCompanyID', $filters) + 1, array_search('CoachKind', $filters));
+
+        Livewire::test(ListTransfers::class)->set('activeTab', 'all')
+            ->filterTable('CoachKind', ['own'])->assertCanSeeTableRecords([$own])->assertCanNotSeeTableRecords([$partner, $none])
+            ->filterTable('CoachKind', ['partner'])->assertCanSeeTableRecords([$partner])->assertCanNotSeeTableRecords([$own, $none])
+            ->filterTable('CoachKind', ['none'])->assertCanSeeTableRecords([$none])->assertCanNotSeeTableRecords([$own, $partner]);
+    }
 }

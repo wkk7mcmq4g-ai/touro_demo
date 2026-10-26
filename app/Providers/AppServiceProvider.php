@@ -146,9 +146,9 @@ class AppServiceProvider extends ServiceProvider
             };
         });
 
-        // Transfers: quick "Ακυρωμένα" toggle next to the search box.
+        // Transfers: the Ημερομηνίες shortcuts menu and the quick "Ακυρωμένα" toggle next to the search box.
         FilamentView::registerRenderHook(TablesRenderHook::TOOLBAR_SEARCH_BEFORE, fn (): string => Livewire::current() instanceof ListTransfers
-            ? view('filament.transfers.cancelled-toggle')->render() : '');
+            ? view('filament.transfers.date-shortcuts')->render().view('filament.transfers.cancelled-toggle')->render() : '');
 
         FilamentView::registerRenderHook(PanelsRenderHook::BODY_END, fn () => auth()->check() ? view('filament.tables.excel-and-widths').view('filament.tables.immersive') : '');
 

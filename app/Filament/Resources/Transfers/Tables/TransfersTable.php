@@ -24,6 +24,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\HtmlString;
 
 /**
@@ -33,6 +34,34 @@ use Illuminate\Support\HtmlString;
  */
 class TransfersTable
 {
+    /** PHPRunner's "Φίλτρα" date shortcuts, in its order (period filter and the toolbar menu). */
+    public const PERIODS = [
+        'issues7' => 'Εκκρεμότητες 7 ημερών', 'last_year' => 'Last Year', 'last_month' => 'Last Month',
+        'yesterday' => 'Yesterday', 'today' => 'Today', 'tomorrow' => 'Tomorrow', 'day_after' => 'Day After Tomorrow',
+        'next5' => 'Next Five Days', 'this_month' => 'This Month', 'this_year' => 'This Year',
+    ];
+
+    /** One date shortcut on a transfers query. */
+    public static function period(Builder $query, string $key): Builder
+    {
+        $today = Carbon::today();
+        $between = fn (Carbon $from, Carbon $until): Builder => $query->where('TransferDate', '>=', $from->toDateString())->where('TransferDate', '<=', $until->toDateString());
+
+        return match ($key) {
+            'issues7' => $between($today, $today->copy()->addDays(7))->withOpenIssues(),
+            'last_year' => $between($today->copy()->subYear()->startOfYear(), $today->copy()->subYear()->endOfYear()),
+            'last_month' => $between($today->copy()->subMonthNoOverflow()->startOfMonth(), $today->copy()->subMonthNoOverflow()->endOfMonth()),
+            'yesterday' => $between($today->copy()->subDay(), $today->copy()->subDay()),
+            'today' => $between($today, $today),
+            'tomorrow' => $between($today->copy()->addDay(), $today->copy()->addDay()),
+            'day_after' => $between($today->copy()->addDays(2), $today->copy()->addDays(2)),
+            'next5' => $between($today, $today->copy()->addDays(4)),
+            'this_month' => $between($today->copy()->startOfMonth(), $today->copy()->endOfMonth()),
+            'this_year' => $between($today->copy()->startOfYear(), $today->copy()->endOfYear()),
+            default => $query,
+        };
+    }
+
     /** The open-items column (Exp. / Chg. / Ops / Fin. badges); kept first by PinsFlagsColumn. */
     public const FLAGS = 'flags';
 
@@ -270,29 +299,26 @@ class TransfersTable
         return [
             // Search panel
             $dateRange('transfer_dates', 'TransferDate', 'Transfer date'),
-            // PHPRunner's "Φίλτρα" menu buttons (Yesterday, This month, ...).
+            // PHPRunner's "Φίλτρα" menu (date shortcuts); the toolbar's Ημερομηνίες menu sets it.
             SelectFilter::make('period')
                 ->label('Period')
-                ->options([
-                    'yesterday' => 'Yesterday', 'this_month' => 'This month', 'last_month' => 'Last month',
-                    'this_year' => 'This year', 'last_year' => 'Last year',
-                ])
-                ->query(function (Builder $query, array $data): Builder {
-                    $today = Carbon::today();
-                    $between = fn (Carbon $from, Carbon $until): \Closure => fn (Builder $q) => $q->where('TransferDate', '>=', $from)->where('TransferDate', '<=', $until);
-
-                    return FilterValues::any($query, $data, [
-                        'yesterday' => $between($today->copy()->subDay(), $today->copy()->subDay()),
-                        'this_month' => $between($today->copy()->startOfMonth(), $today->copy()->endOfMonth()),
-                        'last_month' => $between($today->copy()->subMonthNoOverflow()->startOfMonth(), $today->copy()->subMonthNoOverflow()->endOfMonth()),
-                        'this_year' => $between($today->copy()->startOfYear(), $today->copy()->endOfYear()),
-                        'last_year' => $between($today->copy()->subYear()->startOfYear(), $today->copy()->subYear()->endOfYear()),
-                    ]);
-                }),
+                ->options(self::PERIODS)
+                ->query(fn (Builder $query, array $data): Builder => FilterValues::any($query, $data, collect(self::PERIODS)
+                    ->mapWithKeys(fn (string $label, string $key): array => [$key => fn (Builder $q) => self::period($q, $key)])->all())),
             $dateRange('import_dates', 'ImportDate', 'Date in'),
             SelectFilter::make('cID_Customer')->label('Supplier')->multiple()->searchable()
                 ->options(fn (): array => Lookups::customers()),
             $values('CoachCompanyID', 'Coach', fn (): array => Lookups::coaches())->searchable(),
+            // Our own vehicle (the coach is one of our vehicles), a partner's coach, or none yet.
+            SelectFilter::make('CoachKind')
+                ->label('Ιδιόκτητο όχημα')
+                ->options(['own' => 'Δικό μας όχημα', 'partner' => 'Συνεργάτης', 'none' => 'Χωρίς όχημα'])
+                ->query(fn (Builder $query, array $data): Builder => FilterValues::any($query, $data, [
+                    'own' => fn (Builder $q) => $q->whereIn('CoachCompanyID', DB::table('vehicles')->whereNotNull('VehicleName')->select('VehicleName')),
+                    'partner' => fn (Builder $q) => $q->whereRaw("IFNULL(CoachCompanyID, '') <> ''")
+                        ->whereNotIn('CoachCompanyID', DB::table('vehicles')->whereNotNull('VehicleName')->select('VehicleName')),
+                    'none' => fn (Builder $q) => $q->whereRaw("IFNULL(CoachCompanyID, '') = ''"),
+                ])),
 
             // Filter panel
             $values('Status', 'Status'),
