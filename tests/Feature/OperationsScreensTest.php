@@ -47,9 +47,23 @@ class OperationsScreensTest extends TestCase
 
     public function test_every_screen_opens(): void
     {
-        foreach (['tours', 'review-links', 'communications', 'charges', 'payments', 'archive', 'to-sort', 'partner-jobs'] as $slug) {
+        foreach (['tours', 'review-links', 'communications', 'charges', 'payments', 'archive', 'to-sort'] as $slug) {
             $this->get("/admin/{$slug}")->assertOk();
         }
+    }
+
+    /** Demo showcase: no partner databases, so no partner jobs page and no dashboard panel. */
+    public function test_the_demo_has_no_partner_jobs(): void
+    {
+        $this->assertSame([], config('partners'));
+        $this->get('/admin/partner-jobs')->assertForbidden();
+        $this->get('/admin')->assertOk()->assertDontSee('Νέες αναθέσεις συνεργατών');
+    }
+
+    /** MyAT's LS Tours entry, for the tests that keep the (switched-off) partner code working. */
+    private function withLsPartner(string $database): void
+    {
+        config(['partners.ls' => ['label' => 'LS Tours', 'database' => $database, 'code' => 'LS', 'prefix' => 'LS - ', 'coach' => 'MyAthensTransfers', 'our_customer' => 71]]);
     }
 
     public function test_tours_and_review_links_are_created(): void
@@ -155,7 +169,7 @@ class OperationsScreensTest extends TestCase
         ]);
         DB::table("{$db}.transfers")->insert(['TransferID' => 9, 'cID_Customer' => 71, 'TransferDate' => Carbon::today()->toDateString(), 'LeadName' => 'Ours', 'SupplierCode' => 'S9']);
         $copied = $this->transfer(['SupplierCode' => 'LS - 2']);
-        config(['partners.ls.database' => $db]);
+        $this->withLsPartner($db);
 
         // The real procedure names the partner databases; the test one copies from the test copy.
         DB::unprepared('DROP PROCEDURE IF EXISTS MoveToMyTransfers');
@@ -189,7 +203,7 @@ class OperationsScreensTest extends TestCase
 
     public function test_partner_jobs_say_when_a_partner_database_is_out_of_reach(): void
     {
-        config(['partners.ls.database' => 'no_such_partner_db']);
+        $this->withLsPartner('no_such_partner_db');
         Livewire::test(PartnerJobs::class, ['partner' => 'ls'])->assertOk()->assertSee('cannot be read from here');
     }
 }

@@ -2,7 +2,7 @@
     "$schema": "https://getcomposer.org/schema.json",
     "name": "touro/myat",
     "type": "project",
-    "description": "MyAthens Transfers back office (Laravel + Filament), replacing the PHPRunner app.",
+    "description": "Demo showcase of the Touro back office (Laravel + Filament), copied from MyAT.",
     "keywords": [
         "laravel",
         "filament"

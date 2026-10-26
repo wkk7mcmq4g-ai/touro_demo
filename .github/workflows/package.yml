@@ -50,14 +50,14 @@ jobs:
           mkdir -p "$RUNNER_TEMP/package"
           rsync -a --exclude '.git' --exclude '.github' --exclude 'tests' --exclude 'node_modules' \
             --exclude 'storage/logs/*.log' --exclude 'storage/framework/views/*.php' \
-            --exclude 'bootstrap/cache/config.php' --exclude 'bootstrap/cache/routes-*.php' --exclude 'bootstrap/cache/events.php' ./ "$RUNNER_TEMP/package/touro_myat/"
-          cd "$RUNNER_TEMP/package" && zip -qr touro_myat.zip touro_myat
+            --exclude 'bootstrap/cache/config.php' --exclude 'bootstrap/cache/routes-*.php' --exclude 'bootstrap/cache/events.php' ./ "$RUNNER_TEMP/package/touro_demo/"
+          cd "$RUNNER_TEMP/package" && zip -qr touro_demo.zip touro_demo
 
       - name: Upload
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: touro_myat-${{ github.sha }}
-          path: ${{ runner.temp }}/package/touro_myat.zip
+          name: touro_demo-${{ github.sha }}
+          path: ${{ runner.temp }}/package/touro_demo.zip
           retention-days: 14
 
       # One zip over FTPS, then the server unpacks it (public/deploy.php, protected by
@@ -72,9 +72,9 @@ jobs:
           DEPLOY_URL: ${{ vars.DEPLOY_URL }}
         run: |
           if [ -z "$DEPLOY_TOKEN" ]; then echo "::warning::DEPLOY_TOKEN secret not set; skipping deploy"; exit 0; fi
-          if [ -z "$DEPLOY_URL" ]; then echo "::warning::DEPLOY_URL variable not set (e.g. https://new.myat.touro.gr/deploy.php); skipping deploy"; exit 0; fi
+          if [ -z "$DEPLOY_URL" ]; then echo "::warning::DEPLOY_URL variable not set (e.g. https://new.demo.touro.gr/deploy.php); skipping deploy"; exit 0; fi
           curl --fail --show-error --silent --ssl-reqd --retry 3 \
             --user "$FTP_USERNAME:$FTP_PASSWORD" \
-            -T "$RUNNER_TEMP/package/touro_myat.zip" "ftp://$FTP_SERVER/deploy-package.zip"
+            -T "$RUNNER_TEMP/package/touro_demo.zip" "ftp://$FTP_SERVER/deploy-package.zip"
           curl --fail --show-error --silent --max-time 600 -X POST \
             -H "X-Deploy-Token: $DEPLOY_TOKEN" "$DEPLOY_URL"

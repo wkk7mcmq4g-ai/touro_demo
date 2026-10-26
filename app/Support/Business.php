@@ -12,7 +12,10 @@ class Business
     {
         $ops = config('business.operations');
 
-        return '<p><strong>'.e($ops['name']).'</strong><br>'.e($ops['title']).'</p>'
+        // No person's name (e.g. the Demo showcase): the title alone.
+        $who = filled($ops['name'] ?? null) ? '<strong>'.e($ops['name']).'</strong><br>'.e($ops['title']) : '<strong>'.e($ops['title']).'</strong>';
+
+        return '<p>'.$who.'</p>'
             .'<p>'.e(config('business.trade_name')).'<br>'.e(config('business.tagline'))
             .'<br>visit us: '.e(config('business.website')).'<br>mob: '.e($ops['phone']).'</p>';
     }

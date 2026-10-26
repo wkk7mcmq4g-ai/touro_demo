@@ -43,8 +43,8 @@ if (! is_file($package) || $zip->open($package) !== true) {
 $written = 0;
 for ($i = 0; $i < $zip->numFiles; $i++) {
     $name = (string) $zip->getNameIndex($i);
-    // Entries are touro_myat/<path>.
-    $path = preg_replace('#^touro_myat/#', '', $name);
+    // Entries are touro_demo/<path>.
+    $path = preg_replace('#^touro_demo/#', '', $name);
     if ($path === '' || str_ends_with($path, '/') || str_contains($path, '..') || str_starts_with($path, '/')
         || $path === '.env' || str_starts_with($path, 'storage/') || str_starts_with($path, 'public/storage/')
         || $path === 'deploy-package.zip') {

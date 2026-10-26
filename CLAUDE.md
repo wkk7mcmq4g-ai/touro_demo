@@ -1,3 +1,13 @@
+# Demo Transfers (showcase of the MyAT back office)
+
+**This repo is the Demo showcase**, copied from `touro_myat` (remote `upstream`) at `f4fa728`, for
+showing the system to prospects. Differences from MyAT (`claude/demo-diff-list.md` in the New Touro
+project): made-up identity in `config/business.php` and images (`public/myat/mark.svg`, icons,
+`resources/legacy/images/demo-*.png`); `config/partners.php` empty; deploy folder `touro_demo`.
+Its database is an anonymised copy of MyAT's (`database/legacy/demo/anonymise.sql`, run once in
+phpMyAdmin). Keep mail on `log`, Elorus/Telegram off and `PHPRUNNER_URL` empty on its server.
+Everything below is MyAT's and applies as it is.
+
 # MyAthens Transfers back office
 
 Laravel 13 + Filament 5 rebuild of the PHPRunner app `Touro_MyAT_v2026`. It runs on the

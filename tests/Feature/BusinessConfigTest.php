@@ -7,6 +7,7 @@ use App\Mail\GuideAssignment;
 use App\Models\DailyRecipient;
 use App\Models\VTransfer;
 use App\Services\Documents\Vouchers;
+use App\Support\Business;
 use Tests\TestCase;
 
 /**
@@ -103,5 +104,24 @@ class BusinessConfigTest extends TestCase
         $this->assertStringContainsString('Demo', $html);
         $this->assertStringContainsString('<svg class="myat-brand-mark"', $html);
         $this->assertStringNotContainsString('Athens', $html);
+    }
+
+    /** Demo showcase: the shipped config (not the test overrides above) carries none of MyAT's details. */
+    public function test_the_demo_config_has_no_myat_details(): void
+    {
+        $shipped = require base_path('config/business.php');
+        $flat = json_encode($shipped, JSON_UNESCAPED_UNICODE);
+        $this->assertStringContainsString('Demo Transfers', $flat);
+        foreach (self::MYAT as $value) {
+            $this->assertStringNotContainsStringIgnoringCase($value, $flat);
+        }
+        $this->assertSame([], require base_path('config/partners.php'));
+    }
+
+    public function test_signature_without_an_operations_name_shows_the_title(): void
+    {
+        config(['business.operations' => ['name' => '', 'title' => 'Operations Desk', 'email' => 'ops@example.com', 'phone' => '+30 210 000 0000']]);
+        $this->assertStringStartsWith('<p><strong>Operations Desk</strong></p>', Business::signatureHtml());
+        $this->assertStringStartsWith("Operations Desk\n", Business::signatureText());
     }
 }

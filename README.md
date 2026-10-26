@@ -1,4 +1,10 @@
-# MyAthens Transfers – back office
+# Demo Transfers – showcase of the Touro back office
+
+**This repo is the Demo showcase**: a copy of MyAT's app (`touro_myat`, remote `upstream`) with
+made-up branding (`config/business.php`), no partner databases, running on an anonymised copy of
+MyAT's database (`database/legacy/demo/anonymise.sql`). Test site: <https://new.demo.touro.gr>,
+logins `demo` / `office` / `driver` / `partner`, password `Demo2026`. Everything below is MyAT's
+README and applies as it is.
 
 The new back office for MyAthens Transfers, built with **Laravel 13** and **Filament 5**. It replaces
 the PHPRunner app one module at a time and uses the **same MariaDB/MySQL database**, so both apps
@@ -29,8 +35,8 @@ can run side by side during the switch-over.
 
 ```powershell
 cd C:\Projects
-git clone https://github.com/wkk7mcmq4g-ai/touro_myat.git
-cd touro_myat
+git clone https://github.com/wkk7mcmq4g-ai/touro_demo.git
+cd touro_demo
 composer install
 copy .env.example .env
 php artisan key:generate
