@@ -165,6 +165,11 @@ class TasksTest extends TestCase
         $this->assertSame(1, (int) DB::table('myat_task_subtasks')->value('Done'));
         $this->assertSame(1, DB::table('myat_task_files')->where('Username', $driver->username)->count());
 
+        // the big button on the card: Ολοκληρώθηκε
+        Livewire::test(\App\Filament\Portal\Pages\MyTasks::class)->assertSee('Ολοκληρώθηκε')->call('advance', $wash->ID);
+        $this->assertSame('done', $wash->fresh()->Status);
+        $wash->update(['Status' => 'doing']);
+
         // ...but not the office's part
         $fresh = fn () => Livewire::test(\App\Filament\Portal\Pages\MyTasks::class)->set('openTask', $wash->ID);
         $fresh()->call('saveField', 'Title', 'x')->assertForbidden();

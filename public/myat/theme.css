@@ -3847,7 +3847,33 @@ html.myat-tl-full .fi-main { padding-top:.5rem; }
 .dark .myat-tk-mine-title { color:var(--gray-100); }
 .myat-tk-mine-project { font-size:.75rem; font-weight:600; color:var(--project); }
 .myat-tk-mine-row .myat-tk-due { margin-left:0; min-width:6.5rem; justify-content:flex-end; }
-/* Drivers' tasks in the portal */
-.myat-tk-drv { display:grid; grid-template-columns:repeat(auto-fill, minmax(17rem, 1fr)); gap:.75rem; }
-.myat-tk-drv-card { width:100%; text-align:left; cursor:pointer; padding:.875rem 1rem .875rem 1.125rem; }
-.myat-tk-drv-card .myat-tk-card-title { font-size:1rem; }
+/* Drivers' tasks in the portal: cards in the style of their job cards (.myat-job) */
+.myat-tk-jobs { display:grid; grid-template-columns:repeat(auto-fill, minmax(19rem, 1fr)); gap:1rem; align-items:start; }
+.myat-tk-jobcard { padding:1rem; border-radius:.75rem; background:#fff; box-shadow:0 0 0 1px rgb(3 7 18 / .05), 0 1px 3px rgb(16 24 40 / .06); cursor:pointer; transition:box-shadow .15s, transform .15s; }
+.dark .myat-tk-jobcard { background:var(--gray-900); box-shadow:0 0 0 1px rgb(255 255 255 / .1); }
+.myat-tk-jobcard:active { transform:scale(.99); }
+.myat-tk-jobcard:focus-visible { outline:2px solid var(--myat-azure); outline-offset:2px; }
+.myat-tk-jobcard.is-today { box-shadow:0 0 0 2px var(--myat-azure), 0 14px 30px -14px rgb(var(--myat-azure-rgb) / .55); }
+.myat-tk-jobcard.is-overdue { box-shadow:0 0 0 2px #ef4444, 0 14px 30px -14px rgb(239 68 68 / .5); }
+.myat-job-nextbar.is-overdue { background:linear-gradient(90deg, #ef4444, #f97316); }
+.myat-tk-job-project { max-width:75%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; background:linear-gradient(135deg, color-mix(in srgb, var(--project) 80%, #fff), var(--project)); }
+.myat-tk-job-ring { padding-top:0; align-items:center; background:conic-gradient(var(--myat-mint) calc(var(--pct) * 1%), var(--myat-azure) 0); }
+.myat-tk-job-ring > span, .myat-tk-job-ring > small { position:relative; }
+.myat-tk-job-ring-icon { width:1.4rem; height:1.4rem; }
+.myat-job-time.is-muted { color:#94a3b8; }
+.myat-tk-job-status.is-todo { background:#64748b; }
+.myat-tk-job-status.is-doing { background:var(--myat-azure); }
+.myat-tk-job-status.is-review { background:#f59e0b; }
+.myat-tk-job-title { font-size:1.05rem; font-weight:700; line-height:1.35; color:var(--myat-navy); word-break:break-word; }
+.dark .myat-tk-job-title { color:#fff; }
+.myat-tk-job-meta { display:flex; flex-wrap:wrap; gap:.4rem .9rem; font-size:.8rem; font-weight:600; color:#64748b; }
+.myat-tk-job-meta span { display:inline-flex; align-items:center; gap:.25rem; }
+.myat-tk-job-meta svg { width:.95rem; height:.95rem; }
+.myat-tk-job-actions { display:flex; gap:.5rem; margin-top:.15rem; }
+.myat-tk-job-go { flex:1; display:inline-flex; align-items:center; justify-content:center; gap:.4rem; min-height:2.75rem; border-radius:.7rem; font-size:.95rem; font-weight:800; color:#fff; background:linear-gradient(135deg, var(--myat-azure-light), var(--myat-azure-dark)); box-shadow:0 6px 16px -8px rgb(var(--myat-azure-rgb) / .8); }
+.myat-tk-job-go.is-done { color:var(--myat-navy); background:linear-gradient(135deg, #5ef3bb, var(--myat-mint)); box-shadow:0 6px 16px -8px rgb(var(--myat-mint-rgb) / .9); }
+.myat-tk-job-go svg { width:1.15rem; height:1.15rem; }
+.myat-tk-job-go:disabled { opacity:.6; }
+.myat-tk-job-more { min-height:2.75rem; padding:0 1rem; border-radius:.7rem; font-size:.875rem; font-weight:700; color:var(--myat-navy); background:var(--myat-azure-soft); }
+.dark .myat-tk-job-more { color:#fff; background:rgb(255 255 255 / .08); }
+.myat-tk-done-icon { width:1.1rem; height:1.1rem; color:#10b981; flex:none; }
