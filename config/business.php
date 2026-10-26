@@ -72,22 +72,22 @@ return [
     | Filament's primary colour, the dashboard chart and the e-mails use them directly.
     */
     'colors' => [
-        'primary' => env('BUSINESS_COLOR_PRIMARY', '#0d9488'),       // teal
-        'primary_light' => '#14b8a6',
-        'primary_dark' => '#0f766e',
-        'primary_soft' => '#e6f6f4',
-        'navy' => env('BUSINESS_COLOR_NAVY', '#0f3d3e'),              // sidebar, PWA bar
-        'navy_light' => '#14504f',
-        'navy_deep' => '#092829',
-        'accent' => env('BUSINESS_COLOR_ACCENT', '#f59e0b'),          // amber
-        'page' => '#f4f7f7',
+        'primary' => env('BUSINESS_COLOR_PRIMARY', '#6366f1'),       // indigo
+        'primary_light' => '#818cf8',
+        'primary_dark' => '#4f46e5',
+        'primary_soft' => '#eef0ff',
+        'navy' => env('BUSINESS_COLOR_NAVY', '#1e1b4b'),              // sidebar (deep indigo), PWA bar
+        'navy_light' => '#2e2a6b',
+        'navy_deep' => '#13113a',
+        'accent' => env('BUSINESS_COLOR_ACCENT', '#22d3ee'),          // cyan
+        'page' => '#f7f7fc',
         // E-mail header (a deeper navy gradient, light text on it).
-        'mail_header' => '#0c3536',
-        'mail_header_from' => '#14504f',
-        'mail_header_to' => '#082223',
-        'mail_header_text' => '#a7d8d2',
-        'mail_header_chip' => '#1f5f5d',
-        'mail_wordmark' => '#5eead4',
+        'mail_header' => '#1a1745',
+        'mail_header_from' => '#2e2a6b',
+        'mail_header_to' => '#110f33',
+        'mail_header_text' => '#c7c9f9',
+        'mail_header_chip' => '#3a3585',
+        'mail_wordmark' => '#67e8f9',
     ],
 
     /*
