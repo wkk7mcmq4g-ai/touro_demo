@@ -56,7 +56,7 @@ class AdminPanelProvider extends PanelProvider
                 Action::make('help')->label('Βοήθεια')->icon(Heroicon::OutlinedQuestionMarkCircle)->url(fn (): string => Help::getUrl()),
             ])
             // The login page's own link preview: business name and logo.
-            ->renderHook(PanelsRenderHook::HEAD_END, fn (): string => auth()->check() ? '' : '<meta property="og:site_name" content="'.e(config('business.name')).'"><meta property="og:image" content="'.e(asset(config('business.logo.icon_512'))).'">')
+            ->renderHook(PanelsRenderHook::HEAD_END, fn (): string => auth()->check() ? '' : '<meta property="og:site_name" content="'.e(config('business.name')).'"><meta property="og:image" content="'.e(asset(config('business.logo.icon_180'))).'">')
             ->renderHook(PanelsRenderHook::SIDEBAR_NAV_END, fn (): string => view('filament.brand.edit-menu-link')->render())
             ->middleware([
                 EncryptCookies::class,

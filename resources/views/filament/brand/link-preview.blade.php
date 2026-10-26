@@ -10,9 +10,11 @@
 <meta property="og:title" content="{{ $title }}">
 <meta property="og:description" content="{{ config('business.name') }}">
 <meta property="og:url" content="{{ $url }}">
-<meta property="og:image" content="{{ asset(config('business.logo.icon_512')) }}">
-<meta property="og:image:width" content="512">
-<meta property="og:image:height" content="512">
+{{-- A small square logo (under 300 px): WhatsApp then shows a small thumbnail beside the title,
+     not a big picture above it. --}}
+<meta property="og:image" content="{{ asset(config('business.logo.icon_180')) }}">
+<meta property="og:image:width" content="180">
+<meta property="og:image:height" content="180">
 <meta name="twitter:card" content="summary">
 <meta name="robots" content="noindex, nofollow">
 </head>

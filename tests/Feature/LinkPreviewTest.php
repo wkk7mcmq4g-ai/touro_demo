@@ -14,7 +14,7 @@ class LinkPreviewTest extends TestCase
         $this->get('/admin/reports/driver-sales', $robot)->assertOk()
             ->assertSee('<meta property="og:title" content="Πωλήσεις ανά οδηγό">', false)
             ->assertSee(config('business.name'))
-            ->assertSee(asset(config('business.logo.icon_512')), false);
+            ->assertSee(asset(config('business.logo.icon_180')), false);
 
         $this->get('/admin/transfers/123/edit', $robot)->assertOk()
             ->assertSee('content="Transfers · Επεξεργασία"', false);
