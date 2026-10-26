@@ -6,6 +6,8 @@ use App\Filament\Resources\Transfers\TransferResource;
 use App\Support\Permissions;
 use BackedEnum;
 use Carbon\CarbonImmutable;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 use Filament\Pages\Page;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
@@ -84,8 +86,15 @@ class DayTimeline extends Page
     /** Everything the timeline draws, built once per render and handed to Alpine. */
     public function timeline(): array
     {
-        $day = $this->day();
+        return self::plan($this->day()) + [
+            'editUrl' => TransferResource::getUrl('edit', ['record' => '__ID__']),
+            'pdfUrl' => route('day-plan.pdf', ['date' => $this->day()->toDateString()]),
+        ];
+    }
 
+    /** @return array{date: string, rows: list<array<string, mixed>>, jobs: list<array<string, mixed>>} the day's vehicles and jobs */
+    public static function plan(CarbonImmutable $day): array
+    {
         $jobs = DB::table('transfers as t')
             ->leftJoin('counterparties as c', 'c.CID', '=', 't.cID_Customer')
             ->where('t.TransferDate', $day->toDateString())
@@ -120,15 +129,63 @@ class DayTimeline extends Page
         return [
             'date' => $day->toDateString(),
             'rows' => $rows,
-            'jobs' => $jobs->map(fn ($j): array => $this->job($j, $day, $tourHours))->values()->all(),
-            'editUrl' => TransferResource::getUrl('edit', ['record' => '__ID__']),
+            'jobs' => $jobs->map(fn ($j): array => self::job($j, $day, $tourHours))->values()->all(),
         ];
     }
 
-    /** One block: start and end in minutes from the day's midnight, or null start for TBD times. */
-    private function job(object $j, CarbonImmutable $day, array $tourHours): array
+    /**
+     * The plan per vehicle, as the PDF prints it: rows with jobs (timed in order, then TBD), each job
+     * flagged for overlaps on one of our vehicles and for more passengers than seats.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function grouped(array $plan): array
     {
-        $start = $j->TransferTime_sort ? $this->minutes((string) $j->TransferTime_sort) : null;
+        return collect($plan['rows'])->map(function (array $row) use ($plan): array {
+            $jobs = collect($plan['jobs'])->where('coach', $row['key']);
+            $timed = $jobs->whereNotNull('start')->sortBy('start')->values();
+            $timed = $timed->map(fn (array $j): array => $j + [
+                'clash' => $row['kind'] === 'own' && $timed->contains(fn (array $o): bool => $o['id'] !== $j['id'] && $o['start'] < $j['end'] && $j['start'] < $o['end']),
+                'over' => $row['seats'] && $j['pax'] > $row['seats'],
+            ]);
+            $tbd = $jobs->whereNull('start')->map(fn (array $j): array => $j + ['clash' => false, 'over' => $row['seats'] && $j['pax'] > $row['seats']]);
+
+            return $row + ['jobs' => $timed->concat($tbd)->values()->all()];
+        })->all();
+    }
+
+    /** The day's plan as an A4 landscape PDF (Dompdf, DejaVu Sans for Greek, like the vouchers). */
+    public static function pdf(CarbonImmutable $day): string
+    {
+        $plan = self::plan($day);
+        $rows = self::grouped($plan);
+        $timed = collect($plan['jobs'])->whereNotNull('start');
+        $from = (int) min(5 * 60, intdiv((int) ($timed->min('start') ?? 300), 60) * 60);
+        $to = (int) max(24 * 60, (int) ceil(($timed->max('end') ?? 0) / 60) * 60);
+
+        $html = view('documents.day-plan', [
+            'day' => $day, 'rows' => $rows, 'from' => $from, 'to' => $to,
+            'jobs' => count($plan['jobs']),
+            'unassigned' => collect($plan['jobs'])->where('coach', '')->count(),
+            'clashes' => collect($rows)->sum(fn (array $r): int => collect($r['jobs'])->where('clash', true)->count()),
+        ])->render();
+
+        $options = new Options;
+        $options->setIsRemoteEnabled(false);
+        $options->setDefaultFont('DejaVu Sans');
+        $options->setChroot(resource_path());
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html, 'UTF-8');
+        $dompdf->setPaper('A4', 'landscape');
+        $dompdf->render();
+
+        return (string) $dompdf->output();
+    }
+
+    /** One block: start and end in minutes from the day's midnight, or null start for TBD times. */
+    private static function job(object $j, CarbonImmutable $day, array $tourHours): array
+    {
+        $start = $j->TransferTime_sort ? self::minutes((string) $j->TransferTime_sort) : null;
         $estimated = true;
         $length = self::DURATIONS[$j->TransferType] ?? self::DEFAULT_MINUTES;
 
@@ -142,8 +199,8 @@ class DayTimeline extends Page
         if ($j->Voucher_StartTime && $j->Voucher_EndTime
             && (! $j->Voucher_StartDt || $j->Voucher_StartDt === $day->toDateString())
             && (! $j->Voucher_EndDt || $j->Voucher_EndDt === $day->toDateString())) {
-            $s = $this->minutes((string) $j->Voucher_StartTime);
-            $e = $this->minutes((string) $j->Voucher_EndTime);
+            $s = self::minutes((string) $j->Voucher_StartTime);
+            $e = self::minutes((string) $j->Voucher_EndTime);
             if ($e > $s) {
                 $start ??= $s;
                 $length = $e - $start;
@@ -169,7 +226,7 @@ class DayTimeline extends Page
         ];
     }
 
-    private function minutes(string $time): int
+    private static function minutes(string $time): int
     {
         [$h, $m] = array_map('intval', explode(':', $time) + [0, 0]);
 

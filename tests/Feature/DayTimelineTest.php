@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Filament\Pages\DayTimeline;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
@@ -82,5 +83,27 @@ class DayTimelineTest extends TestCase
 
         $this->actingAs($this->makeLegacyUser('Driver'));
         $this->get(DayTimeline::getUrl())->assertForbidden();
+    }
+
+    public function test_day_plan_as_pdf(): void
+    {
+        $this->job(['CoachCompanyID' => 'VITO 1', 'TransferTime' => '09:00', 'LeadName' => 'Ms Taylor']);
+        $this->job(['CoachCompanyID' => 'VITO 1', 'TransferTime' => '09:30']);
+        $this->job(['CoachCompanyID' => '', 'TransferTime' => 'TBD']);
+
+        $this->assertStringContainsString('/documents/day-plan/'.Carbon::today()->toDateString(), Livewire::test(DayTimeline::class)->instance()->timeline()['pdfUrl']);
+
+        $response = $this->get(route('day-plan.pdf', ['date' => Carbon::today()->toDateString()]))->assertOk()->assertHeader('Content-Type', 'application/pdf');
+        $this->assertStringStartsWith('%PDF', $response->getContent());
+
+        $html = view('documents.day-plan', ['day' => CarbonImmutable::today(), 'rows' => DayTimeline::grouped($plan = DayTimeline::plan(CarbonImmutable::today())),
+            'from' => 300, 'to' => 1440, 'jobs' => count($plan['jobs']), 'unassigned' => 1, 'clashes' => 2])->render();
+        $this->assertStringContainsString('Ms Taylor', $html);
+        $this->assertStringContainsString('Επικαλύπτεται', $html);
+        $this->assertStringNotContainsString('θέσεις ·', $html);
+
+        $this->get('/documents/day-plan/2026-99-99')->assertNotFound();
+        auth()->logout();
+        $this->get(route('day-plan.pdf', ['date' => Carbon::today()->toDateString()]))->assertForbidden();
     }
 }

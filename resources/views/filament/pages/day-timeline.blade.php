@@ -39,6 +39,9 @@
                     <button type="button" @click="zoom(-1)" aria-label="Σμίκρυνση">−</button>
                     <button type="button" @click="zoom(1)" aria-label="Μεγέθυνση">+</button>
                 </div>
+                <a class="myat-tl-pdfbtn" :href="c.pdfUrl" target="_blank" rel="noopener" title="Εξαγωγή της ημέρας σε PDF">
+                    <x-filament::icon icon="heroicon-m-document-arrow-down" class="h-4 w-4" /><span>PDF</span>
+                </a>
                 <button type="button" class="myat-tl-fullbtn" @click="toggleFull()" :aria-pressed="full" :title="full ? 'Έξοδος από πλήρη οθόνη' : 'Πλήρης οθόνη'">
                     <x-filament::icon icon="heroicon-m-arrows-pointing-out" class="h-4 w-4" x-show="! full" />
                     <x-filament::icon icon="heroicon-m-arrows-pointing-in" class="h-4 w-4" x-show="full" x-cloak />
@@ -63,7 +66,7 @@
                     <header>
                         <div>
                             <h3 x-text="row.name"></h3>
-                            <p :class="{ 'is-warn': row.noDriver }" x-text="row.sub + (row.seats ? ' · ' + row.seats + ' θέσεις' : '')"></p>
+                            <p :class="{ 'is-warn': row.noDriver }" x-text="row.sub"></p>
                         </div>
                         <span class="myat-tl-card-n" x-text="row.jobs.length"></span>
                     </header>
@@ -110,7 +113,7 @@
                     <div class="myat-tl-row" :class="'is-' + row.kind">
                         <div class="myat-tl-label">
                             <span class="myat-tl-name" x-text="row.name"></span>
-                            <span class="myat-tl-sub" :class="{ 'is-warn': row.noDriver && row.jobs.length }" x-text="row.sub + (row.seats ? ' · ' + row.seats + ' θέσεις' : '')"></span>
+                            <span class="myat-tl-sub" :class="{ 'is-warn': row.noDriver && row.jobs.length }" x-text="row.sub"></span>
                             <span class="myat-tl-tbd" x-show="row.tbd.length">
                                 <template x-for="j in row.tbd" :key="j.id">
                                     <button type="button" class="myat-tl-chip" :class="'is-' + typeClass(j)" x-text="'TBD #' + j.id"

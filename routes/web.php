@@ -1,7 +1,9 @@
 <?php
 
+use App\Filament\Pages\DayTimeline;
 use App\Http\Controllers\TransferFileController;
 use App\Http\Controllers\VoucherController;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Route;
 
 // One way in for everyone: the login sends office users to /admin and everyone else to /portal.
@@ -48,6 +50,20 @@ Route::get('/files/loads/{id}', [TransferFileController::class, 'download'])
 Route::get('/documents/vouchers/{page}/{transfer}', [VoucherController::class, 'show'])
     ->whereNumber('transfer')
     ->name('vouchers.show');
+
+// Ημερήσιο πλάνο as PDF, for the date shown on the page.
+Route::get('/documents/day-plan/{date}', function (string $date) {
+    abort_unless(auth()->check() && DayTimeline::canAccess(), 403);
+    // Carbon would roll 2026-02-31 over into March: refuse dates that don't exist.
+    [$y, $m, $d] = array_map('intval', explode('-', $date));
+    abort_unless(checkdate($m, $d, $y), 404);
+    $day = CarbonImmutable::createFromDate($y, $m, $d)->startOfDay();
+
+    return response(DayTimeline::pdf($day), 200, [
+        'Content-Type' => 'application/pdf',
+        'Content-Disposition' => 'inline; filename="'.'plano-'.$day->format('Y-m-d').'.pdf"',
+    ]);
+})->where('date', '\d{4}-\d{2}-\d{2}')->middleware('web')->name('day-plan.pdf');
 
 // A table export made a moment ago by the signed-in user (App\Support\TableExports); used once.
 Route::get('/exports/{token}', function (string $token) {
