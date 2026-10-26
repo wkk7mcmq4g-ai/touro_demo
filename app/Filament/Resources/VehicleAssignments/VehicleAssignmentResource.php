@@ -57,7 +57,7 @@ class VehicleAssignmentResource extends Resource
     /** Vehicles that can be assigned (PHPRunner: not sold, rental or private). */
     private static function vehicles(): array
     {
-        return Lookups::vehicles(exclude: ['Sold', 'Renta', 'PVT']);
+        return Lookups::vehicles(exclude: ['Sold', 'Rental', 'PVT']);
     }
 
     public static function form(Schema $schema): Schema
