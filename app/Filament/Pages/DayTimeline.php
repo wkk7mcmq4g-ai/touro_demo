@@ -3,25 +3,20 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Resources\Transfers\TransferResource;
-use App\Models\Transfer;
 use App\Support\Permissions;
 use BackedEnum;
 use Carbon\CarbonImmutable;
-use Filament\Actions\Action;
-use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\DB;
-use Livewire\Attributes\On;
 use Livewire\Attributes\Url;
 use UnitEnum;
 
 /**
  * Ημερήσιο πλάνο: one row per vehicle (own vehicles with the day's driver, then outside coaches
  * with jobs that day), the day's jobs as blocks by time, so gaps and overlaps show at a glance.
- * Dragging a block to another row assigns the job to that vehicle (transfers.CoachCompanyID,
- * saved through the Transfer model so the database procedures run as on the edit page).
+ * Read only: nothing is changed from here; clicking a block opens the transfer.
  *
  * How long a job lasts: the voucher start/end times when someone set them, a tour's duration from
  * the tours list (matched by name), otherwise an estimate per transfer type (DURATIONS).
@@ -57,17 +52,9 @@ class DayTimeline extends Page
     #[Url]
     public ?string $date = null;
 
-    /** Bumped after each change so Alpine redraws from fresh data. */
-    public int $revision = 0;
-
     public static function canAccess(): bool
     {
         return Permissions::allows(auth()->user(), 'transfers', 'view');
-    }
-
-    public function canAssign(): bool
-    {
-        return (bool) auth()->user()?->may('transfers', 'edit');
     }
 
     public function mount(): void
@@ -135,7 +122,6 @@ class DayTimeline extends Page
             'rows' => $rows,
             'jobs' => $jobs->map(fn ($j): array => $this->job($j, $day, $tourHours))->values()->all(),
             'editUrl' => TransferResource::getUrl('edit', ['record' => '__ID__']),
-            'canAssign' => $this->canAssign(),
         ];
     }
 
@@ -188,47 +174,5 @@ class DayTimeline extends Page
         [$h, $m] = array_map('intval', explode(':', $time) + [0, 0]);
 
         return $h * 60 + $m;
-    }
-
-    /**
-     * Drag and drop: assign a job of this day to a vehicle or coach ('' = none). Saved through the
-     * Transfer model, so Update_Transfers_Price and the own-vehicle price rule run as on edit.
-     */
-    public function assign(int $transferId, string $coach, bool $undo = false): void
-    {
-        abort_unless($this->canAssign(), 403);
-
-        $coach = trim($coach);
-        $allowed = $coach === '' || DB::table('v_coach')->where('CounterShortName', $coach)->exists();
-        $transfer = Transfer::query()->withoutBlobs()->whereKey($transferId)->where('TransferDate', $this->day()->toDateString())->first();
-        if (! $allowed || ! $transfer) {
-            Notification::make()->danger()->title('Η ανάθεση δεν έγινε')->send();
-
-            return;
-        }
-
-        $before = trim((string) $transfer->CoachCompanyID);
-        if ($before === $coach) {
-            return;
-        }
-        $transfer->CoachCompanyID = $coach;
-        $transfer->save();
-        $this->revision++;
-
-        $notification = Notification::make()->success()
-            ->title($undo ? 'Αναιρέθηκε' : "#{$transferId} → ".($coach === '' ? 'Χωρίς όχημα' : $coach));
-        if (! $undo) {
-            $notification->actions([
-                Action::make('undo')->label('Αναίρεση')->button()
-                    ->dispatch('timeline-undo', ['transferId' => $transferId, 'coach' => $before]),
-            ]);
-        }
-        $notification->send();
-    }
-
-    #[On('timeline-undo')]
-    public function undo(int $transferId, string $coach): void
-    {
-        $this->assign($transferId, $coach, undo: true);
     }
 }

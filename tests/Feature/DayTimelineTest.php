@@ -63,22 +63,14 @@ class DayTimelineTest extends TestCase
         $this->assertSame([600, 780, false], [$job['start'], $job['end'], $job['estimated']]);
     }
 
-    public function test_dragging_assigns_and_undo_puts_it_back(): void
+    public function test_read_only_nothing_can_be_assigned_from_here(): void
     {
         $id = $this->job(['CoachCompanyID' => '']);
 
-        $page = Livewire::test(DayTimeline::class)->call('assign', $id, 'VITO 1')->assertNotified()->assertSet('revision', 1);
-        $this->assertSame('VITO 1', DB::table('transfers')->where('TransferID', $id)->value('CoachCompanyID'));
-
-        $page->dispatch('timeline-undo', transferId: $id, coach: '');
+        $page = Livewire::test(DayTimeline::class)->assertDontSee('Σύρετε');
+        $this->assertFalse(method_exists($page->instance(), 'assign'));
+        $this->assertFalse(method_exists($page->instance(), 'undo'));
         $this->assertSame('', (string) DB::table('transfers')->where('TransferID', $id)->value('CoachCompanyID'));
-
-        // only coaches from v_coach, only jobs of the day shown
-        $page->call('assign', $id, 'NO SUCH VAN');
-        $this->assertSame('', (string) DB::table('transfers')->where('TransferID', $id)->value('CoachCompanyID'));
-        $other = $this->job(['TransferDate' => Carbon::tomorrow(), 'CoachCompanyID' => '']);
-        $page->call('assign', $other, 'VITO 1');
-        $this->assertSame('', (string) DB::table('transfers')->where('TransferID', $other)->value('CoachCompanyID'));
     }
 
     public function test_other_days_and_rights(): void

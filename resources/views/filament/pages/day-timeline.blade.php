@@ -1,12 +1,12 @@
 {{--
     Ημερήσιο πλάνο (App\Filament\Pages\DayTimeline): rows = vehicles, blocks = the day's jobs by time.
     Alpine draws it from one JSON payload. Overlaps within one of our vehicles are outlined red; a job
-    with more passengers than the vehicle's seats gets a warning. Drag a block (mouse; long-press on
-    touch) onto another row to assign it; click it to open the transfer.
+    with more passengers than the vehicle's seats gets a warning. Read only: click a block to open the
+    transfer.
 --}}
 @php($t = $this->timeline())
 <x-filament-panels::page>
-    <div class="myat-tl" wire:key="tl-{{ $t['date'] }}-{{ $revision }}" x-data="dayTimeline(@js($t))">
+    <div class="myat-tl" wire:key="tl-{{ $t['date'] }}" x-data="dayTimeline(@js($t))">
 
         <div class="myat-tl-bar">
             <div class="myat-tl-nav">
@@ -37,9 +37,7 @@
             <li><i class="myat-tl-k is-other"></i>Άλλο</li>
             <li><i class="myat-tl-k is-est"></i>Εκτιμώμενη διάρκεια</li>
             <li><i class="myat-tl-k is-clash"></i>Επικάλυψη</li>
-            @if ($t['canAssign'])
-                <li class="myat-tl-hint">Σύρετε ένα δρομολόγιο σε άλλο όχημα για ανάθεση (σε κινητό: παρατεταμένο πάτημα)</li>
-            @endif
+            <li class="myat-tl-hint">Κλικ σε δρομολόγιο: ανοίγει σε νέα καρτέλα</li>
         </ul>
 
         <div class="myat-tl-scroll" x-ref="scroll">
@@ -55,7 +53,7 @@
                 </div>
 
                 <template x-for="row in rows" :key="row.key">
-                    <div class="myat-tl-row" :data-row="row.key" :class="{ 'is-target': target === row.key && dragging && dragging.coach !== row.key, ['is-' + row.kind]: true }">
+                    <div class="myat-tl-row" :class="'is-' + row.kind">
                         <div class="myat-tl-label">
                             <span class="myat-tl-name" x-text="row.name"></span>
                             <span class="myat-tl-sub" :class="{ 'is-warn': row.noDriver && row.jobs.length }" x-text="row.sub + (row.seats ? ' · ' + row.seats + ' θέσεις' : '')"></span>
@@ -63,7 +61,7 @@
                                 <template x-for="j in row.tbd" :key="j.id">
                                     <button type="button" class="myat-tl-chip" :class="'is-' + typeClass(j)" x-text="'TBD #' + j.id"
                                             x-tooltip="{ content: tip(j), theme: $store.theme }"
-                                            @pointerdown="down($event, j)" @click="open($event, j)"></button>
+                                            @click="open(j)"></button>
                                 </template>
                             </span>
                         </div>
@@ -74,10 +72,10 @@
                             <i class="myat-tl-now" x-show="nowMin !== null" :style="`left:${(nowMin - from) * ppm}px`"></i>
                             <template x-for="j in row.timed" :key="j.id">
                                 <button type="button" class="myat-tl-job"
-                                        :class="['is-' + typeClass(j), j.estimated && 'is-est', j.clash && 'is-clash', j.over && 'is-over', dragging && dragging.id === j.id && 'is-dragging']"
+                                        :class="['is-' + typeClass(j), j.estimated && 'is-est', j.clash && 'is-clash', j.over && 'is-over']"
                                         :style="`left:${(j.start - from) * ppm}px;width:${Math.max(28, (j.end - j.start) * ppm)}px;top:${j.lane * 2.6 + 0.25}rem`"
                                         x-tooltip="{ content: tip(j), theme: $store.theme }"
-                                        @pointerdown="down($event, j)" @click="open($event, j)">
+                                        @click="open(j)">
                                     <b x-text="j.time"></b>
                                     <span x-text="short(j)"></span>
                                     <em x-show="j.over" title="Περισσότεροι επιβάτες από θέσεις">⚠</em>
@@ -88,15 +86,12 @@
                 </template>
             </div>
         </div>
-
-        <div class="myat-tl-ghost" x-show="dragging && moved" x-cloak :style="`left:${gx}px;top:${gy}px`" x-text="dragging ? (dragging.time + ' · #' + dragging.id) : ''"></div>
     </div>
 
     @script
     <script>
         Alpine.data('dayTimeline', (c) => ({
             c, ppm: (() => { try { return Number(localStorage.getItem('myat-tl-ppm')) || 2 } catch (e) { return 2 } })(),
-            dragging: null, moved: false, target: null, gx: 0, gy: 0, timer: null, startX: 0, startY: 0, justDragged: false,
             nowMin: null,
             init() {
                 const tick = () => {
@@ -105,9 +100,7 @@
                     this.nowMin = today === this.c.date ? now.getHours() * 60 + now.getMinutes() : null;
                 };
                 tick(); setInterval(tick, 60000);
-                // touch: once a long press has picked a job up, the finger moves it instead of scrolling
-                this.$el.addEventListener('touchmove', (e) => { if (this.dragging) e.preventDefault(); }, { passive: false });
-                // After an assignment the timeline is redrawn: keep where the user was looking (same day);
+                // Redrawn (e.g. polling or zoom) on the same day: keep where the user was looking;
                 // a new day opens at its first job (or now).
                 this.$nextTick(() => {
                     const el = this.$refs.scroll, kept = window.myatTimelineScroll;
@@ -169,52 +162,8 @@
                 this.ppm = steps[Math.max(0, Math.min(steps.length - 1, (i === -1 ? 2 : i) + dir))];
                 try { localStorage.setItem('myat-tl-ppm', this.ppm) } catch (e) {}
             },
-            open(e, j) {
-                if (this.justDragged) { this.justDragged = false; e.preventDefault(); return; }
+            open(j) {
                 window.open(this.c.editUrl.replace('__ID__', j.id), '_blank');
-            },
-            // Drag: a mouse starts after a small move; touch after a long press (so swiping still scrolls).
-            down(e, j) {
-                if (! this.c.canAssign || e.button > 0) return;
-                this.startX = e.clientX; this.startY = e.clientY;
-                const begin = () => { this.dragging = j; this.moved = e.pointerType !== 'mouse'; this.place(e.clientX, e.clientY); if (navigator.vibrate) navigator.vibrate(15); };
-                const move = (ev) => {
-                    if (! this.dragging) {
-                        if (e.pointerType === 'mouse' && Math.hypot(ev.clientX - this.startX, ev.clientY - this.startY) > 6) begin();
-                        else if (e.pointerType !== 'mouse' && Math.hypot(ev.clientX - this.startX, ev.clientY - this.startY) > 10) cancel();
-                        return;
-                    }
-                    ev.preventDefault();
-                    this.moved = true;
-                    this.place(ev.clientX, ev.clientY);
-                };
-                const up = () => {
-                    clearTimeout(this.timer);
-                    removeEventListener('pointermove', move); removeEventListener('pointerup', up); removeEventListener('pointercancel', cancel);
-                    if (! this.dragging) return;
-                    const job = this.dragging, target = this.target;
-                    this.dragging = null; this.target = null;
-                    if (this.moved) this.justDragged = true;
-                    if (target !== null && target !== job.coach) {
-                        const before = job.coach;
-                        this.c.jobs.find((x) => x.id === job.id).coach = target;
-                        $wire.assign(job.id, target).catch(() => { this.c.jobs.find((x) => x.id === job.id).coach = before; });
-                    }
-                };
-                const cancel = () => {
-                    clearTimeout(this.timer);
-                    removeEventListener('pointermove', move); removeEventListener('pointerup', up); removeEventListener('pointercancel', cancel);
-                    this.dragging = null; this.target = null;
-                };
-                if (e.pointerType !== 'mouse') this.timer = setTimeout(begin, 350);
-                addEventListener('pointermove', move, { passive: false });
-                addEventListener('pointerup', up);
-                addEventListener('pointercancel', cancel);
-            },
-            place(x, y) {
-                this.gx = x + 12; this.gy = y + 12;
-                const row = document.elementFromPoint(x, y)?.closest('[data-row]');
-                this.target = row ? row.dataset.row : null;
             },
         }));
     </script>
