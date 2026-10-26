@@ -2,10 +2,10 @@
 title: Χρήστες και ρυθμίσεις
 group: Ρυθμίσεις
 order: 610
-pages: UserResource, AccessLogResource, ElorusSettings, ElorusContacts, OptionValueResource
+pages: UserResource, AccessLogResource, OptionValueResource
 ---
 ## Users & roles
-Οι χρήστες είναι **οι ίδιοι με του PHPRunner**: ό,τι αλλάξετε εδώ ισχύει και στις δύο εφαρμογές.
+Εδώ ορίζετε ποιος μπαίνει στην εφαρμογή και σε ποια ομάδα ανήκει.
 - **Login**: username (μοναδικό), password, **Active (can log in)**.
 - **Profile & role**: όνομα, email, **Group**.
   - **Admin**, **Entry (office)**: back office.
@@ -15,11 +15,7 @@ pages: UserResource, AccessLogResource, ElorusSettings, ElorusContacts, OptionVa
 - Για οδηγό: συνδέστε το username και στην καρτέλα του οδηγού (**Όνομα χρήστη (Touro)**), δείτε [Στόλος και οδηγοί](help:fleet).
 
 ## Access Log
-Συνδέσεις και αποσυνδέσεις και από τις δύο εφαρμογές (in πράσινο, out γκρι), με φίλτρα χρήστη και ημερομηνίας.
-
-## Elorus Settings και Elorus Contacts
-- **Settings**: Organization ID, API key (δεν εμφανίζεται ποτέ· αφήστε κενό για να μείνει), Private Individual ID, Default Product ID. Κάτω γράφει αν το Elorus είναι ενεργό σε αυτόν τον server.
-- **Contacts**: οι επαφές του Elorus, διαβάζονται ζωντανά από το Elorus.
+Συνδέσεις και αποσυνδέσεις (in πράσινο, out γκρι), με φίλτρα χρήστη και ημερομηνίας.
 
 ## Field Settings
 Οι τιμές των λιστών επιλογής σε όλη την εφαρμογή (τύποι transfer, car types, status, τύποι αρχείων, κατηγορίες εξόδων…) και τα **χρώματά** τους, ομαδοποιημένες ανά λίστα.

@@ -261,7 +261,7 @@ class TransferForm
                             ->hintIcon(Heroicon::OutlinedInformationCircle, 'Filled from the customer when you pick it; if left empty, it is filled when saved.'),
                         TextInput::make('VPOS')->label('Kωδ. πληρ.')->columnSpan(['default' => 2]),
                         Select::make('DriverReceiptType')->label('Driver Receipt Type')->options(['Cash' => 'Cash', 'Card' => 'Card']),
-                        TextInput::make('ElorusID')->label('Elorus ID'),
+                        TextInput::make('ElorusID')->label('Elorus ID')->visible(fn (): bool => (bool) config('elorus.ui')),
                     ]),
                     Fieldset::make('Έξοδα')->columns(['default' => 2, 'lg' => 3])->schema([
                         $money('PurchasePrice', 'Τιμή Αγορ.'),
@@ -340,7 +340,7 @@ class TransferForm
                 TextInput::make('TaxiReceiptAmount')->label('Taxi Receipt Amount')->numeric()->prefix('€'),
                 DatePicker::make('TaxiReceiptDate')->label('Taxi Receipt Date'),
                 TextInput::make('TaxiReceipt_Issued')->label('TaxiReceipt Issued')->maxLength(50),
-                TextInput::make('ElorusTaxiNumber')->label('Elorus Taxi Number')->maxLength(150),
+                TextInput::make('ElorusTaxiNumber')->label('Elorus Taxi Number')->maxLength(150)->visible(fn (): bool => (bool) config('elorus.ui')),
             ]),
             self::list(TaxiFilesRelationManager::class),
         ];

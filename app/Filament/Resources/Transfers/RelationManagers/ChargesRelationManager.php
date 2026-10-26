@@ -64,7 +64,7 @@ class ChargesRelationManager extends RelationManager
                 Toggle::make('TobeInvoiced')->label('To be invoiced')->inline(false),
                 Toggle::make('Invoiced')->inline(false),
                 TextInput::make('InvoiceNum')->label('Invoice no.'),
-                TextInput::make('ElorusID')->label('Elorus ID'),
+                TextInput::make('ElorusID')->label('Elorus ID')->visible(fn (): bool => (bool) config('elorus.ui')),
             ]);
     }
 

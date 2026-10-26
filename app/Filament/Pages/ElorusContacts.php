@@ -41,7 +41,7 @@ class ElorusContacts extends Page implements HasTable
 
     public static function canAccess(): bool
     {
-        return config('elorus.buttons') && Permissions::allows(auth()->user(), 'Elorus_Contacts_New', 'view');
+        return config('elorus.ui') && Permissions::allows(auth()->user(), 'Elorus_Contacts_New', 'view');
     }
 
     public function table(Table $table): Table

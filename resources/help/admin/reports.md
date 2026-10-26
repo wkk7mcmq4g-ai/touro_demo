@@ -4,7 +4,7 @@ group: Αναφορές
 order: 410
 pages: StatsReport, CapacityReport, AccountantExport, ReceiveReport, DueReport, IssueReport, RequireReport, ExpensesReport, ProfitLoss, FuelAnalysis, TaxisReport, Duplicates, DriverStatsReport, VanTaxiReport
 ---
-Υπάρχουν δύο ειδών αναφορές: **συγκεντρωτικές** (pivot, σαν τους crosstab του PHPRunner) και **λίστες**.
+Υπάρχουν δύο ειδών αναφορές: **συγκεντρωτικές** (pivot) και **λίστες**.
 
 ## Συγκεντρωτικές αναφορές
 Πάνω επιλέγετε:

@@ -46,11 +46,11 @@ class CounterpartiesTable
                 $text('LesseName', 'Lessee name', true),
                 $text('InvoiceType', 'Invoice type', true),
                 $text('PaymentType', 'Payment type', true),
-                $text('ElorusID', 'Elorus ID'),
-                $text('DocumentType', 'Document type', true),
-                $text('MydataDocumentType', 'myDATA doc. type', true),
-                $text('MydataClassCategory', 'myDATA class category', true),
-                $text('MydataClassType', 'myDATA class type', true),
+                $text('ElorusID', 'Elorus ID')->visible(fn (): bool => (bool) config('elorus.ui')),
+                $text('DocumentType', 'Document type', true)->visible(fn (): bool => (bool) config('elorus.ui')),
+                $text('MydataDocumentType', 'myDATA doc. type', true)->visible(fn (): bool => (bool) config('elorus.ui')),
+                $text('MydataClassCategory', 'myDATA class category', true)->visible(fn (): bool => (bool) config('elorus.ui')),
+                $text('MydataClassType', 'myDATA class type', true)->visible(fn (): bool => (bool) config('elorus.ui')),
                 $text('BankName', 'Τράπεζα', true),
                 $text('IBAN', 'IBAN', true),
                 $text('BankAccount', 'Λογαριασμός', true),
@@ -65,7 +65,7 @@ class CounterpartiesTable
                         true: fn (Builder $q) => $q->where(fn (Builder $q) => $q->whereNull('Active')->orWhereNotIn('Active', ['', '0', 'No', 'no', 'off'])),
                         false: fn (Builder $q) => $q->whereIn('Active', ['', '0', 'No', 'no', 'off']),
                     ),
-                SelectFilter::make('elorus')->label('In Elorus')
+                SelectFilter::make('elorus')->label('In Elorus')->visible(fn (): bool => (bool) config('elorus.ui'))
                     ->options(['yes' => 'Yes', 'no' => 'No'])
                     ->query(fn (Builder $q, array $data) => FilterValues::any($q, $data, [
                         'yes' => fn (Builder $q) => $q->whereNotIn('ElorusID', ['', 'NotRegistered']),

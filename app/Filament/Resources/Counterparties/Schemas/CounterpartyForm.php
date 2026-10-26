@@ -65,7 +65,7 @@ class CounterpartyForm
                     TextInput::make('VAT')->label('ΑΦΜ')->maxLength(150),
                     TextInput::make('DOY')->label('ΔΟΥ')->maxLength(150),
                 ]),
-                Tab::make('Elorus')->columns(2)->schema([
+                Tab::make('Elorus')->visible(fn (): bool => (bool) config('elorus.ui'))->columns(2)->schema([
                     $notRegistered(TextInput::make('ElorusID')->label('Elorus ID')->maxLength(150)),
                     $notRegistered(TextInput::make('DocumentType')->label('Document type')->maxLength(150)),
                     $notRegistered(TextInput::make('MydataDocumentType')->label('myDATA document type')->maxLength(150)),

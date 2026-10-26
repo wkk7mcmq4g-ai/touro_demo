@@ -51,7 +51,7 @@ class TaxisReport extends ListReport
             TextColumn::make('TaxiReceipt')->label('Taxi receipt')->searchable()->placeholder('—'),
             TextColumn::make('TaxiReceiptDate')->label('Taxi receipt date')->date('d/m/Y')->searchable(query: fn ($query, string $search) => $query->whereRaw("DATE_FORMAT(TaxiReceiptDate, '%d/%m/%Y') LIKE ?", ['%'.$search.'%']))->placeholder('—'),
             TextColumn::make('TaxiReceiptAmount')->label('Taxi receipt amount')->searchable()->money('EUR', locale: 'el')->alignEnd()->placeholder('—'),
-            TextColumn::make('ElorusTaxiNumber')->label('Elorus taxi number')->searchable()->placeholder('—'),
+            TextColumn::make('ElorusTaxiNumber')->label('Elorus taxi number')->searchable()->placeholder('—')->visible(fn (): bool => (bool) config('elorus.ui')),
             TextColumn::make('SalesInvoiceNum')->label('Sales invoice num')->searchable()->placeholder('—'),
             TextColumn::make('TaxiReceipt_Issued')->label('Taxi receipt issued')->searchable()->placeholder('—'),
             TextColumn::make('SalePrice')->label('Sale price')->searchable()->money('EUR', locale: 'el')->alignEnd(),

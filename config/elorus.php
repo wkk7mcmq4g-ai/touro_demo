@@ -9,11 +9,12 @@ return [
     'enabled' => (bool) env('ELORUS_ENABLED', false),
 
     /*
-    | Demo showcase: no Elorus buttons or screens at all (invoicing actions in Transfers and
-    | Charges, "Προσθήκη στο Elorus" on partners, Elorus Settings / Contacts). Set
-    | ELORUS_BUTTONS=true to show them again.
+    | Demo showcase: nothing about Elorus on screen — buttons (invoicing actions in Transfers
+    | and Charges, "Προσθήκη στο Elorus" on partners), screens (Elorus Settings / Contacts)
+    | and fields (Elorus ID, myDATA, Elorus taxi number, the "In Elorus" filter). Hidden
+    | fields keep their stored values. Set ELORUS_UI=true to show them again.
     */
-    'buttons' => (bool) env('ELORUS_BUTTONS', false),
+    'ui' => (bool) env('ELORUS_UI', false),
 
     'url' => env('ELORUS_URL', 'https://api.elorus.com/v1.2/'),
 
