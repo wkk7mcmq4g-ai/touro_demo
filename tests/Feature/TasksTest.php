@@ -134,4 +134,55 @@ class TasksTest extends TestCase
         auth()->logout();
         $this->get(route('task-files.download', $file))->assertForbidden();
     }
+
+    public function test_drivers_get_tasks_and_work_them_in_the_portal(): void
+    {
+        $admin = $this->makeLegacyUser('Admin');
+        $driver = $this->makeLegacyUser('Drivers', ['fullname' => 'Kostas Driver']);
+        $other = $this->makeLegacyUser('Drivers');
+        $p = MyatProject::query()->create(['Name' => 'Στόλος', 'Emoji' => '🚐']);
+        $wash = MyatTask::query()->create(['ProjectID' => $p->ID, 'Title' => 'Πλύσιμο', 'Status' => 'todo', 'CreatedBy' => $admin->username]);
+        $notMine = MyatTask::query()->create(['ProjectID' => $p->ID, 'Title' => 'Άλλο']);
+
+        // the office gives it to a driver: drivers are in the picker, under their own heading
+        $this->actingAs($admin);
+        $this->assertArrayHasKey($driver->username, Tasks::peopleByGroup()['Οδηγοί']);
+        Livewire::test(ProjectBoard::class, ['project' => $p->ID])->set('openTask', $wash->ID)
+            ->call('toggleAssignee', $driver->username)->call('addSubtask', 'Εσωτερικά')
+            ->assertSee('Οδηγοί');
+
+        // the driver: only their own tasks, limited panel
+        $this->actingAs($driver);
+        $this->assertTrue(\App\Filament\Portal\Pages\MyTasks::canAccess());
+        $this->assertSame('1', \App\Filament\Portal\Pages\MyTasks::getNavigationBadge());
+        $page = Livewire::test(\App\Filament\Portal\Pages\MyTasks::class)->assertOk()->assertSee('Πλύσιμο')->assertDontSee('Άλλο')
+            ->call('open', $wash->ID)->assertSee('Εσωτερικά')
+            ->call('saveField', 'Status', 'doing')
+            ->call('toggleSubtask', DB::table('myat_task_subtasks')->value('ID'))
+            ->call('addComment', 'Ξεκίνησα')
+            ->set('uploads', [UploadedFile::fake()->createWithContent('photo.jpg', 'jpg')]);
+        $this->assertSame('doing', $wash->fresh()->Status);
+        $this->assertSame(1, (int) DB::table('myat_task_subtasks')->value('Done'));
+        $this->assertSame(1, DB::table('myat_task_files')->where('Username', $driver->username)->count());
+
+        // ...but not the office's part
+        $fresh = fn () => Livewire::test(\App\Filament\Portal\Pages\MyTasks::class)->set('openTask', $wash->ID);
+        $fresh()->call('saveField', 'Title', 'x')->assertForbidden();
+        $fresh()->call('toggleAssignee', $other->username)->assertForbidden();
+        $fresh()->call('addSubtask', 'x')->assertForbidden();
+        $fresh()->call('deleteTask')->assertForbidden();
+        $this->assertSame('Πλύσιμο', $wash->fresh()->Title);
+        Livewire::test(\App\Filament\Portal\Pages\MyTasks::class)->call('open', $notMine->ID)->assertNotFound();
+
+        // files: theirs to download; another driver's task's files are not
+        $file = DB::table('myat_task_files')->value('ID');
+        $this->get(route('task-files.download', $file))->assertOk();
+        $this->actingAs($other);
+        $this->get(route('task-files.download', $file))->assertForbidden();
+        $this->assertNull(\App\Filament\Portal\Pages\MyTasks::getNavigationBadge());
+
+        // the office isn't a driver: no portal tasks page
+        $this->actingAs($admin);
+        $this->assertFalse(\App\Filament\Portal\Pages\MyTasks::canAccess());
+    }
 }

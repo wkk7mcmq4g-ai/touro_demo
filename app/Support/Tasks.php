@@ -13,7 +13,8 @@ use Illuminate\Support\Str;
 
 /**
  * Εργασίες: projects with tasks on a Kanban board (tables myat_projects, myat_tasks, ...).
- * Everyone in the back office works the tasks; Admins create, change and delete projects.
+ * Everyone in the back office works the tasks; Admins create, change and delete projects. Tasks can
+ * also be given to drivers, who work them in the portal (move them along, subtasks, comments, files).
  */
 class Tasks
 {
@@ -51,13 +52,31 @@ class Tasks
         return auth()->user()?->group() === UserGroup::Admin;
     }
 
-    /** The people tasks can be given to: active back-office logins, username => name. */
+    /** The people tasks can be given to: active office and driver logins, username => name. */
     public static function people(): array
     {
-        return once(fn (): array => User::query()->where('active', 1)->orderBy('fullname')->get(['ID', 'username', 'fullname', 'groupid'])
-            ->filter(fn (User $u): bool => (bool) $u->group()?->usesBackOffice() && filled($u->username))
-            ->mapWithKeys(fn (User $u): array => [(string) $u->username => $u->fullname ?: (string) $u->username])
-            ->all());
+        return array_merge(...array_values(self::peopleByGroup()));
+    }
+
+    /** @return array{Γραφείο: array<string, string>, Οδηγοί: array<string, string>} */
+    public static function peopleByGroup(): array
+    {
+        return once(function (): array {
+            $users = User::query()->where('active', 1)->orderBy('fullname')->get(['ID', 'username', 'fullname', 'groupid'])
+                ->filter(fn (User $u): bool => filled($u->username) && ($u->group()?->usesBackOffice() || $u->group()?->isDriver()));
+            $names = fn ($list): array => $list->mapWithKeys(fn (User $u): array => [(string) $u->username => $u->fullname ?: (string) $u->username])->all();
+
+            return [
+                'Γραφείο' => $names($users->filter(fn (User $u): bool => (bool) $u->group()?->usesBackOffice())),
+                'Οδηγοί' => $names($users->filter(fn (User $u): bool => (bool) $u->group()?->isDriver())),
+            ];
+        });
+    }
+
+    /** Drivers see and work their own tasks in the portal (Οι εργασίες μου). */
+    public static function isDriver(): bool
+    {
+        return (bool) auth()->user()?->group()?->isDriver();
     }
 
     public static function initials(string $name): string

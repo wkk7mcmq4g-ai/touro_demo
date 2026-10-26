@@ -5,6 +5,7 @@ use App\Http\Controllers\TransferFileController;
 use App\Http\Controllers\VoucherController;
 use App\Models\MyatTaskFile;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\HeaderUtils;
@@ -49,11 +50,14 @@ Route::get('/files/loads/{id}', [TransferFileController::class, 'download'])
     ->whereNumber('id')
     ->name('load-files.download');
 
-// Files attached to tasks (Εργασίες), kept in the database; for the office only.
+// Files attached to tasks (Εργασίες), kept in the database; for the office and the task's drivers.
 Route::get('/files/tasks/{id}', function (int $id) {
     $user = auth()->user();
-    abort_unless($user && $user->canAccessPanel(filament()->getPanel('admin')), 403);
+    abort_unless($user !== null, 403);
     $file = MyatTaskFile::query()->findOrFail($id);
+    // The office sees every task's files; a driver only those of the tasks given to them.
+    abort_unless($user->canAccessPanel(filament()->getPanel('admin'))
+        || DB::table('myat_task_assignees')->where('TaskID', $file->TaskID)->where('Username', $user->username)->exists(), 403);
     $name = str_replace(['/', '\\'], '_', $file->Flnm ?: "file-{$file->ID}");
     $content = (string) $file->getRawOriginal('Attachment');
     $mime = (new finfo(FILEINFO_MIME_TYPE))->buffer($content) ?: 'application/octet-stream';

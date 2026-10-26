@@ -1,9 +1,12 @@
 {{--
-    The open task, in a panel on the right (ProjectBoard, ?task=<id>). Every field saves on change.
+    The open task, in a panel on the right (ProjectBoard, and the drivers' MyTasks in the portal;
+    ?task=<id>). Every field saves on change. $task['limited'] (drivers): status, subtasks ticked,
+    comments and own files only; the rest is shown read-only.
     Close with Esc, the X, the backdrop, or a swipe to the right on a phone.
 --}}
 @php
     use App\Support\Tasks;
+    $limited = $task['limited'];
     $peopleJs = collect($people)->map(fn ($name, $user) => ['user' => (string) $user, 'name' => $name])->values();
 @endphp
 <div class="myat-tk-panel-wrap" wire:key="panel-{{ $task['id'] }}"
@@ -21,11 +24,15 @@
                     <option value="{{ $key }}" @selected($task['status'] === $key)>{{ $label }}</option>
                 @endforeach
             </select>
-            <span class="myat-tk-panel-id">#{{ $task['id'] }}</span>
+            <span class="myat-tk-panel-id">
+                @if ($limited && $task['project'])<span class="myat-tk-mine-project" style="--project: {{ $task['project']['Color'] ?: '#0096ff' }}">{{ trim($task['project']['Emoji'].' '.$task['project']['Name']) }}</span> · @endif#{{ $task['id'] }}
+            </span>
+            @unless ($limited)
             <button type="button" class="myat-tk-iconbtn" title="Αντιγραφή συνδέσμου"
                 x-data="{ copied: false }" x-on:click="navigator.clipboard?.writeText(window.location.href); copied = true; setTimeout(() => copied = false, 1500)" :class="copied && 'is-on'">
                 <x-filament::icon icon="heroicon-m-link" />
             </button>
+            @endunless
             @if ($task['canDelete'])
                 <button type="button" class="myat-tk-iconbtn is-danger" title="Διαγραφή εργασίας"
                     x-on:click="if (confirm('Διαγραφή της εργασίας;')) $wire.deleteTask()">
@@ -39,27 +46,39 @@
 
         <div class="myat-tk-panel-body">
             {{-- Title --}}
+            @if ($limited)
+                <h2 class="myat-tk-title-input is-static">{{ $task['title'] }}</h2>
+            @else
             <textarea class="myat-tk-title-input" rows="1" maxlength="250" x-data
                 x-init="requestAnimationFrame(() => { $el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px' })" x-on:input="$el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px'"
                 x-on:keydown.enter.prevent="$el.blur()"
                 x-on:blur="if ($el.value.trim() && $el.value !== @js($task['title'])) $wire.saveField('Title', $el.value)">{{ $task['title'] }}</textarea>
+            @endif
 
             {{-- Fields --}}
             <dl class="myat-tk-fields">
                 <dt>Προτεραιότητα</dt>
                 <dd>
+                    @if ($limited)
+                        <span class="myat-tk-prio" style="--c: {{ Tasks::PRIORITIES[$task['priority']][1] ?? '#0ea5e9' }}">{{ Tasks::PRIORITIES[$task['priority']][0] ?? $task['priority'] }}</span>
+                    @else
                     <div class="myat-tk-prio-pick">
                         @foreach (Tasks::PRIORITIES as $key => [$label, $color])
                             <button type="button" class="{{ $task['priority'] === $key ? 'is-on' : '' }}" style="--c: {{ $color }}" wire:click="saveField('Priority', '{{ $key }}')">{{ $label }}</button>
                         @endforeach
                     </div>
+                    @endif
                 </dd>
 
                 <dt>Προθεσμία</dt>
                 <dd class="myat-tk-inline">
+                    @if ($limited)
+                        {{ $task['due'] ? \Illuminate\Support\Carbon::parse($task['due'])->format('d/m/Y') : '—' }}
+                    @else
                     <input type="date" class="myat-tk-input" value="{{ $task['due'] }}" x-on:change="$wire.saveField('DueDate', $event.target.value)">
                     @if ($task['due'])
                         <button type="button" class="myat-tk-linkbtn" wire:click="saveField('DueDate', '')">Αφαίρεση</button>
+                    @endif
                     @endif
                 </dd>
 
@@ -69,44 +88,57 @@
                         @foreach ($task['assignees'] as $u)
                             <span class="myat-tk-chip">
                                 <span class="myat-tk-avatar">{{ Tasks::initials($people[$u] ?? $u) }}</span>{{ $people[$u] ?? $u }}
-                                <button type="button" wire:click="toggleAssignee(@js($u))" title="Αφαίρεση"><x-filament::icon icon="heroicon-m-x-mark" /></button>
+                                @unless ($limited)<button type="button" wire:click="toggleAssignee(@js($u))" title="Αφαίρεση"><x-filament::icon icon="heroicon-m-x-mark" /></button>@endunless
                             </span>
                         @endforeach
+                        @unless ($limited)
                         <button type="button" class="myat-tk-chip is-add" x-on:click="open = ! open"><x-filament::icon icon="heroicon-m-plus" /> Προσθήκη</button>
                         <div class="myat-tk-pop" x-show="open" x-cloak x-transition.opacity>
-                            @foreach ($people as $u => $name)
-                                <button type="button" wire:click="toggleAssignee(@js((string) $u))" class="{{ in_array((string) $u, $task['assignees'], true) ? 'is-on' : '' }}">
-                                    <span class="myat-tk-avatar">{{ Tasks::initials($name) }}</span>{{ $name }}
-                                    @if (in_array((string) $u, $task['assignees'], true))<x-filament::icon icon="heroicon-m-check" class="myat-tk-pop-check" />@endif
-                                </button>
+                            @foreach (Tasks::peopleByGroup() as $groupLabel => $members)
+                                @continue($members === [])
+                                <span class="myat-tk-pop-h">{{ $groupLabel }}</span>
+                                @foreach ($members as $u => $name)
+                                    <button type="button" wire:click="toggleAssignee(@js((string) $u))" class="{{ in_array((string) $u, $task['assignees'], true) ? 'is-on' : '' }}">
+                                        <span class="myat-tk-avatar {{ $groupLabel === 'Οδηγοί' ? 'is-driver' : '' }}">{{ Tasks::initials($name) }}</span>{{ $name }}
+                                        @if (in_array((string) $u, $task['assignees'], true))<x-filament::icon icon="heroicon-m-check" class="myat-tk-pop-check" />@endif
+                                    </button>
+                                @endforeach
                             @endforeach
                         </div>
+                        @endunless
                     </div>
                 </dd>
 
+                @if (! $limited || $task['transfer'])
                 <dt>Transfer</dt>
                 <dd class="myat-tk-inline">
+                    @if ($limited)
+                        #{{ $task['transfer'] }}
+                    @else
                     <input type="text" inputmode="numeric" class="myat-tk-input is-short" placeholder="Αρ. transfer" value="{{ $task['transfer'] }}"
                         x-on:change="$wire.saveField('TransferID', $event.target.value)">
                     @if ($task['transferUrl'])
                         <a href="{{ $task['transferUrl'] }}" target="_blank" class="myat-tk-linkbtn">Άνοιγμα #{{ $task['transfer'] }} ↗</a>
                     @endif
                     @error('transfer')<span class="myat-tk-error">{{ $message }}</span>@enderror
+                    @endif
                 </dd>
+                @endif
             </dl>
 
             {{-- Description (Markdown) --}}
             <section class="myat-tk-sec" x-data="{ editing: false, preview: false, html: '' }">
                 <h3>Περιγραφή
-                    <button type="button" class="myat-tk-linkbtn" x-show="! editing" x-on:click="editing = true; $nextTick(() => $refs.desc.focus())">Επεξεργασία</button>
+                    @unless ($limited)<button type="button" class="myat-tk-linkbtn" x-show="! editing" x-on:click="editing = true; $nextTick(() => $refs.desc.focus())">Επεξεργασία</button>@endunless
                 </h3>
-                <div x-show="! editing" class="myat-tk-md {{ $task['description'] === '' ? 'is-empty' : '' }}" x-on:dblclick="editing = true">
+                <div x-show="! editing" class="myat-tk-md {{ $task['description'] === '' ? 'is-empty' : '' }}" @unless ($limited) x-on:dblclick="editing = true" @endunless>
                     @if ($task['description'] === '')
-                        <span>Προσθέστε περιγραφή…</span>
+                        <span>{{ $limited ? '—' : 'Προσθέστε περιγραφή…' }}</span>
                     @else
                         {{ $task['html'] }}
                     @endif
                 </div>
+                @unless ($limited)
                 <div x-show="editing" x-cloak>
                     <div class="myat-tk-seg is-small">
                         <button type="button" :class="! preview && 'is-active'" x-on:click="preview = false">Κείμενο</button>
@@ -120,9 +152,11 @@
                         <button type="button" class="myat-tk-btn" x-on:click="$refs.desc.value = @js($task['description']); editing = false; preview = false">Άκυρο</button>
                     </div>
                 </div>
+                @endunless
             </section>
 
             {{-- Subtasks --}}
+            @if (! $limited || $task['subtasks'] !== [])
             <section class="myat-tk-sec">
                 <h3>Υποεργασίες
                     @if ($task['subtasks'] !== [])<span class="myat-tk-count">{{ $task['subDone'] }}/{{ count($task['subtasks']) }}</span>@endif
@@ -134,18 +168,23 @@
                     @foreach ($task['subtasks'] as $s)
                         <li wire:key="sub-{{ $s['id'] }}" class="{{ $s['done'] ? 'is-done' : '' }}" x-data="{ editing: false }">
                             <input type="checkbox" @checked($s['done']) wire:click="toggleSubtask({{ $s['id'] }})">
-                            <span x-show="! editing" x-on:dblclick="editing = true; $nextTick(() => $refs.t.focus())">{{ $s['title'] }}</span>
+                            <span x-show="! editing" @unless ($limited) x-on:dblclick="editing = true; $nextTick(() => $refs.t.focus())" @endunless>{{ $s['title'] }}</span>
+                            @unless ($limited)
                             <input x-show="editing" x-cloak x-ref="t" class="myat-tk-input" value="{{ $s['title'] }}" maxlength="250"
                                 x-on:keydown.enter.prevent="$wire.renameSubtask({{ $s['id'] }}, $el.value); editing = false" x-on:keydown.escape="editing = false"
                                 x-on:blur="if (editing) { $wire.renameSubtask({{ $s['id'] }}, $el.value); editing = false }">
                             <button type="button" class="myat-tk-iconbtn" wire:click="deleteSubtask({{ $s['id'] }})" title="Διαγραφή"><x-filament::icon icon="heroicon-m-x-mark" /></button>
+                            @endunless
                         </li>
                     @endforeach
                 </ul>
+                @unless ($limited)
                 <form class="myat-tk-inline" x-data="{ t: '' }" x-on:submit.prevent="if (t.trim()) { $wire.addSubtask(t); t = '' }">
                     <input class="myat-tk-input" x-model="t" maxlength="250" placeholder="Νέα υποεργασία… (Enter)">
                 </form>
+                @endunless
             </section>
+            @endif
 
             {{-- Attachments --}}
             <section class="myat-tk-sec" x-data="{ over: false }"
@@ -158,16 +197,18 @@
                             <x-filament::icon :icon="$f['image'] ? 'heroicon-o-photo' : 'heroicon-o-document'" />
                             <a href="{{ $f['url'] }}" target="_blank">{{ $f['name'] }}</a>
                             <span class="myat-tk-meta">{{ \Illuminate\Support\Number::fileSize($f['size'], 0) }} · {{ $f['by'] }}</span>
+                            @if ($f['canDelete'])
                             <button type="button" class="myat-tk-iconbtn" title="Διαγραφή" x-on:click="if (confirm('Διαγραφή του αρχείου;')) $wire.deleteFile({{ $f['id'] }})">
                                 <x-filament::icon icon="heroicon-m-trash" />
                             </button>
+                            @endif
                         </li>
                     @endforeach
                 </ul>
                 <label class="myat-tk-drop" :class="over && 'is-over'">
-                    <input type="file" multiple wire:model="uploads" class="sr-only">
+                    <input type="file" multiple wire:model="uploads" class="sr-only" @if ($limited) accept="image/*,application/pdf" @endif>
                     <x-filament::icon icon="heroicon-o-arrow-up-tray" />
-                    <span wire:loading.remove wire:target="uploads">Σύρετε αρχεία εδώ ή <u>επιλέξτε</u> (έως {{ Tasks::MAX_FILE_KB / 1024 }} MB)</span>
+                    <span wire:loading.remove wire:target="uploads">@if ($limited) <u>Φωτογραφία ή αρχείο</u> @else Σύρετε αρχεία εδώ ή <u>επιλέξτε</u> @endif (έως {{ Tasks::MAX_FILE_KB / 1024 }} MB)</span>
                     <span wire:loading wire:target="uploads">Ανέβασμα…</span>
                 </label>
                 @error('uploads.*')<span class="myat-tk-error">{{ $message }}</span>@enderror

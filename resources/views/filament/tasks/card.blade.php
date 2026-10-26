@@ -21,7 +21,7 @@
         @if ($t['files'])<span class="myat-tk-meta" title="Συνημμένα"><x-filament::icon icon="heroicon-m-paper-clip" />{{ $t['files'] }}</span>@endif
         @if ($t['transfer'])<span class="myat-tk-meta" title="Transfer"><x-filament::icon icon="heroicon-m-truck" />#{{ $t['transfer'] }}</span>@endif
         <span class="myat-tk-avatars">
-            @foreach ($t['people'] as $p)<span class="myat-tk-avatar" title="{{ $p['name'] }}">{{ $p['initials'] }}</span>@endforeach
+            @foreach ($t['people'] as $p)<span class="myat-tk-avatar {{ $p['driver'] ? 'is-driver' : '' }}" title="{{ $p['name'] }}{{ $p['driver'] ? ' (οδηγός)' : '' }}">{{ $p['initials'] }}</span>@endforeach
         </span>
     </div>
 </article>

@@ -31,8 +31,13 @@
                 <option value="">Όλοι οι υπεύθυνοι</option>
                 <option value="me">Εγώ</option>
                 <option value="none">Χωρίς υπεύθυνο</option>
-                @foreach ($people as $user => $name)
-                    <option value="{{ $user }}">{{ $name }}</option>
+                @foreach (Tasks::peopleByGroup() as $groupLabel => $members)
+                    @continue($members === [])
+                    <optgroup label="{{ $groupLabel }}">
+                        @foreach ($members as $user => $name)
+                            <option value="{{ $user }}">{{ $name }}</option>
+                        @endforeach
+                    </optgroup>
                 @endforeach
             </select>
             <select class="myat-tk-select" wire:model.live="priority" aria-label="Προτεραιότητα">
@@ -142,7 +147,7 @@
                                     <td><span class="{{ $t['overdue'] ? 'myat-tk-overdue' : '' }}">{{ $t['dueFull'] ?? '—' }}</span></td>
                                     <td>
                                         <span class="myat-tk-avatars">
-                                            @foreach ($t['people'] as $p)<span class="myat-tk-avatar" title="{{ $p['name'] }}">{{ $p['initials'] }}</span>@endforeach
+                                            @foreach ($t['people'] as $p)<span class="myat-tk-avatar {{ $p['driver'] ? 'is-driver' : '' }}" title="{{ $p['name'] }}{{ $p['driver'] ? ' (οδηγός)' : '' }}">{{ $p['initials'] }}</span>@endforeach
                                         </span>
                                     </td>
                                 </tr>

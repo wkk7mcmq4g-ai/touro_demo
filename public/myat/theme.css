@@ -3727,7 +3727,7 @@ html.myat-tl-full .fi-main { padding-top:.5rem; }
 .dark .myat-tk-list-title { color:var(--gray-100); }
 
 /* Task panel */
-.myat-tk-panel-wrap { position:fixed; inset:0; z-index:40; }
+.myat-tk-panel-wrap { position:fixed; inset:0; z-index:60; }
 .myat-tk-backdrop { position:absolute; inset:0; background:rgb(15 23 42 / .25); animation:myat-tk-fade .2s ease; }
 @keyframes myat-tk-fade { from { opacity:0; } }
 @keyframes myat-tk-slide { from { transform:translateX(100%); } }
@@ -3773,6 +3773,10 @@ html.myat-tl-full .fi-main { padding-top:.5rem; }
 .myat-tk-pop button:hover, .myat-tk-pop button.is-on { background:var(--gray-100); }
 .dark .myat-tk-pop button:hover, .dark .myat-tk-pop button.is-on { background:var(--gray-700); }
 .myat-tk-pop .myat-tk-avatar { border:0; }
+.myat-tk-pop-h { padding:.375rem .5rem .125rem; font-size:.6875rem; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--gray-400); }
+.myat-tk-avatar.is-driver { background:#0d9488; }
+.myat-tk-title-input.is-static { margin:0; padding:0; cursor:default; }
+.myat-tk-title-input.is-static:hover { background:transparent; }
 .myat-tk-pop-check { width:1rem; height:1rem; margin-left:auto; color:var(--primary-600); }
 .myat-tk-sec { display:flex; flex-direction:column; gap:.5rem; }
 .myat-tk-sec h3 { display:flex; align-items:center; gap:.5rem; font-size:.75rem; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--gray-500); }
@@ -3843,3 +3847,7 @@ html.myat-tl-full .fi-main { padding-top:.5rem; }
 .dark .myat-tk-mine-title { color:var(--gray-100); }
 .myat-tk-mine-project { font-size:.75rem; font-weight:600; color:var(--project); }
 .myat-tk-mine-row .myat-tk-due { margin-left:0; min-width:6.5rem; justify-content:flex-end; }
+/* Drivers' tasks in the portal */
+.myat-tk-drv { display:grid; grid-template-columns:repeat(auto-fill, minmax(17rem, 1fr)); gap:.75rem; }
+.myat-tk-drv-card { width:100%; text-align:left; cursor:pointer; padding:.875rem 1rem .875rem 1.125rem; }
+.myat-tk-drv-card .myat-tk-card-title { font-size:1rem; }
