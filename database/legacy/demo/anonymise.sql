@@ -1,10 +1,11 @@
 -- =====================================================================================
 -- Demo showcase: anonymise a COPY of the MyAT database and add the demo logins.
 --
--- Run in phpMyAdmin, on the demo copy only (select that database, SQL tab, paste,
+-- Run in phpMyAdmin or HeidiSQL, on the demo copy only (select that database, SQL tab, paste,
 -- Go). It refuses to run on the live business databases. Data only: no table, column,
 -- view or trigger is changed; the helper functions/tables it makes are dropped at the end.
--- If it stops half-way (e.g. a timeout), fix the cause and run the whole file again.
+-- If it stops half-way (e.g. a timeout), fix the cause and run the whole file again: the
+-- maps of old -> new names (zz_anon_* tables) are kept from the first attempt until the end.
 --
 -- What it does
 --   * Passengers, lead names/phones, lessees: invented names, phones in the UK range
@@ -36,7 +37,13 @@
 -- All other money columns are put back as they were (tested: sales, assets, income equal).
 -- =====================================================================================
 
--- ---- 0. Never on a live database --------------------------------------------------
+-- ---- 0. Session settings, and never on a live database ---------------------------
+-- Not strict: some transfers have a time like "TBD - ", and every update recalculates
+-- their voucher-time columns (STR_TO_DATE), which strict mode (HeidiSQL's default) turns
+-- from a warning into an error. Set first: routines keep the mode they are created with.
+SET @zz_old_sql_mode = @@SESSION.sql_mode;
+SET SESSION sql_mode = 'NO_ENGINE_SUBSTITUTION';
+
 DROP PROCEDURE IF EXISTS zz_anon_guard;
 DELIMITER $$
 CREATE PROCEDURE zz_anon_guard()
@@ -178,8 +185,9 @@ SELECT TransferID, vid, InvoicedRcvd, Platform, PlatformPrice, PurchasePrice, Pr
 -- ---- 3. Logins ----------------------------------------------------------------------
 DELETE FROM MyAthensTransfersAPP_users WHERE username IN ('demo', 'office', 'driver', 'partner');
 
-DROP TABLE IF EXISTS zz_anon_users;
-CREATE TABLE zz_anon_users (
+-- Kept from a failed attempt: by then the logins are already renamed, and the tables not
+-- yet updated still need the original names.
+CREATE TABLE IF NOT EXISTS zz_anon_users (
   ID INT PRIMARY KEY,
   old_un VARCHAR(255) COLLATE utf8mb4_general_ci,
   new_un VARCHAR(255) COLLATE utf8mb4_general_ci,
@@ -201,7 +209,8 @@ FROM (
          END AS prefix
   FROM MyAthensTransfersAPP_users
   WHERE IFNULL(username, '') <> ''
-) u;
+) u
+WHERE NOT EXISTS (SELECT 1 FROM zz_anon_users);
 
 UPDATE MyAthensTransfersAPP_users u
 JOIN zz_anon_users m ON m.ID = u.ID
@@ -234,8 +243,7 @@ UPDATE MyAthensTransfersAPP_users u JOIN drivers d ON d.UserID = u.ID SET u.full
 
 -- ---- 5. Partners (counterparties) ----------------------------------------------------
 -- Map of old names -> new, so transfers' Coach / Assistant follow.
-DROP TABLE IF EXISTS zz_anon_names;
-CREATE TABLE zz_anon_names (
+CREATE TABLE IF NOT EXISTS zz_anon_names (
   CID INT,
   kind VARCHAR(10),
   old_name VARCHAR(500) COLLATE utf8mb4_general_ci,
@@ -247,23 +255,24 @@ CREATE TABLE zz_anon_names (
 SET @keep = '^(TB[AD]|NOT PROVIDED|NotRegistered)';
 
 -- Guides (assistants) become people, everyone else a company.
-DROP TABLE IF EXISTS zz_anon_cp;
-CREATE TABLE zz_anon_cp ENGINE=InnoDB AS
+CREATE TABLE IF NOT EXISTS zz_anon_cp (PRIMARY KEY (CID)) ENGINE=InnoDB AS
 SELECT CID,
        (IsAssistant = 1) AS is_person,
        IF(IsAssistant = 1, zz_anon_greek(CID, 1), zz_anon_company(CID)) AS new_name
 FROM counterparties;
-ALTER TABLE zz_anon_cp ADD PRIMARY KEY (CID);
+
+-- Filled once (first attempt), before the partners are renamed.
+SET @zz_names_empty = NOT EXISTS (SELECT 1 FROM zz_anon_names);
 
 INSERT INTO zz_anon_names (CID, kind, old_name, new_name)
 SELECT c.CID, 'coach', CONVERT(c.CoachName USING utf8mb4), m.new_name
 FROM counterparties c JOIN zz_anon_cp m ON m.CID = c.CID
-WHERE IFNULL(c.CoachName, '') <> '' AND CONVERT(c.CoachName USING utf8mb4) NOT REGEXP @keep;
+WHERE @zz_names_empty AND IFNULL(c.CoachName, '') <> '' AND CONVERT(c.CoachName USING utf8mb4) NOT REGEXP @keep;
 
 INSERT INTO zz_anon_names (CID, kind, old_name, new_name)
 SELECT c.CID, 'assistant', CONVERT(c.AssistantName USING utf8mb4), m.new_name
 FROM counterparties c JOIN zz_anon_cp m ON m.CID = c.CID
-WHERE IFNULL(c.AssistantName, '') <> '' AND CONVERT(c.AssistantName USING utf8mb4) NOT REGEXP @keep;
+WHERE @zz_names_empty AND IFNULL(c.AssistantName, '') <> '' AND CONVERT(c.AssistantName USING utf8mb4) NOT REGEXP @keep;
 
 UPDATE counterparties c
 JOIN zz_anon_cp m ON m.CID = c.CID
@@ -427,6 +436,7 @@ DROP FUNCTION zz_anon_scrubbed;
 DROP PROCEDURE zz_anon_run;
 DROP PROCEDURE zz_anon_scrub;
 DROP PROCEDURE zz_anon_rename_users;
+SET SESSION sql_mode = @zz_old_sql_mode;
 
 -- Done. Still to look at by hand (cannot be found automatically): names typed inside
 -- notes (transfers Notes/DriverNotes, transfer notes, comments). To blank all transfer
