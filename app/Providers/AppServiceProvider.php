@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Auth\PhpRunnerUserProvider;
 use App\Filament\Resources\Transfers\Pages\ListTransfers;
 use App\Listeners\LogAccess;
+use App\Navigation\PersonalNavigationManager;
 use App\Support\ExcelFilters;
 use App\Support\ImmersiveTables;
 use App\Support\SavedFilters;
@@ -13,6 +14,7 @@ use App\Support\TablePresets;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Navigation\NavigationManager;
 use Filament\Pages\BasePage;
 use Filament\Support\Enums\Width;
 use Filament\Support\Facades\FilamentAsset;
@@ -40,6 +42,9 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        // Each user's own arrangement of the side menu (favourites, order, own groups).
+        $this->app->scoped(NavigationManager::class, fn (): NavigationManager => new PersonalNavigationManager);
+
         // `php artisan serve` hands the dev server only a few environment variables. On Windows
         // PHP then has no TEMP/TMP, can't buffer larger requests (e.g. "Edit in list") and drops them.
         if (PHP_OS_FAMILY === 'Windows') {

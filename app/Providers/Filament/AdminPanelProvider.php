@@ -3,15 +3,19 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Pages\Auth\Login;
+use App\Filament\Pages\MyMenu;
 use App\Filament\Theme;
 use App\Http\Middleware\SendToHomePanel;
 use App\Http\Middleware\SyncTableLayouts;
+use Filament\Actions\Action;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Navigation\NavigationGroup;
 use Filament\Panel;
 use Filament\PanelProvider;
+use Filament\Support\Icons\Heroicon;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -42,6 +46,11 @@ class AdminPanelProvider extends PanelProvider
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->databaseNotifications(false)
+            // Each user's own side menu (App\Filament\Pages\MyMenu): from the user menu and under the side menu.
+            ->userMenuItems([
+                Action::make('myMenu')->label('Το μενού μου')->icon(Heroicon::OutlinedSquares2x2)->url(fn (): string => MyMenu::getUrl()),
+            ])
+            ->renderHook(PanelsRenderHook::SIDEBAR_NAV_END, fn (): string => view('filament.brand.edit-menu-link')->render())
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

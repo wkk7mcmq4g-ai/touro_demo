@@ -3522,3 +3522,53 @@ html.myat-tl-full .fi-main { padding-top:.5rem; }
 .myat-date-menu { gap:.4rem; padding:0 .625rem; }
 .myat-date-menu.is-on { border-color:var(--primary-500); background:rgb(14 165 233 / .08); color:var(--primary-700); }
 .dark .myat-date-menu.is-on { color:var(--primary-300); }
+
+/* Το μενού μου: favourites card on top, then a grid of group cards; items and groups drag by their handle */
+.myat-menu { display:flex; flex-direction:column; gap:1rem; }
+.myat-menu-intro { font-size:.875rem; color:var(--gray-600); max-width:52rem; line-height:1.55; }
+.dark .myat-menu-intro { color:var(--gray-400); }
+.myat-menu-inline-icon { display:inline-block; width:1rem; height:1rem; vertical-align:-.2em; }
+.myat-menu-groups { display:grid; grid-template-columns:repeat(auto-fill, minmax(17rem, 1fr)); gap:1rem; align-items:start; }
+.myat-menu-card { border:1px solid var(--myat-line); border-radius:.875rem; background:#fff; box-shadow:var(--myat-shadow); overflow:hidden; }
+.dark .myat-menu-card { background:var(--gray-900); border-color:rgb(255 255 255 / .08); }
+.myat-menu-card.is-favourites { border-color:#fcd34d; background:linear-gradient(180deg, #fffbeb, #fff 3rem); }
+.dark .myat-menu-card.is-favourites { border-color:rgb(245 158 11 / .45); background:linear-gradient(180deg, rgb(245 158 11 / .1), var(--gray-900) 3rem); }
+.myat-menu-card.is-favourites .myat-menu-items { display:flex; flex-wrap:wrap; gap:.375rem; padding:.625rem; }
+.myat-menu-card.is-favourites .myat-menu-item { border:1px solid var(--gray-200); border-radius:999px; padding:.25rem .375rem .25rem .25rem; background:#fff; }
+.dark .myat-menu-card.is-favourites .myat-menu-item { border-color:var(--gray-700); background:var(--gray-800); }
+.myat-menu-card-h { display:flex; align-items:center; gap:.375rem; min-height:2.75rem; padding:.375rem .5rem .375rem .75rem; border-bottom:1px solid var(--myat-line); }
+.dark .myat-menu-card-h { border-color:rgb(255 255 255 / .06); }
+.myat-menu-card-title { flex:1; min-width:0; font-size:.8125rem; font-weight:700; letter-spacing:.02em; text-transform:uppercase; color:var(--gray-700); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:default; }
+.dark .myat-menu-card-title { color:var(--gray-200); }
+.myat-menu-star-h { width:1.125rem; height:1.125rem; color:#f59e0b; }
+.myat-menu-count { display:inline-grid; place-items:center; min-width:1.375rem; height:1.375rem; padding:0 .375rem; border-radius:999px; background:var(--gray-100); color:var(--gray-600); font-size:.6875rem; font-weight:700; }
+.dark .myat-menu-count { background:var(--gray-800); color:var(--gray-300); }
+.myat-menu-rename { flex:1; min-width:0; height:1.875rem; padding:0 .5rem; border:1px solid var(--primary-500); border-radius:.375rem; font-size:.875rem; background:#fff; color:var(--gray-950); }
+.dark .myat-menu-rename { background:var(--gray-800); color:#fff; }
+.myat-menu-items { list-style:none; margin:0; padding:.375rem; min-height:2.75rem; }
+.myat-menu-item { display:flex; align-items:center; gap:.5rem; min-height:2.5rem; padding:.25rem .25rem .25rem .125rem; border-radius:.5rem; font-size:.875rem; color:var(--gray-800); background:transparent; }
+.dark .myat-menu-item { color:var(--gray-100); }
+.myat-menu-item:hover { background:var(--gray-50); }
+.dark .myat-menu-item:hover { background:rgb(255 255 255 / .04); }
+.myat-menu-item.is-hidden .myat-menu-label, .myat-menu-item.is-hidden .myat-menu-icon { opacity:.4; text-decoration:line-through; }
+.myat-menu-item.is-ghost, .myat-menu-card.is-ghost { opacity:.45; outline:2px dashed var(--primary-400); outline-offset:-2px; }
+.myat-menu-icon { width:1.125rem; height:1.125rem; flex:none; color:var(--gray-400); }
+.myat-menu-label { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.myat-menu-was { margin-left:.25rem; font-size:.6875rem; font-weight:500; text-transform:none; letter-spacing:0; color:var(--gray-400); }
+.myat-menu-handle { display:inline-grid; place-items:center; width:1.75rem; height:2rem; flex:none; border-radius:.375rem; color:var(--gray-400); cursor:grab; touch-action:none; }
+.myat-menu-handle:hover { color:var(--gray-700); background:var(--gray-100); }
+.dark .myat-menu-handle:hover { color:var(--gray-200); background:var(--gray-800); }
+.myat-menu-handle svg, .myat-menu-btn svg { width:1rem; height:1rem; }
+.myat-menu-btn { display:inline-grid; place-items:center; width:2rem; height:2rem; flex:none; border-radius:.375rem; color:var(--gray-400); transition:color .15s, background-color .15s; }
+.myat-menu-btn:hover { color:var(--gray-800); background:var(--gray-100); }
+.dark .myat-menu-btn:hover { color:#fff; background:var(--gray-800); }
+.myat-menu-btn.is-on { color:#f59e0b; }
+.myat-menu-btn.is-danger:hover { color:#dc2626; background:#fef2f2; }
+.myat-menu-btn:focus-visible, .myat-menu-handle:focus-visible { outline:2px solid var(--primary-500); outline-offset:1px; }
+.myat-menu-items[data-empty]:not(:has([data-item]))::before { content:attr(data-empty); display:block; padding:.625rem .5rem; font-size:.8125rem; color:var(--gray-400); }
+.myat-menu-empty { padding:.625rem .5rem; font-size:.8125rem; color:var(--gray-400); }
+/* The edit link under the side menu */
+.myat-menu-edit-link { display:flex; align-items:center; gap:.5rem; margin:.75rem .5rem 0; padding:.5rem .75rem; border:1px dashed var(--gray-300); border-radius:.5rem; font-size:.8125rem; font-weight:600; color:var(--gray-500); }
+.myat-menu-edit-link:hover { color:var(--primary-600); border-color:var(--primary-400); }
+.dark .myat-menu-edit-link { border-color:var(--gray-700); color:var(--gray-400); }
+.myat-menu-edit-link svg { width:1rem; height:1rem; }
