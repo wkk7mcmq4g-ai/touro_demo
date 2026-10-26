@@ -3941,3 +3941,10 @@ html.myat-tl-full .fi-main { padding-top:.5rem; }
     .myat-help-btn span { display:none; }
     .myat-help-btn { width:2.25rem; justify-content:center; padding:0; }
 }
+
+/* Sticky form buttons on phones (Αποθήκευση · Αποθήκευση & πίσω · Ακύρωση): one row, no icons. */
+@media (max-width: 639px) {
+  .fi-sc-actions.fi-sticky .fi-ac { flex-wrap: nowrap; gap: .4rem; }
+  .fi-sc-actions.fi-sticky .fi-ac > .fi-btn { flex: 1 1 auto; justify-content: center; padding-inline: .55rem; white-space: nowrap; }
+  .fi-sc-actions.fi-sticky .fi-ac > .fi-btn > .fi-icon { display: none; }
+}

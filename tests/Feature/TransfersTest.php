@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Filament\Resources\Transfers\Pages\CreateTransfer;
 use App\Filament\Resources\Transfers\Pages\EditTransfer;
+use App\Filament\Resources\Transfers\TransferResource;
 use App\Filament\Resources\Transfers\Pages\ListTransfers;
 use App\Filament\Resources\Transfers\RelationManagers\ChargesRelationManager;
 use App\Filament\Resources\Transfers\RelationManagers\CommsRelationManager;
@@ -213,6 +214,42 @@ class TransfersTest extends TestCase
         $this->assertSame('Ναι', $transfer->Platform);
         $this->assertEquals(20, $transfer->PlatformPrice);
         $this->assertEquals(7, $transfer->Expense);
+    }
+
+    public function test_save_stays_and_save_and_back_returns_to_the_list(): void
+    {
+        $this->actingAs($this->makeLegacyUser('Entry'));
+        $transfer = $this->transfer(['Notes' => 'a']);
+        $list = TransferResource::getUrl('index');
+
+        Livewire::test(EditTransfer::class, ['record' => $transfer->getKey()])
+            ->assertSee('Αποθήκευση &amp; πίσω', false)
+            ->fillForm(['Notes' => 'b'])
+            ->call('save')
+            ->assertHasNoFormErrors()
+            ->assertNoRedirect();
+        $this->assertSame('b', $transfer->fresh()->Notes);
+
+        // Back to the list the user came from, with its tab and search.
+        Livewire::test(EditTransfer::class, ['record' => $transfer->getKey()])
+            ->set('previousUrl', $list.'?tab=today&search=x')
+            ->fillForm(['Notes' => 'c'])
+            ->call('saveAndBack')
+            ->assertRedirect($list.'?tab=today&search=x');
+        $this->assertSame('c', $transfer->fresh()->Notes);
+
+        // Came from elsewhere (e.g. the create page): the plain list.
+        Livewire::test(EditTransfer::class, ['record' => $transfer->getKey()])
+            ->set('previousUrl', TransferResource::getUrl('create'))
+            ->call('saveAndBack')
+            ->assertRedirect($list);
+
+        // A form error keeps the user on the form.
+        Livewire::test(EditTransfer::class, ['record' => $transfer->getKey()])
+            ->fillForm(['TransferDate' => null])
+            ->call('saveAndBack')
+            ->assertHasFormErrors(['TransferDate'])
+            ->assertNoRedirect();
     }
 
     public function test_copy_transfer_button(): void
