@@ -156,6 +156,10 @@ class AppServiceProvider extends ServiceProvider
         FilamentView::registerRenderHook(TablesRenderHook::TOOLBAR_SEARCH_BEFORE, fn (): string => Livewire::current() instanceof ListTransfers
             ? view('filament.transfers.date-shortcuts')->render().view('filament.transfers.cancelled-toggle')->render() : '');
 
+        // Transfers: the Coach window opened by a double-click on a Coach cell (stays in the browser).
+        FilamentView::registerRenderHook(PanelsRenderHook::PAGE_END, fn (): string => auth()->user()?->may('transfers', 'edit')
+            ? view('filament.transfers.coach-editor')->render() : '', scopes: ListTransfers::class);
+
         FilamentView::registerRenderHook(PanelsRenderHook::BODY_END, fn () => auth()->check() ? view('filament.tables.excel-and-widths').view('filament.tables.immersive') : '');
 
         // The filter panel's dropdowns and date pickers are Filament components loaded on demand,

@@ -3955,3 +3955,37 @@ html.myat-tl-full .fi-main { padding-top:.5rem; }
 .dark .myat-id-link a.fi-ta-col { color: var(--primary-400); }
 .myat-dblclick-edit { cursor: cell; user-select: none; }
 .myat-dblclick-edit:hover { box-shadow: inset 0 0 0 1px var(--primary-300); border-radius: .375rem; }
+
+/* Transfers: the Coach window (double-click a Coach cell; filament/transfers/coach-editor). */
+.myat-coach-wrap { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 1rem; }
+.myat-coach-backdrop { position: absolute; inset: 0; background: rgb(15 23 42 / .45); }
+.myat-coach { position: relative; width: min(26rem, 100%); max-height: min(34rem, calc(100dvh - 2rem)); display: flex; flex-direction: column; gap: .75rem;
+  background: #fff; border-radius: 1rem; padding: 1.1rem 1.25rem 1.25rem; box-shadow: 0 20px 50px rgb(15 23 42 / .25); animation: myat-coach-in .12s ease-out; }
+@keyframes myat-coach-in { from { opacity: 0; transform: translateY(6px) scale(.98); } }
+.myat-coach-head { display: flex; align-items: center; justify-content: space-between; }
+.myat-coach-head p { font-weight: 600; color: var(--gray-950); }
+.myat-coach-x { font-size: 1.5rem; line-height: 1; color: var(--gray-400); padding: 0 .25rem; }
+.myat-coach-x:hover { color: var(--gray-700); }
+.myat-coach-search { display: flex; align-items: center; gap: .5rem; border: 1px solid var(--gray-300); border-radius: .6rem; padding: .45rem .7rem; }
+.myat-coach-search:focus-within { border-color: var(--primary-500); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-500) 18%, transparent); }
+.myat-coach-search .fi-icon { width: 1rem; height: 1rem; color: var(--gray-400); }
+.myat-coach-search input { flex: 1; border: 0; outline: 0; background: transparent; font-size: .875rem; padding: 0; box-shadow: none; }
+.myat-coach-list { flex: 1; min-height: 6rem; overflow-y: auto; border: 1px solid var(--gray-200); border-radius: .6rem; padding: .25rem; }
+.myat-coach-list li { padding: .45rem .6rem; border-radius: .45rem; font-size: .875rem; cursor: pointer; color: var(--gray-800); }
+.myat-coach-list li:hover { background: var(--gray-100); }
+.myat-coach-list li.is-on { background: var(--primary-50); color: var(--primary-700); font-weight: 600; }
+.myat-coach-list li:first-child { color: var(--gray-500); font-style: italic; }
+.myat-coach-list li:first-child.is-on { color: var(--primary-700); }
+.myat-coach-list .myat-coach-none { cursor: default; color: var(--gray-500); }
+.myat-coach-hint { font-size: .75rem; color: var(--gray-500); }
+.myat-coach-actions { display: flex; gap: .5rem; }
+.myat-coach-save, .myat-coach-cancel { border-radius: .6rem; padding: .5rem 1rem; font-size: .875rem; font-weight: 600; }
+.myat-coach-save { background: var(--primary-600); color: #fff; }
+.myat-coach-save:disabled { opacity: .7; }
+.myat-coach-cancel { border: 1px solid var(--gray-300); color: var(--gray-800); background: #fff; }
+.dark .myat-coach { background: var(--gray-900); }
+.dark .myat-coach-head p, .dark .myat-coach-list li { color: var(--gray-100); }
+.dark .myat-coach-search, .dark .myat-coach-list, .dark .myat-coach-cancel { border-color: var(--gray-700); }
+.dark .myat-coach-list li:hover { background: var(--gray-800); }
+.dark .myat-coach-list li.is-on { background: color-mix(in srgb, var(--primary-500) 20%, transparent); color: var(--primary-300); }
+.dark .myat-coach-cancel { background: var(--gray-900); color: var(--gray-100); }

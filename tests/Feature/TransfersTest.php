@@ -263,21 +263,18 @@ class TransfersTest extends TestCase
         $this->assertSame(2, substr_count($html, 'href="'.$edit.'"'), 'only the ID and the pencil link to the transfer');
         $this->assertStringContainsString('myat-dblclick-edit', $html);
 
-        Livewire::test(ListTransfers::class)
-            ->callTableColumnAction('CoachCompanyID', $transfer)
-            ->assertHasNoErrors();
-        Livewire::test(ListTransfers::class)
-            ->mountTableAction('editCoach', $transfer)
-            ->setTableActionData(['coach' => 'Some Coach Co'])
-            ->callMountedTableAction()
-            ->assertHasNoTableActionErrors();
+        $this->assertStringContainsString('myat-coach', $html, 'the Coach window is on the page');
+
+        Livewire::test(ListTransfers::class)->call('setCoach', $transfer->getKey(), 'Some Coach Co')->assertHasNoErrors();
         $this->assertSame('Some Coach Co', $transfer->fresh()->CoachCompanyID);
 
-        Livewire::test(ListTransfers::class)
-            ->mountTableAction('editCoach', $transfer)
-            ->setTableActionData(['coach' => null])
-            ->callMountedTableAction();
+        Livewire::test(ListTransfers::class)->call('setCoach', $transfer->getKey(), '');
         $this->assertSame('', $transfer->fresh()->CoachCompanyID);
+
+        // Only names from the coach list.
+        Livewire::test(ListTransfers::class)->call('setCoach', $transfer->getKey(), 'Nope')->assertStatus(422);
+        $this->assertSame('', $transfer->fresh()->CoachCompanyID);
+
         DB::table('counterparties')->where('CID', $coachId)->delete();
     }
 

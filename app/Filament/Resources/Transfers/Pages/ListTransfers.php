@@ -9,6 +9,7 @@ use App\Filament\Resources\Transfers\Tables\TransfersTable;
 use App\Filament\Resources\Transfers\TransferResource;
 use App\Filament\Resources\Transfers\Widgets\TransferTotals;
 use App\Models\Transfer;
+use App\Support\Lookups;
 use App\Support\PhpRunnerLayouts;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -57,6 +58,24 @@ class ListTransfers extends ListRecords
      * the totals widget, which rebuilds this page to read its query, sees the same choice.
      */
     public const HIDE_CANCELLED = 'myat.transfers.hide_cancelled';
+
+    /**
+     * The Coach window (double-click in the list): saved through the model, so the same rules run
+     * as on the form (Update_Transfers_Price, own vehicle = no purchase price, the DB triggers).
+     */
+    public function setCoach(int $id, ?string $coach): void
+    {
+        abort_unless((bool) auth()->user()?->may('transfers', 'edit'), 403);
+
+        $coach = trim((string) $coach);
+        abort_unless($coach === '' || array_key_exists($coach, Lookups::coaches()), 422);
+
+        $transfer = Transfer::query()->findOrFail($id);
+        $transfer->CoachCompanyID = $coach;
+        $transfer->save();
+
+        Notification::make()->success()->title('#'.$id.' · Coach: '.($coach !== '' ? $coach : '—'))->send();
+    }
 
     public function showsCancelled(): bool
     {

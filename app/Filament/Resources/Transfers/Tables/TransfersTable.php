@@ -8,12 +8,9 @@ use App\Filament\Resources\Transfers\TransferResource;
 use App\Models\Transfer;
 use App\Support\FilterValues;
 use App\Support\Lookups;
-use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Select;
-use Filament\Notifications\Notification;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\Column;
@@ -143,39 +140,16 @@ class TransfersTable
 
     /**
      * Coach: double-click the cell to change it in a small window (users who may edit transfers).
-     * Saved through the model, so the same rules as the form run (Update_Transfers_Price, own
-     * vehicle = no purchase price, the DB triggers).
+     * The window lives in the browser (filament/transfers/coach-editor), so opening and Cancel
+     * cost nothing; Αποθήκευση calls ListTransfers::setCoach.
      */
     private static function coachColumn(TextColumn $column): TextColumn
     {
-        $mayEdit = fn (): bool => (bool) auth()->user()?->may('transfers', 'edit');
-
-        return $column
-            ->action(
-                Action::make('editCoach')
-                    ->modalHeading(fn (Transfer $record): string => 'Coach · Transfer #'.$record->TransferID)
-                    ->modalWidth(Width::Medium)
-                    ->modalSubmitActionLabel('Αποθήκευση')
-                    ->fillForm(fn (Transfer $record): array => ['coach' => $record->CoachCompanyID ?: null])
-                    ->schema([
-                        Select::make('coach')->label('Coach')->options(fn (): array => Lookups::coaches())
-                            ->searchable()->placeholder('— Χωρίς όχημα —')
-                            ->helperText('Τα δικά μας οχήματα μηδενίζουν την τιμή αγοράς.'),
-                    ])
-                    ->visible($mayEdit)
-                    ->action(function (Transfer $record, array $data): void {
-                        $record->CoachCompanyID = (string) ($data['coach'] ?? '');
-                        $record->save();
-                        Notification::make()->success()->title('Coach: '.($record->CoachCompanyID ?: '—'))->send();
-                    }),
-            )
-            // Single clicks do nothing (selecting text, scrolling); the double-click opens the window.
-            ->disabledClick()
-            ->extraCellAttributes(fn (Transfer $record): array => $mayEdit() ? [
-                'class' => 'myat-dblclick-edit',
-                'title' => 'Διπλό κλικ για αλλαγή',
-                'x-on:dblclick.prevent' => "\$wire.mountTableAction('editCoach', '".(int) $record->getKey()."')",
-            ] : [], merge: true);
+        return $column->extraCellAttributes(fn (Transfer $record): array => auth()->user()?->may('transfers', 'edit') ? [
+            'class' => 'myat-dblclick-edit',
+            'title' => 'Διπλό κλικ για αλλαγή',
+            'x-on:dblclick.prevent' => "\$dispatch('myat-coach', { id: ".(int) $record->getKey().", coach: \$el.innerText.trim() })",
+        ] : [], merge: true);
     }
 
     /**
