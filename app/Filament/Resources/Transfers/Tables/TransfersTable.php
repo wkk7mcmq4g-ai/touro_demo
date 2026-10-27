@@ -4,12 +4,16 @@ namespace App\Filament\Resources\Transfers\Tables;
 
 use App\Filament\Resources\Transfers\Actions\InvoicingActions;
 use App\Filament\Resources\Transfers\Actions\TransferActions;
+use App\Filament\Resources\Transfers\TransferResource;
 use App\Models\Transfer;
 use App\Support\FilterValues;
 use App\Support\Lookups;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
+use Filament\Notifications\Notification;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\Column;
@@ -104,6 +108,9 @@ class TransfersTable
                 ->orderBy('TransferDate')
                 ->orderBy('TransferTime_sort'))
             ->striped()
+            // Only the ID opens the transfer (and the pencil); a click elsewhere on the row does nothing.
+            ->recordUrl(null)
+            ->recordAction(null)
             // Editable cells are heavy (a few KB each), so editing pages are kept short.
             ->paginated($editing ? [25, 50] : [25, 50, 100, 200])
             ->defaultPaginationPageOption($editing ? 25 : 50)
@@ -132,6 +139,43 @@ class TransfersTable
                     ])->dropdown(false),
                 ])->label('Τιμολόγηση')->button()->dropdownWidth(Width::Medium),
             ]);
+    }
+
+    /**
+     * Coach: double-click the cell to change it in a small window (users who may edit transfers).
+     * Saved through the model, so the same rules as the form run (Update_Transfers_Price, own
+     * vehicle = no purchase price, the DB triggers).
+     */
+    private static function coachColumn(TextColumn $column): TextColumn
+    {
+        $mayEdit = fn (): bool => (bool) auth()->user()?->may('transfers', 'edit');
+
+        return $column
+            ->action(
+                Action::make('editCoach')
+                    ->modalHeading(fn (Transfer $record): string => 'Coach · Transfer #'.$record->TransferID)
+                    ->modalWidth(Width::Medium)
+                    ->modalSubmitActionLabel('Αποθήκευση')
+                    ->fillForm(fn (Transfer $record): array => ['coach' => $record->CoachCompanyID ?: null])
+                    ->schema([
+                        Select::make('coach')->label('Coach')->options(fn (): array => Lookups::coaches())
+                            ->searchable()->placeholder('— Χωρίς όχημα —')
+                            ->helperText('Τα δικά μας οχήματα μηδενίζουν την τιμή αγοράς.'),
+                    ])
+                    ->visible($mayEdit)
+                    ->action(function (Transfer $record, array $data): void {
+                        $record->CoachCompanyID = (string) ($data['coach'] ?? '');
+                        $record->save();
+                        Notification::make()->success()->title('Coach: '.($record->CoachCompanyID ?: '—'))->send();
+                    }),
+            )
+            // Single clicks do nothing (selecting text, scrolling); the double-click opens the window.
+            ->disabledClick()
+            ->extraCellAttributes(fn (Transfer $record): array => $mayEdit() ? [
+                'class' => 'myat-dblclick-edit',
+                'title' => 'Διπλό κλικ για αλλαγή',
+                'x-on:dblclick.prevent' => "\$wire.mountTableAction('editCoach', '".(int) $record->getKey()."')",
+            ] : [], merge: true);
     }
 
     /**
@@ -180,6 +224,8 @@ class TransfersTable
                 ->searchable()
                 ->sortable()
                 ->weight('semibold')
+                ->url(fn (Transfer $record): string => TransferResource::getUrl('edit', ['record' => $record]))
+                ->extraCellAttributes(['class' => 'myat-id-link'], merge: true)
                 ->icon(fn (Transfer $record) => $record->placeholderFields() ? Heroicon::ExclamationTriangle : null)
                 ->iconColor('warning')
                 ->tooltip(fn (Transfer $record): ?string => ($fields = $record->placeholderFields())
@@ -206,7 +252,7 @@ class TransfersTable
             $dot('AssistantStatus', 'Guide status', 'AssistantStatus'),
             $money('Assistant_Price', 'Guide Rate'),
             $dot('CarTypeID', 'Car Type', 'CarType'),
-            $text('CoachCompanyID', 'Coach')->sortable(),
+            self::coachColumn($text('CoachCompanyID', 'Coach')->sortable()),
             $text('Notes', 'Transfer Notes', 50),
             $text('LesseeName', 'Lessee Name', 30),
             $text('LeadName', 'Lead Name', 30)->searchable(),

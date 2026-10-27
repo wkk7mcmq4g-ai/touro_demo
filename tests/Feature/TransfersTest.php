@@ -252,6 +252,35 @@ class TransfersTest extends TestCase
             ->assertNoRedirect();
     }
 
+    public function test_only_the_id_opens_the_transfer_and_coach_changes_in_the_list(): void
+    {
+        $this->actingAs($this->makeLegacyUser('Entry'));
+        $transfer = $this->transfer(['CoachCompanyID' => '']);
+        $coachId = DB::table('counterparties')->insertGetId(['CounterShortName' => 'Some Coach Co', 'SupplierName' => 'Some Coach Co', 'CoachName' => 'Some Coach Co', 'IsCoach' => 1], 'CID');
+        $edit = TransferResource::getUrl('edit', ['record' => $transfer]);
+
+        $html = Livewire::test(ListTransfers::class)->html();
+        $this->assertSame(2, substr_count($html, 'href="'.$edit.'"'), 'only the ID and the pencil link to the transfer');
+        $this->assertStringContainsString('myat-dblclick-edit', $html);
+
+        Livewire::test(ListTransfers::class)
+            ->callTableColumnAction('CoachCompanyID', $transfer)
+            ->assertHasNoErrors();
+        Livewire::test(ListTransfers::class)
+            ->mountTableAction('editCoach', $transfer)
+            ->setTableActionData(['coach' => 'Some Coach Co'])
+            ->callMountedTableAction()
+            ->assertHasNoTableActionErrors();
+        $this->assertSame('Some Coach Co', $transfer->fresh()->CoachCompanyID);
+
+        Livewire::test(ListTransfers::class)
+            ->mountTableAction('editCoach', $transfer)
+            ->setTableActionData(['coach' => null])
+            ->callMountedTableAction();
+        $this->assertSame('', $transfer->fresh()->CoachCompanyID);
+        DB::table('counterparties')->where('CID', $coachId)->delete();
+    }
+
     public function test_copy_transfer_button(): void
     {
         $this->actingAs($this->makeLegacyUser('Entry'));

@@ -3948,3 +3948,10 @@ html.myat-tl-full .fi-main { padding-top:.5rem; }
   .fi-sc-actions.fi-sticky .fi-ac > .fi-btn { flex: 1 1 auto; justify-content: center; padding-inline: .55rem; white-space: nowrap; }
   .fi-sc-actions.fi-sticky .fi-ac > .fi-btn > .fi-icon { display: none; }
 }
+
+/* Transfers list: only the ID opens the transfer; Coach changes with a double-click. */
+.myat-id-link a.fi-ta-col { color: var(--primary-600); }
+.myat-id-link a.fi-ta-col:hover { text-decoration: underline; }
+.dark .myat-id-link a.fi-ta-col { color: var(--primary-400); }
+.myat-dblclick-edit { cursor: cell; user-select: none; }
+.myat-dblclick-edit:hover { box-shadow: inset 0 0 0 1px var(--primary-300); border-radius: .375rem; }
