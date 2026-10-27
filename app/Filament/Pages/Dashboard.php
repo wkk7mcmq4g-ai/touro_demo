@@ -40,6 +40,8 @@ class Dashboard extends BaseDashboard
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('transfers')->label('Transfers')->icon(TransferResource::getNavigationIcon() ?? Heroicon::OutlinedTruck)->color('gray')
+                ->url(fn (): string => TransferResource::getUrl())->visible(fn (): bool => TransferResource::canViewAny()),
             Action::make('dispatch')->label('Dispatch')->icon(Heroicon::OutlinedMap)->color('gray')
                 ->url(fn (): string => DispatchResource::getUrl())->visible(fn (): bool => DispatchResource::canAccess()),
             Action::make('send')->label('Αποστολή Transfers')->icon(Heroicon::OutlinedPaperAirplane)->color('gray')

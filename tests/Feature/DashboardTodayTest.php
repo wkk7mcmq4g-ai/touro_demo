@@ -11,6 +11,15 @@ use Tests\TestCase;
 
 class DashboardTodayTest extends TestCase
 {
+    public function test_the_dashboard_has_a_transfers_button(): void
+    {
+        $this->actingAs($this->makeLegacyUser('Entry'));
+
+        $html = $this->get('/admin')->assertOk()->getContent();
+        $header = substr($html, (int) strpos($html, 'fi-header'), 6000);
+        $this->assertStringContainsString('href="'.e(\App\Filament\Resources\Transfers\TransferResource::getUrl()).'"', $header, 'Transfers button in the page header');
+    }
+
     public function test_cancelled_jobs_are_hidden_until_switched_on(): void
     {
         $this->actingAs($this->makeLegacyUser('Admin'));

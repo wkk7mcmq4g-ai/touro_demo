@@ -3989,3 +3989,12 @@ html.myat-tl-full .fi-main { padding-top:.5rem; }
 .dark .myat-coach-list li:hover { background: var(--gray-800); }
 .dark .myat-coach-list li.is-on { background: color-mix(in srgb, var(--primary-500) 20%, transparent); color: var(--primary-300); }
 .dark .myat-coach-cancel { background: var(--gray-900); color: var(--gray-100); }
+
+/* Page header buttons on phones: one left-aligned flow (the Βοήθεια button and the page's own buttons
+   wrapped separately before, so they landed on odd lines). */
+@media (max-width: 639px) {
+  .fi-header-actions-ctn { display: flex; flex-wrap: wrap; justify-content: flex-start; align-items: center; gap: .5rem; }
+  .fi-header-actions-ctn > .fi-ac { display: contents; }
+  /* full-screen table pages keep their one slim row of icon buttons */
+  body:has(.myat-zoombar) .fi-header-actions-ctn { flex-wrap: nowrap; gap: .35rem; }
+}
