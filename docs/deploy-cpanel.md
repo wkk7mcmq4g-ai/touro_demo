@@ -7,6 +7,10 @@ Before the first start: in phpMyAdmin, select the demo copy and run
 `database/legacy/demo/anonymise.sql` (it refuses to run on the live databases). It replaces
 people's names, phones and e-mails, deletes attachments, locks the copied logins and adds the
 demo logins `demo` (Admin), `office` (Entry), `driver` and `partner` (portal), password `Demo2026`.
+Then run `database/legacy/demo/assign.sql` on the same database: it gives the fleet vehicles
+their drivers and every open transfer of the next 30 days a vehicle or a partner, so Dispatch
+and the Ημερήσιο πλάνο look like a working day. Run it again every few weeks (it only fills
+what is empty); settings at its top.
 
 ## Once
 

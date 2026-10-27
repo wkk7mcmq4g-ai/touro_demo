@@ -5,7 +5,8 @@ showing the system to prospects. Differences from MyAT (`claude/demo-diff-list.m
 project): made-up identity in `config/business.php` and images (`public/myat/mark.svg`, icons,
 `resources/legacy/images/demo-*.png`); `config/partners.php` empty; deploy folder `touro_demo`.
 Its database is an anonymised copy of MyAT's (`database/legacy/demo/anonymise.sql`, run once in
-phpMyAdmin). Keep mail on `log`, Elorus/Telegram off and `PHPRUNNER_URL` empty on its server.
+phpMyAdmin), then `database/legacy/demo/assign.sql` gives drivers to vehicles and vehicles/partners to
+open transfers (re-runnable). Keep mail on `log`, Elorus/Telegram off and `PHPRUNNER_URL` empty on its server.
 Everything below is MyAT's and applies as it is.
 
 # MyAthens Transfers back office
