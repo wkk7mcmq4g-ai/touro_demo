@@ -29,6 +29,8 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          # Full history: the version number is the count of commits (AppVersion).
+          fetch-depth: 0
 
       - name: Setup PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
@@ -43,6 +45,9 @@ jobs:
 
       - name: Build the package
         run: |
+          # The version shown in the user menu (App\Support\AppVersion); the server has no git.
+          printf '{"number":%s,"commit":"%s","date":"%s"}\n' "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)" "$(git log -1 --format=%cI)" > version.json
+          cat version.json
           cp .env.example .env
           php artisan key:generate
           php artisan filament:assets

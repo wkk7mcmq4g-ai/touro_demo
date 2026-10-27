@@ -33,3 +33,6 @@ Thumbs.db
 
 # Superdesign working files
 .superdesign/
+
+# Written by the Package workflow (App\Support\AppVersion)
+/version.json

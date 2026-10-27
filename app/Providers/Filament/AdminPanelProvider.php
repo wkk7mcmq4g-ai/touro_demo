@@ -14,6 +14,7 @@ use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Navigation\NavigationGroup;
+use App\Support\AppVersion;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Icons\Heroicon;
@@ -54,6 +55,8 @@ class AdminPanelProvider extends PanelProvider
             ->userMenuItems([
                 Action::make('myMenu')->label('Το μενού μου')->icon(Heroicon::OutlinedSquares2x2)->url(fn (): string => MyMenu::getUrl()),
                 Action::make('help')->label('Βοήθεια')->icon(Heroicon::OutlinedQuestionMarkCircle)->url(fn (): string => Help::getUrl()),
+                // Which version is running (new number on every push).
+                Action::make('version')->label(fn (): string => AppVersion::label())->tooltip(fn (): ?string => AppVersion::details())->icon(Heroicon::OutlinedTag)->color('gray')->disabled()->sort(100),
             ])
             // The login page's own link preview: business name and logo.
             ->renderHook(PanelsRenderHook::HEAD_END, fn (): string => auth()->check() ? '' : '<meta property="og:site_name" content="'.e(config('business.name')).'"><meta property="og:image" content="'.e(asset(config('business.logo.icon_180'))).'">')

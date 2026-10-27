@@ -11,7 +11,10 @@ use App\Http\Middleware\SyncTableLayouts;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use App\Support\AppVersion;
+use Filament\Actions\Action;
 use Filament\Panel;
+use Filament\Support\Icons\Heroicon;
 use Filament\PanelProvider;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -43,6 +46,10 @@ class PortalPanelProvider extends PanelProvider
             // Hotels have PHPRunner's Van Taxi Report too.
             ->pages([VanTaxiReport::class])
             ->databaseNotifications(false)
+            ->userMenuItems([
+                // Which version is running (new number on every push).
+                Action::make('version')->label(fn (): string => AppVersion::label())->tooltip(fn (): ?string => AppVersion::details())->icon(Heroicon::OutlinedTag)->color('gray')->disabled()->sort(100),
+            ])
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
