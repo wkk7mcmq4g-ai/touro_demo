@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Auth\PhpRunnerUserProvider;
 use App\Filament\Resources\Transfers\Pages\ListTransfers;
 use App\Listeners\LogAccess;
+use App\Support\ActivityLog;
 use App\Navigation\PersonalNavigationManager;
 use App\Support\ExcelFilters;
 use App\Support\Help;
@@ -196,6 +197,9 @@ class AppServiceProvider extends ServiceProvider
         ImmersiveTables::register();
 
         // Same access_log rows the PHPRunner login/logout events wrote.
+        // Ιστορικό ενεργειών: every insert / update / delete made through the app (myat_activity_log).
+        ActivityLog::register();
+
         Event::listen(Login::class, [LogAccess::class, 'login']);
         Event::listen(Logout::class, [LogAccess::class, 'logout']);
     }

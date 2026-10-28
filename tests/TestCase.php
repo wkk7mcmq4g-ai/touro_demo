@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Support\Lookups;
 use App\Support\Portal;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use App\Support\ActivityLog;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 
@@ -37,6 +38,9 @@ abstract class TestCase extends BaseTestCase
 
             self::$schemaReady = true;
         }
+
+        // The activity log remembers whether its table exists; ask again in the fresh database.
+        ActivityLog::reset();
     }
 
     protected function tearDown(): void

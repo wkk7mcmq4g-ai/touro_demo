@@ -3998,3 +3998,23 @@ html.myat-tl-full .fi-main { padding-top:.5rem; }
   /* full-screen table pages keep their one slim row of icon buttons */
   body:has(.myat-zoombar) .fi-header-actions-ctn { flex-wrap: nowrap; gap: .35rem; }
 }
+
+/* Ιστορικό ενεργειών (ActivityLogResource): the list's summary and the details window. */
+.myat-activity-summary { font-size: .8rem; color: var(--gray-600); max-width: 36rem; }
+.myat-activity { display: grid; gap: 1rem; font-size: .875rem; }
+.myat-activity-meta { display: grid; grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); gap: .5rem 1rem; }
+.myat-activity-meta .is-wide { grid-column: 1 / -1; }
+.myat-activity-meta dt { font-size: .7rem; text-transform: uppercase; letter-spacing: .04em; color: var(--gray-500); }
+.myat-activity-meta dd { font-weight: 600; color: var(--gray-900); word-break: break-all; }
+.myat-activity-h { font-size: .75rem; font-weight: 600; color: var(--gray-500); text-transform: uppercase; letter-spacing: .04em; }
+.myat-activity-sql { white-space: pre-wrap; word-break: break-all; background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: .5rem; padding: .6rem .75rem; font-size: .78rem; }
+.myat-activity-bindings { list-style: decimal; padding-left: 1.5rem; word-break: break-all; }
+.myat-activity-table { width: 100%; border-collapse: collapse; }
+.myat-activity-table th { text-align: left; font-size: .7rem; text-transform: uppercase; letter-spacing: .04em; color: var(--gray-500); padding: .35rem .5rem; border-bottom: 1px solid var(--gray-200); }
+.myat-activity-table td { padding: .4rem .5rem; border-bottom: 1px solid var(--gray-100); vertical-align: top; word-break: break-word; white-space: pre-wrap; }
+.myat-activity-table .is-field { font-weight: 600; color: var(--gray-700); white-space: nowrap; }
+.myat-activity-table .is-old { color: var(--danger-700, #b91c1c); text-decoration: line-through; text-decoration-color: color-mix(in srgb, currentColor 40%, transparent); }
+.myat-activity-table .is-new { color: var(--success-700, #15803d); }
+.dark .myat-activity-meta dd { color: var(--gray-100); }
+.dark .myat-activity-sql { background: var(--gray-800); border-color: var(--gray-700); }
+.dark .myat-activity-table th, .dark .myat-activity-table td { border-color: var(--gray-700); }

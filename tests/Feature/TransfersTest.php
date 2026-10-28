@@ -265,8 +265,16 @@ class TransfersTest extends TestCase
 
         $this->assertStringContainsString('myat-coach', $html, 'the Coach window is on the page');
 
+        $this->emptyTables(['myat_activity_log']);
         Livewire::test(ListTransfers::class)->call('setCoach', $transfer->getKey(), 'Some Coach Co')->assertHasNoErrors();
         $this->assertSame('Some Coach Co', $transfer->fresh()->CoachCompanyID);
+
+        // Activity log: one "update" with the field that changed; the price procedure and the
+        // own-vehicle rule that run after the save are part of it, not extra rows.
+        $log = DB::table('myat_activity_log')->get();
+        $this->assertCount(1, $log);
+        $this->assertSame(['update', 'transfers', (string) $transfer->getKey()], [$log[0]->Action, $log[0]->TableName, $log[0]->RecordID]);
+        $this->assertSame(['', 'Some Coach Co'], json_decode($log[0]->Changes, true)['CoachCompanyID']);
 
         Livewire::test(ListTransfers::class)->call('setCoach', $transfer->getKey(), '');
         $this->assertSame('', $transfer->fresh()->CoachCompanyID);
