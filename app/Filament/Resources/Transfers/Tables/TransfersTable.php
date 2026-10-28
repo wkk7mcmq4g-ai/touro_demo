@@ -63,6 +63,9 @@ class TransfersTable
         };
     }
 
+    /** The day's driver of the transfer's vehicle, or the outside coach's partner (PHPRunner's DriverName). */
+    public const DRIVER_NAME_SQL = 'Get_Driver_name(`transfers`.`CoachCompanyID`, `transfers`.`TransferDate`)';
+
     /** The open-items column (Exp. / Chg. / Ops / Fin. badges); kept first by PinsFlagsColumn. */
     public const FLAGS = 'flags';
 
@@ -105,6 +108,7 @@ class TransfersTable
                 ->orderBy('TransferDate')
                 ->orderBy('TransferTime_sort'))
             ->striped()
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->addSelect(DB::raw(self::DRIVER_NAME_SQL.' AS `DriverName`')))
             // Only the ID opens the transfer (and the pencil); a click elsewhere on the row does nothing.
             ->recordUrl(null)
             ->recordAction(null)
@@ -227,10 +231,19 @@ class TransfersTable
             $money('Assistant_Price', 'Guide Rate'),
             $dot('CarTypeID', 'Car Type', 'CarType'),
             self::coachColumn($text('CoachCompanyID', 'Coach')->sortable()),
-            $text('Notes', 'Transfer Notes', 50),
-            $text('LesseeName', 'Lessee Name', 30),
+            // PHPRunner's DriverName (datasource; there it was searchable only): the vehicle's driver
+            // that day from the assignments, or the partner for an outside coach (Get_Driver_name).
+            TextColumn::make('DriverName')->label('Οδηγός')->toggleable()->placeholder('')
+                ->searchable(query: fn (Builder $query, string $search): Builder => $query
+                    ->orWhereRaw(self::DRIVER_NAME_SQL.' LIKE ?', ['%'.$search.'%'])),
+            $text('Notes', 'Transfer Notes', 50)->searchable(),
+            $text('LesseeName', 'Lessee Name', 30)->searchable(),
             $text('LeadName', 'Lead Name', 30)->searchable(),
-            $text('LeadPhone', 'Lead Phone')->searchable(),
+            // PHPRunner searched PhoneClean too: the digits only, so "6977123456" finds "+30 697 712 3456".
+            $text('LeadPhone', 'Lead Phone')->searchable(query: fn (Builder $query, string $search): Builder => $query
+                ->orWhere('LeadPhone', 'like', '%'.$search.'%')
+                ->when(strlen($digits = preg_replace('/\D/', '', $search)) >= 4, fn (Builder $q) => $q
+                    ->orWhereRaw("REGEXP_REPLACE(`transfers`.`LeadPhone`, '[^0-9]', '') LIKE ?", ['%'.$digits.'%']))),
             $text('PassengerName', 'Passenger List', 40)->searchable(),
             $dot('Status', 'Status', 'Status'),
             $money('PlatformPrice', 'Τιμή Πλατφ.', total: true),
@@ -254,7 +267,7 @@ class TransfersTable
             $text('VPOS', 'Kωδ. πληρ.'),
             $text('SalesInvoiceNum', 'ΑΑ Εσόδων')->searchable(),
             $text('PurchaseInvoiceNum', 'ΑΑ Εξόδων')->searchable(),
-            $text('DriverNotes', 'Driver Notes', 40),
+            $text('DriverNotes', 'Driver Notes', 40)->searchable(),
             $text('PaymentOnHoldFlag', 'Αναμ. Έκδ.'),
             $text('Assistant', 'Assistant', 30),
             $text('Platform', 'Πλατφ.'),

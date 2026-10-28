@@ -22,6 +22,12 @@ pages: ListTransfers
 
 **«Θέμα» (issue)** θεωρείται: κάποιο πεδίο που ξεκινά με **TBD** (Pax, Flight/Ship, From, To, Notes, Lead Name/Phone, Lessee, Passenger list, Time), κενό From ή To, Assistant = TBA, ή σημαία Operational/Financial issue = Yes.
 
+## Αναζήτηση
+Ψάχνει σε ID, Supplier, Sup Code, From, To, Flight/Ship, Transfer Notes, Driver Notes, Lessee, Lead Name, Lead Phone, Passenger list, ΑΑ Εσόδων/Εξόδων και **όνομα οδηγού**. Το τηλέφωνο βρίσκεται και χωρίς κενά ή «+30» (π.χ. «6977123456» βρίσκει «+30 697 712 3456»).
+
+## Στήλη Οδηγός
+Ο οδηγός που έχει το όχημα του transfer εκείνη τη μέρα (από τις **Αναθέσεις**), ή ο συνεργάτης όταν το Coach είναι ξένο όχημα. Αλλάζει μόνη της όταν αλλάξει η ανάθεση ή το Coach.
+
 ## Δίπλα στην αναζήτηση
 - **Ημερομηνίες**: γρήγορες επιλογές (Today, Tomorrow, Next Five Days, This Month, Last Month, This Year, Εκκρεμότητες 7 ημερών…). Η επιλογή περνά στην καρτέλα **All** και εφαρμόζεται ως φίλτρο «Period». **Καθαρισμός** για να φύγει.
 - **Ακυρωμένα**: διακόπτης που δείχνει ή κρύβει τα ακυρωμένα σε όλες τις καρτέλες, στους αριθμούς και στα σύνολα. Ο αριθμός δείχνει πόσα ακυρωμένα έχει η ανοιχτή καρτέλα.

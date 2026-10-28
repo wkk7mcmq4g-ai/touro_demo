@@ -71,7 +71,8 @@ class TransferForm
                         self::tab('Voucher Date & Time', Heroicon::OutlinedTicket, self::voucherTab(), ['Voucher_StartDt', 'Voucher_StartTime', 'Voucher_EndDt', 'Voucher_EndTime']),
                         self::listTab('Αρχεία', Heroicon::OutlinedPaperClip, FilesRelationManager::class),
                         self::tab('Taxi', Heroicon::OutlinedReceiptPercent, self::taxiTab(), ['TaxiReceipt', 'TaxiReceiptAmount', 'TaxiReceiptDate', 'TaxiReceipt_Issued', 'ElorusTaxiNumber']),
-                        self::listTab('Σχόλια Οδηγού!', Heroicon::OutlinedChatBubbleOvalLeftEllipsis, CommsRelationManager::class),
+                        self::listTab('Σχόλια Οδηγού!', Heroicon::OutlinedChatBubbleOvalLeftEllipsis, CommsRelationManager::class)
+                            ->schema([self::list(CommsRelationManager::class), self::driverInfo()]),
                         Tab::make('Audit')->icon(Heroicon::OutlinedClock)->visibleOn('edit')->schema([self::auditText()]),
                     ]),
             ]);
@@ -111,6 +112,42 @@ class TransferForm
             ->key($manager)
             ->lazy($lazy)
             ->visible(fn (string $operation, ?Transfer $record): bool => $operation === 'edit' && $record && $manager::canViewForRecord($record, EditTransfer::class));
+    }
+
+    /**
+     * Under the driver's comments, as on PHPRunner's edit page (read-only, from its datasource):
+     * Review Link = if(Get_Review_option(customer) = 0, '', Get_Review_Link(From, To, TransferType));
+     * Descr = "Οδηγός: <Get_Driver_name> / Όνομα επιβάτη: <LeadName> / <route>".
+     */
+    private static function driverInfo(): Grid
+    {
+        $info = function (?Transfer $record): array {
+            if (! $record?->getKey()) {
+                return ['review' => '', 'driver' => ''];
+            }
+
+            return once(fn (): array => (array) DB::selectOne(
+                "SELECT if(Get_Review_option(?) = 0, '', ifnull(Get_Review_Link(?, ?, ?), '')) AS review, ifnull(Get_Driver_name(?, ?), '') AS driver",
+                [(int) $record->cID_Customer, (string) $record->From, (string) $record->To, (string) $record->TransferType,
+                    (string) $record->CoachCompanyID, $record->TransferDate?->format('Y-m-d')],
+            ));
+        };
+
+        return Grid::make(['default' => 1, 'lg' => 2])->schema([
+            TextInput::make('Review_Link_shown')->label('Review Link')
+                ->disabled()->dehydrated(false)->placeholder('—')
+                ->formatStateUsing(fn (?Transfer $record): ?string => $info($record)['review'] ?: null)
+                ->suffixAction(Action::make('openReviewLink')->icon(Heroicon::OutlinedArrowTopRightOnSquare)->tooltip('Άνοιγμα')
+                    ->url(fn (?Transfer $record): ?string => $info($record)['review'] ?: null, shouldOpenInNewTab: true)
+                    ->visible(fn (?Transfer $record): bool => filled($info($record)['review']))),
+            Textarea::make('Descr_shown')->label('Descr')->rows(3)
+                ->disabled()->dehydrated(false)
+                ->formatStateUsing(fn (?Transfer $record): ?string => $record?->getKey() ? implode("\n", [
+                    'Οδηγός: '.$info($record)['driver'],
+                    'Όνομα επιβάτη: '.$record->LeadName,
+                    $record->TransferType === 'Tour' ? (string) $record->To : $record->From.' - '.$record->To,
+                ]) : null),
+        ])->visible(fn (string $operation): bool => $operation === 'edit');
     }
 
     /** PHPRunner's red section header. */

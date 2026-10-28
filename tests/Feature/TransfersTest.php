@@ -286,6 +286,35 @@ class TransfersTest extends TestCase
         DB::table('counterparties')->where('CID', $coachId)->delete();
     }
 
+    public function test_driver_column_wider_search_and_review_link_as_in_phprunner(): void
+    {
+        $this->actingAs($this->makeLegacyUser('Admin'));
+        $this->emptyTables(['drivers', 'vehicle_assignments', 'review_links']);
+        $vehicleId = DB::table('vehicles')->where('VehicleName', 'VITO 2022')->value('VehicleID');
+        $driverId = DB::table('drivers')->insertGetId(['Fullname' => 'Nikos Papas', 'MobilePhone' => '6900000000'], 'DriverID');
+        DB::table('vehicle_assignments')->insert(['VehicleID' => $vehicleId, 'DriverID' => $driverId, 'AssignmentDate' => Carbon::today()->toDateString()]);
+
+        $mine = $this->transfer(['CoachCompanyID' => 'VITO 2022', 'Notes' => 'Baby seat please', 'LeadPhone' => '+30 697 712 3456', 'LesseeName' => 'Acme Lease']);
+        $other = $this->transfer(['CoachCompanyID' => '', 'Notes' => '', 'LeadPhone' => '210 000', 'LesseeName' => 'Other']);
+
+        // The driver of the vehicle that day, in its own column (PHPRunner: DriverName).
+        Livewire::test(ListTransfers::class)
+            ->assertTableColumnExists('DriverName')
+            ->assertTableColumnStateSet('DriverName', 'Nikos Papas', $mine);
+
+        foreach (['Nikos', 'Baby seat', '6977123456', 'Acme Lease'] as $search) {
+            Livewire::test(ListTransfers::class)->searchTable($search)
+                ->assertCanSeeTableRecords([$mine])->assertCanNotSeeTableRecords([$other]);
+        }
+
+        // Review Link and Descr under the driver's comments on the edit page.
+        DB::table('counterparties')->where('CID', $this->customerId)->update(['GetReview' => 1]);
+        DB::table('review_links')->insert(['TransferType' => 'Arrival', 'From' => 'Athens Airport', 'To' => 'Hotel Grande Bretagne', 'ReviewLink' => 'https://example.com/review']);
+        $edit = Livewire::test(EditTransfer::class, ['record' => $mine->getKey()]);
+        $this->assertSame('https://example.com/review', $edit->get('data.Review_Link_shown'));
+        $this->assertSame("Οδηγός: Nikos Papas\nΌνομα επιβάτη: {$mine->LeadName}\nAthens Airport - Hotel Grande Bretagne", $edit->get('data.Descr_shown'));
+    }
+
     public function test_copy_transfer_button(): void
     {
         $this->actingAs($this->makeLegacyUser('Entry'));
