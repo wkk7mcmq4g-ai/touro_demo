@@ -129,6 +129,10 @@ class ActivityLogTest extends TestCase
             ->mountTableAction('details', $log)
             ->assertHasNoErrors();
 
+        // Access Log is off the menu (the page still opens by its address).
+        $this->assertFalse(\App\Filament\Resources\AccessLogs\AccessLogResource::shouldRegisterNavigation());
+        $this->get(\App\Filament\Resources\AccessLogs\AccessLogResource::getUrl())->assertOk();
+
         $details = view('filament.activity-log.details', ['log' => $log])->render();
         $this->assertStringContainsString('Πριν', $details);
         $this->assertStringContainsString('Rental', $details);

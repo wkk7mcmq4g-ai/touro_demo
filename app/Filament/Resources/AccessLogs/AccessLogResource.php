@@ -39,6 +39,9 @@ class AccessLogResource extends Resource
 
     protected static ?string $slug = 'access-log';
 
+    /** Not on the menu (George, 2026-10-28): logins are in Ιστορικό ενεργειών; the page still opens by its address. */
+    protected static bool $shouldRegisterNavigation = false;
+
     public static function canCreate(): bool
     {
         return false;
