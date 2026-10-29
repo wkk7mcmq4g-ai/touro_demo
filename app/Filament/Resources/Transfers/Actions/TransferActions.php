@@ -6,6 +6,7 @@ use App\Enums\UserGroup;
 use App\Filament\Resources\Transfers\TransferResource;
 use App\Models\Transfer;
 use App\Support\Lookups;
+use App\Support\TransferCellEdit;
 use Closure;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -108,6 +109,48 @@ class TransferActions
     }
 
     /** "Κλείσιμο Πωλήσεων" (New_Button32): received = sale price on the selected transfers. */
+    /**
+     * Change one field on all ticked transfers (e.g. a group of 6 jobs on the same coach). Each one is
+     * saved through the model with the quick-edit checks (App\Support\TransferCellEdit), so the
+     * triggers, price procedure and own-vehicle rule run per transfer as on the form.
+     */
+    public static function bulkSet(string $field): BulkAction
+    {
+        $coach = $field === 'CoachCompanyID';
+
+        return BulkAction::make($coach ? 'bulkCoach' : 'bulkStatus')
+            ->label($coach ? 'Αλλαγή Coach…' : 'Αλλαγή Status…')
+            ->icon($coach ? Heroicon::OutlinedTruck : Heroicon::OutlinedCheckCircle)
+            ->modalHeading(fn (Collection $records): string => ($coach ? 'Coach' : 'Status').' για '.$records->count().' transfers')
+            ->modalWidth(Width::Medium)
+            ->modalSubmitActionLabel('Αλλαγή σε όλα')
+            ->schema([
+                $coach
+                    ? Select::make('value')->label('Coach')->options(fn (): array => Lookups::coaches())->searchable()
+                        ->placeholder('— Χωρίς όχημα —')->helperText('Κενό = χωρίς όχημα. Τα δικά μας οχήματα μηδενίζουν την τιμή αγοράς.')
+                    : Select::make('value')->label('Status')->options(fn (): array => Lookups::statusesFor(auth()->user()?->groupid))->required(),
+            ])
+            ->visible(fn (): bool => TransferCellEdit::allowed())
+            ->deselectRecordsAfterCompletion()
+            ->action(function (Collection $records, array $data) use ($field, $coach): void {
+                $value = (string) ($data['value'] ?? '');
+                $refused = [];
+                foreach ($records as $record) {
+                    if (($error = TransferCellEdit::save((int) $record->getKey(), $field, $value)) !== null) {
+                        $refused[] = '#'.$record->getKey().': '.$error;
+                    }
+                }
+                $done = $records->count() - count($refused);
+                $label = ($coach ? 'Coach' : 'Status').': '.($value === '' ? '—' : $value);
+
+                Notification::make()
+                    ->{$refused === [] ? 'success' : 'warning'}()
+                    ->title($label.' σε '.$done.' transfers')
+                    ->body($refused === [] ? null : implode("\n", $refused))
+                    ->send();
+            });
+    }
+
     public static function closeSales(): BulkAction
     {
         return BulkAction::make('closeSales')

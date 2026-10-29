@@ -321,6 +321,33 @@ class TransfersTest extends TestCase
         $this->assertSame([], \App\Support\TransferCellEdit::cellAttributes($transfer, 'Status'));
     }
 
+    public function test_bulk_change_of_coach_and_status(): void
+    {
+        $this->actingAs($this->makeLegacyUser('Admin'));
+        $group = [$this->transfer(), $this->transfer(), $this->transfer()];
+        $other = $this->transfer(['CoachCompanyID' => '']);
+
+        Livewire::test(ListTransfers::class)
+            ->callTableBulkAction('bulkCoach', $group, data: ['value' => 'VITO 2022'])
+            ->assertHasNoTableBulkActionErrors()
+            ->assertNotified('Coach: VITO 2022 σε 3 transfers');
+        foreach ($group as $t) {
+            $this->assertSame('VITO 2022', $t->fresh()->CoachCompanyID);
+            $this->assertEquals(0, $t->fresh()->PurchasePrice, 'own vehicle rule ran per transfer');
+        }
+        $this->assertSame('', $other->fresh()->CoachCompanyID);
+
+        Livewire::test(ListTransfers::class)
+            ->callTableBulkAction('bulkStatus', array_slice($group, 0, 2), data: ['value' => 'Completed'])
+            ->assertNotified('Status: Completed σε 2 transfers');
+        $this->assertSame(['Completed', 'Completed', 'Pending'], array_map(fn ($t) => $t->fresh()->Status, $group));
+
+        Livewire::test(ListTransfers::class)
+            ->callTableBulkAction('bulkCoach', $group, data: ['value' => null])
+            ->assertNotified('Coach: — σε 3 transfers');
+        $this->assertSame(['', '', ''], array_map(fn ($t) => $t->fresh()->CoachCompanyID, $group));
+    }
+
     public function test_quick_find_by_number_passenger_phone_or_booking_code(): void
     {
         $this->actingAs($this->makeLegacyUser('Entry'));
