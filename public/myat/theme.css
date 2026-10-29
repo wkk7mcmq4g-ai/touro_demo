@@ -4049,3 +4049,59 @@ textarea.myat-cell-input { resize: vertical; min-height: 7rem; }
 .myat-attention-jobs-more a { font-size: .78rem; font-weight: 600; color: var(--primary-600); }
 .dark .myat-attention-job-time { color: var(--gray-100); }
 .dark .myat-attention-job-route { color: var(--gray-200); }
+
+/* «Σήμερα» (TodayJobs): the day's jobs as cards, for the phone. */
+.myat-today { display:flex; flex-direction:column; gap:.75rem; max-width:44rem; margin:0 auto; width:100%; }
+.myat-today-bar { display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; }
+.myat-today-date { font-weight:700; color:var(--myat-navy); text-transform:capitalize; }
+.dark .myat-today-date { color:#fff; }
+.myat-today-filter { display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; position:sticky; top:4rem; z-index:5; padding:.375rem 0; background:var(--myat-page); }
+.dark .myat-today-filter { background:var(--gray-950); }
+.myat-today-filter > button { display:inline-flex; align-items:center; gap:.375rem; height:2.25rem; padding:0 .875rem; border-radius:999px; border:1px solid var(--gray-300); background:#fff; font-size:.875rem; font-weight:600; color:var(--gray-700); }
+.myat-today-filter > button b { font-weight:800; }
+.myat-today-filter > button.is-warn b { color:#c2410c; }
+.myat-today-filter > button.is-on { background:var(--myat-navy); border-color:var(--myat-navy); color:#fff; }
+.myat-today-filter > button.is-on.is-warn b { color:#fed7aa; }
+.dark .myat-today-filter > button { background:var(--gray-900); border-color:var(--gray-700); color:var(--gray-200); }
+.dark .myat-today-filter > button.is-on { background:var(--myat-azure-dark); border-color:var(--myat-azure-dark); color:#fff; }
+.myat-today-search { flex:1 1 12rem; display:flex; align-items:center; gap:.375rem; height:2.25rem; padding:0 .75rem; border-radius:999px; border:1px solid var(--gray-300); background:#fff; color:var(--gray-400); }
+.myat-today-search input { flex:1; min-width:0; border:0; background:transparent; padding:0; font-size:.9375rem; color:var(--gray-900); outline:none; box-shadow:none; }
+.dark .myat-today-search { background:var(--gray-900); border-color:var(--gray-700); }
+.dark .myat-today-search input { color:#fff; }
+
+.myat-today-card { display:flex; flex-direction:column; gap:.625rem; padding:1rem; border-radius:1rem; background:#fff; border:1px solid var(--myat-line); box-shadow:var(--myat-shadow); border-left:4px solid var(--myat-azure); }
+.myat-today-card.is-open { border-left-color:#f97316; }
+.dark .myat-today-card { background:var(--gray-900); border-color:var(--gray-800); border-left-color:var(--myat-azure); }
+.dark .myat-today-card.is-open { border-left-color:#f97316; }
+.myat-today-head { display:flex; align-items:baseline; gap:.625rem; }
+.myat-today-time { font-size:1.5rem; font-weight:800; line-height:1; color:var(--myat-navy); font-variant-numeric:tabular-nums; }
+.dark .myat-today-time { color:#fff; }
+.myat-today-type { font-size:.8125rem; font-weight:600; color:var(--gray-500); }
+.myat-today-id { margin-left:auto; font-size:.8125rem; font-weight:700; color:var(--myat-azure-dark); }
+.myat-today-route { display:flex; flex-wrap:wrap; align-items:center; gap:.25rem .5rem; font-size:1rem; font-weight:600; color:var(--gray-900); }
+.myat-today-route svg { color:var(--gray-400); flex:none; }
+.dark .myat-today-route { color:var(--gray-100); }
+.myat-today-flight { display:flex; align-items:center; gap:.375rem; font-size:.875rem; color:var(--gray-600); }
+.dark .myat-today-flight { color:var(--gray-300); }
+
+.myat-today-driver, .myat-today-pax { display:flex; align-items:center; justify-content:space-between; gap:.75rem; padding-top:.625rem; border-top:1px solid var(--myat-line); }
+.dark .myat-today-driver, .dark .myat-today-pax { border-color:var(--gray-800); }
+.myat-today-who { font-size:1.25rem; font-weight:800; color:var(--myat-navy); line-height:1.2; }
+.dark .myat-today-who { color:#fff; }
+.myat-today-lead { font-size:1rem; font-weight:700; color:var(--gray-900); }
+.dark .myat-today-lead { color:var(--gray-100); }
+.myat-today-sub { font-size:.8125rem; color:var(--gray-500); }
+.myat-today-none { font-size:1.125rem; font-weight:800; color:#c2410c; }
+.myat-today-fix { display:inline-flex; align-items:center; gap:.375rem; height:2.5rem; padding:0 1rem; border-radius:.75rem; background:var(--myat-navy); color:#fff; font-weight:700; font-size:.875rem; }
+.myat-today-call { display:flex; gap:.5rem; flex:none; }
+.myat-today-call a { display:inline-flex; align-items:center; justify-content:center; width:2.75rem; height:2.75rem; border-radius:999px; background:var(--myat-azure-soft); color:var(--myat-azure-dark); }
+.myat-today-call a.is-wa { background:#dcfce7; color:#15803d; }
+.dark .myat-today-call a { background:rgb(var(--myat-azure-rgb) / .15); color:var(--myat-azure-light); }
+.dark .myat-today-call a.is-wa { background:rgb(22 163 74 / .18); color:#4ade80; }
+
+.myat-today-foot { display:flex; flex-wrap:wrap; align-items:center; gap:.375rem .75rem; padding-top:.5rem; border-top:1px dashed var(--myat-line); font-size:.8125rem; color:var(--gray-600); }
+.dark .myat-today-foot { border-color:var(--gray-800); color:var(--gray-300); }
+.myat-today-status { padding:.125rem .5rem; border-radius:999px; background:var(--gray-100); font-weight:600; color:var(--gray-700); }
+.dark .myat-today-status { background:var(--gray-800); color:var(--gray-200); }
+.myat-today-notes { flex-basis:100%; white-space:pre-line; }
+.myat-today-empty { padding:2rem 1rem; text-align:center; color:var(--gray-500); }
