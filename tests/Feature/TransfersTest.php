@@ -965,6 +965,34 @@ class TransfersTest extends TestCase
         $this->assertNull($page->instance()->activePeriod());
     }
 
+    public function test_ready_made_views_menu(): void
+    {
+        $this->actingAs($this->makeLegacyUser('Entry'));
+        $tomorrow = Carbon::tomorrow();
+        $airport = $this->transfer(['TransferDate' => $tomorrow, 'From' => 'Athens Airport', 'To' => 'Hotel Plaka', 'CoachCompanyID' => 'VITO']);
+        $port = $this->transfer(['TransferDate' => $tomorrow, 'From' => 'Hotel Plaka', 'To' => 'Piraeus Port', 'CoachCompanyID' => '']);
+        $later = $this->transfer(['TransferDate' => Carbon::today()->addDays(5), 'From' => 'Athens Airport', 'To' => 'Hotel Plaka']);
+        $tourNoGuide = $this->transfer(['TransferDate' => Carbon::today()->addDays(3), 'TransferType' => 'Tour', 'Assistant' => 'TBA']);
+        $tourGuide = $this->transfer(['TransferDate' => Carbon::today()->addDays(3), 'TransferType' => 'Tour', 'Assistant' => 'Maria']);
+        $onHold = $this->transfer(['TransferDate' => Carbon::yesterday(), 'PaymentOnHoldFlag' => 'Ναι']);
+        $toInvoice = $this->transfer(['TransferDate' => Carbon::yesterday(), 'Status' => 'Completed', 'TobeInvoiced' => 'Τιμολόγιο', 'InvoicedIssued' => '']);
+        $invoiced = $this->transfer(['TransferDate' => Carbon::yesterday(), 'Status' => 'Completed', 'TobeInvoiced' => 'Τιμολόγιο', 'InvoicedIssued' => 'Ναι']);
+
+        $page = Livewire::test(ListTransfers::class)->assertSee('Προβολές')->assertSee('Αύριο · Αεροδρόμιο')
+            ->call('applyView', 'tomorrow_airport')
+            ->assertSet('activeTab', 'all')
+            ->assertCanSeeTableRecords([$airport])->assertCanNotSeeTableRecords([$port, $later]);
+        $this->assertSame('tomorrow_airport', $page->instance()->activeView());
+
+        $page->call('applyView', 'tomorrow_port')->assertCanSeeTableRecords([$port])->assertCanNotSeeTableRecords([$airport]);
+        $page->call('applyView', 'tomorrow_open')->assertCanSeeTableRecords([$port])->assertCanNotSeeTableRecords([$airport]);
+        $page->call('applyView', 'week_no_guide')->assertCanSeeTableRecords([$tourNoGuide])->assertCanNotSeeTableRecords([$tourGuide]);
+        $page->call('applyView', 'on_hold')->assertCanSeeTableRecords([$onHold])->assertCanNotSeeTableRecords([$toInvoice]);
+        $page->call('applyView', 'to_invoice')->assertCanSeeTableRecords([$toInvoice])->assertCanNotSeeTableRecords([$invoiced]);
+        $page->call('applyView', '')->assertCanSeeTableRecords([$airport, $onHold]);
+        $this->assertNull($page->instance()->activeView());
+    }
+
     public function test_own_vehicle_filter_next_to_coach(): void
     {
         $this->actingAs($this->makeLegacyUser('Entry'));

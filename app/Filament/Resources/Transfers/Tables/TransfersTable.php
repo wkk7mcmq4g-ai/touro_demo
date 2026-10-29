@@ -9,6 +9,7 @@ use App\Models\Transfer;
 use App\Support\FilterValues;
 use App\Support\Lookups;
 use App\Support\TransferCellEdit;
+use App\Support\TransferViews;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
@@ -339,6 +340,11 @@ class TransfersTable
                 ->options(self::PERIODS)
                 ->query(fn (Builder $query, array $data): Builder => FilterValues::any($query, $data, collect(self::PERIODS)
                     ->mapWithKeys(fn (string $label, string $key): array => [$key => fn (Builder $q) => self::period($q, $key)])->all())),
+            // Ready-made views ("Προβολές" menu, ListTransfers::applyView).
+            SelectFilter::make('view')
+                ->label('Προβολή')
+                ->options(TransferViews::options())
+                ->query(fn (Builder $query, array $data): Builder => filled($data['value'] ?? null) ? TransferViews::apply($query, (string) $data['value']) : $query),
             $dateRange('import_dates', 'ImportDate', 'Date in'),
             SelectFilter::make('cID_Customer')->label('Supplier')->multiple()->searchable()
                 ->options(fn (): array => Lookups::customers()),

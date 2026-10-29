@@ -11,6 +11,7 @@ use App\Filament\Resources\Transfers\TransferResource;
 use App\Filament\Resources\Transfers\Widgets\TransferTotals;
 use App\Models\Transfer;
 use App\Support\Lookups;
+use App\Support\TransferViews;
 use App\Support\PhpRunnerLayouts;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -88,6 +89,22 @@ class ListTransfers extends ListRecords
         $this->activeTab = 'all';
         $this->tableFilters['period'] = ['values' => $key === '' ? [] : [$key]];
         $this->updatedTableFilters();
+    }
+
+    /** "Προβολές": one of the ready-made views (TransferViews) over All; '' clears it. */
+    public function applyView(string $key): void
+    {
+        abort_unless($key === '' || array_key_exists($key, TransferViews::VIEWS), 422);
+        $this->activeTab = 'all';
+        $this->tableFilters['view'] = ['value' => $key === '' ? null : $key];
+        $this->updatedTableFilters();
+    }
+
+    public function activeView(): ?string
+    {
+        $value = $this->tableFilters['view']['value'] ?? null;
+
+        return filled($value) && array_key_exists((string) $value, TransferViews::VIEWS) ? (string) $value : null;
     }
 
     public function activePeriod(): ?string

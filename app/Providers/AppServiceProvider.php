@@ -156,7 +156,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Transfers: the Ημερομηνίες shortcuts menu and the quick "Ακυρωμένα" toggle next to the search box.
         FilamentView::registerRenderHook(TablesRenderHook::TOOLBAR_SEARCH_BEFORE, fn (): string => Livewire::current() instanceof ListTransfers
-            ? view('filament.transfers.date-shortcuts')->render().view('filament.transfers.cancelled-toggle')->render() : '');
+            ? view('filament.transfers.views-menu')->render().view('filament.transfers.date-shortcuts')->render().view('filament.transfers.cancelled-toggle')->render() : '');
 
         // Transfers: the quick-edit window opened by a double-click on a Coach / Status / Time /
         // Assistant / Driver Notes cell (stays in the browser until Αποθήκευση).
