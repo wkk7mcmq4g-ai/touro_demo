@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Transfer;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 /**
@@ -15,7 +16,56 @@ use Illuminate\Support\Str;
  */
 class TransferCellEdit
 {
+    /** Fields with a double-click window on the Transfers list. */
     public const FIELDS = ['CoachCompanyID', 'Status', 'TransferTime', 'Assistant', 'DriverNotes'];
+
+    /** The form's fixed lists (TransferForm uses the same). */
+    public const GUIDE_STATUSES = ['Request', 'Client Rejected', 'Payment Pending', 'Payment Received'];
+
+    public const TICKETS = ['Contacted', 'Paid in Advance', 'Cash', "Purchased by\u{a0}client", 'No tickets needed'];
+
+    public const INVOICE_TYPES = ['Όχι', 'Τιμολόγιο', 'Απόδειξη'];
+
+    /** Money fields: only for users who see the money (as the totals above the list). */
+    public const MONEY_FIELDS = ['TobeInvoiced', 'InvoicedIssued', 'PaymentOnHoldFlag', 'SalePrice', 'PurchasePrice'];
+
+    /**
+     * The fields «Αλλαγή» sets on many ticked transfers at once: label, group and the kind of input.
+     * Kinds: list (options, `empty` = label of the blank choice, none = required), text, textarea, date, money.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public static function bulkFields(): array
+    {
+        $yes = ['Ναι' => 'Ναι'];
+        $fields = [
+            'CoachCompanyID' => ['label' => 'Coach', 'group' => 'Λειτουργικά', 'kind' => 'list', 'options' => Lookups::coaches(), 'empty' => '— Χωρίς όχημα —',
+                'hint' => 'Τα δικά μας οχήματα μηδενίζουν την τιμή αγοράς.'],
+            'Status' => ['label' => 'Status', 'group' => 'Λειτουργικά', 'kind' => 'list', 'options' => self::statuses()],
+            'TransferDate' => ['label' => 'Transfer Date', 'group' => 'Λειτουργικά', 'kind' => 'date'],
+            'TransferTime' => ['label' => 'Transfer Time', 'group' => 'Λειτουργικά', 'kind' => 'text', 'max' => 50, 'placeholder' => '14:30 ή TBD'],
+            'CarTypeID' => ['label' => 'Car Type', 'group' => 'Λειτουργικά', 'kind' => 'list', 'options' => Lookups::optionValues('CarType')],
+            'Assistant' => ['label' => 'Assistant (ξεναγός)', 'group' => 'Λειτουργικά', 'kind' => 'text', 'max' => 500, 'suggest' => array_keys(Lookups::assistantNames()),
+                'hint' => 'Κενό = χωρίς ξεναγό.'],
+            'AssistantStatus' => ['label' => 'Guide status', 'group' => 'Λειτουργικά', 'kind' => 'list', 'options' => array_combine(self::GUIDE_STATUSES, self::GUIDE_STATUSES), 'empty' => '— Κενό —'],
+            'TicketsRequested' => ['label' => 'Tickets', 'group' => 'Λειτουργικά', 'kind' => 'list', 'options' => array_combine(self::TICKETS, self::TICKETS), 'empty' => '— Κενό —'],
+            'DriverNotes' => ['label' => 'Driver Notes', 'group' => 'Λειτουργικά', 'kind' => 'textarea', 'max' => 2500, 'hint' => 'Αντικαθιστά τα Driver Notes όλων.'],
+            'TobeInvoiced' => ['label' => 'Τύπος παραστ.', 'group' => 'Οικονομικά', 'kind' => 'list', 'options' => array_combine(self::INVOICE_TYPES, self::INVOICE_TYPES)],
+            'InvoicedIssued' => ['label' => 'Εκδόθηκε παραστ.', 'group' => 'Οικονομικά', 'kind' => 'list', 'options' => $yes, 'empty' => '— Όχι (κενό) —'],
+            'PaymentOnHoldFlag' => ['label' => 'Αναμ. Έκδ. (on hold)', 'group' => 'Οικονομικά', 'kind' => 'list', 'options' => $yes, 'empty' => '— Όχι (κενό) —'],
+            'SalePrice' => ['label' => 'Τιμή Πώλ.', 'group' => 'Οικονομικά', 'kind' => 'money',
+                'hint' => 'Όπου η τιμή βγαίνει από τα Products, την ξαναϋπολογίζει η βάση.'],
+            'PurchasePrice' => ['label' => 'Τιμή Αγορ.', 'group' => 'Οικονομικά', 'kind' => 'money',
+                'hint' => 'Στα δικά μας οχήματα η τιμή αγοράς μένει 0.'],
+        ];
+
+        return self::seesMoney() ? $fields : array_diff_key($fields, array_flip(self::MONEY_FIELDS));
+    }
+
+    public static function seesMoney(): bool
+    {
+        return (bool) auth()->user()?->may('Dashboard', 'view');
+    }
 
     /**
      * What the window shows for each field (sent to the browser once per page).
@@ -77,11 +127,19 @@ class TransferCellEdit
     public static function save(int $id, string $field, ?string $value): ?string
     {
         abort_unless(self::allowed(), 403);
-        abort_unless(in_array($field, self::FIELDS, true), 422);
+        abort_unless(in_array($field, self::FIELDS, true) || array_key_exists($field, self::BULK_KINDS), 422);
+        abort_if(in_array($field, self::MONEY_FIELDS, true) && ! self::seesMoney(), 403);
 
         $transfer = Transfer::query()->findOrFail($id);
         $value = $field === 'DriverNotes' ? rtrim((string) $value) : trim((string) $value);
-        $current = (string) ($transfer->getAttribute($field) ?? '');
+        $current = match (true) {
+            $field === 'TransferDate' => $transfer->TransferDate?->toDateString() ?? '',
+            in_array($field, ['SalePrice', 'PurchasePrice'], true) => $transfer->getAttribute($field) === null ? '' : (string) (float) $transfer->getAttribute($field),
+            default => (string) ($transfer->getAttribute($field) ?? ''),
+        };
+        if (in_array($field, ['SalePrice', 'PurchasePrice'], true) && is_numeric(str_replace(',', '.', $value))) {
+            $value = (string) (float) str_replace(',', '.', $value);
+        }
 
         if ($value === $current) {
             return null;
@@ -101,15 +159,58 @@ class TransferCellEdit
             },
             'Assistant' => mb_strlen($value) > 500 ? 'Έως 500 χαρακτήρες.' : null,
             'DriverNotes' => mb_strlen($value) > 2500 ? 'Έως 2.500 χαρακτήρες.' : null,
+            'TransferDate' => self::dateError($value, $transfer),
+            'CarTypeID' => self::listError($value, Lookups::optionValues('CarType'), required: true),
+            'AssistantStatus' => self::listError($value, array_flip(self::GUIDE_STATUSES)),
+            'TicketsRequested' => self::listError($value, array_flip(self::TICKETS)),
+            'TobeInvoiced' => self::listError($value, array_flip(self::INVOICE_TYPES), required: true),
+            'InvoicedIssued', 'PaymentOnHoldFlag' => self::listError($value, ['Ναι' => true]),
+            'SalePrice', 'PurchasePrice' => match (true) {
+                $value === '' => 'Η τιμή είναι υποχρεωτική.',
+                ! is_numeric($value) => 'Γράψτε αριθμό.',
+                (float) $value < 0 => 'Η τιμή δεν μπορεί να είναι αρνητική.',
+                default => null,
+            },
         };
         if ($error !== null) {
             return $error;
         }
 
-        $transfer->setAttribute($field, $value);
+        $transfer->setAttribute($field, in_array($field, ['SalePrice', 'PurchasePrice'], true) ? (float) $value : $value);
         $transfer->save();
 
         return null;
+    }
+
+    /** The fields only «Αλλαγή» sets (the double-click ones are in FIELDS). */
+    private const BULK_KINDS = ['TransferDate' => 'date', 'CarTypeID' => 'list', 'AssistantStatus' => 'list', 'TicketsRequested' => 'list',
+        'TobeInvoiced' => 'list', 'InvoicedIssued' => 'list', 'PaymentOnHoldFlag' => 'list', 'SalePrice' => 'money', 'PurchasePrice' => 'money'];
+
+    private static function listError(string $value, array $options, bool $required = false): ?string
+    {
+        return match (true) {
+            $value === '' => $required ? 'Η τιμή είναι υποχρεωτική.' : null,
+            ! array_key_exists($value, $options) => 'Το «'.$value.'» δεν είναι στη λίστα.',
+            default => null,
+        };
+    }
+
+    /** The form's date checks (TransferRules): required, and a changed date not in the past. */
+    private static function dateError(string $value, Transfer $transfer): ?string
+    {
+        if ($value === '') {
+            return 'Η ημερομηνία είναι υποχρεωτική.';
+        }
+        try {
+            $date = Carbon::createFromFormat('Y-m-d', $value);
+        } catch (\Throwable) {
+            $date = false;
+        }
+        if (! $date || $date->format('Y-m-d') !== $value) {
+            return 'Μη έγκυρη ημερομηνία.';
+        }
+
+        return TransferRules::transferDateError($value, $transfer, $transfer->ImportDate, false);
     }
 
     /** "#10482 · Coach: VITO 2022" for the confirmation. */

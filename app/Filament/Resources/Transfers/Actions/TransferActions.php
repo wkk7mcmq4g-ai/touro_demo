@@ -16,11 +16,14 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Text;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 /**
  * The PHPRunner custom buttons of the transfers list (spec/buttons/New_Button*.txt).
@@ -168,26 +171,61 @@ class TransferActions
      * saved through the model with the quick-edit checks (App\Support\TransferCellEdit), so the
      * triggers, price procedure and own-vehicle rule run per transfer as on the form.
      */
-    public static function bulkSet(string $field): BulkAction
+    /**
+     * «Αλλαγή»: one field, one value, on all ticked transfers. Pick the field (TransferCellEdit::bulkFields:
+     * operational ones for everyone who edits transfers, money ones only for those who see the money),
+     * then the value. Each transfer is saved on its own with the form's checks; refusals are listed.
+     */
+    public static function bulkChange(): BulkAction
     {
-        $coach = $field === 'CoachCompanyID';
+        $fields = fn (): array => TransferCellEdit::bulkFields();
+        $is = fn (string $field): Closure => fn (Get $get): bool => $get('field') === $field;
 
-        return BulkAction::make($coach ? 'bulkCoach' : 'bulkStatus')
-            ->label($coach ? 'Αλλαγή Coach…' : 'Αλλαγή Status…')
-            ->icon($coach ? Heroicon::OutlinedTruck : Heroicon::OutlinedCheckCircle)
-            ->modalHeading(fn (Collection $records): string => ($coach ? 'Coach' : 'Status').' για '.$records->count().' transfers')
+        return BulkAction::make('bulkChange')
+            ->label('Αλλαγή')
+            ->icon(Heroicon::OutlinedPencilSquare)
+            ->button()
+            ->color('gray')
+            ->modalHeading(fn (Collection $records): string => 'Αλλαγή σε '.$records->count().' transfers')
+            ->modalDescription('Ένα πεδίο, ίδια τιμή σε όλα. Ισχύουν οι κανόνες της φόρμας.')
             ->modalWidth(Width::Medium)
             ->modalSubmitActionLabel('Αλλαγή σε όλα')
-            ->schema([
-                $coach
-                    ? Select::make('value')->label('Coach')->options(fn (): array => Lookups::coaches())->searchable()
-                        ->placeholder('— Χωρίς όχημα —')->helperText('Κενό = χωρίς όχημα. Τα δικά μας οχήματα μηδενίζουν την τιμή αγοράς.')
-                    : Select::make('value')->label('Status')->options(fn (): array => Lookups::statusesFor(auth()->user()?->groupid))->required(),
-            ])
+            // Built when the window opens (the lists are read then, not on every page load).
+            ->schema(function () use ($fields, $is): array {
+                $inputs = [];
+                foreach (TransferCellEdit::bulkFields() as $name => $f) {
+                    $id = 'v_'.$name;
+                    $input = match ($f['kind']) {
+                        'list' => Select::make($id)->options($f['options'])->searchable(count($f['options']) > 8)
+                            ->placeholder($f['empty'] ?? 'Διαλέξτε…')->required(! isset($f['empty'])),
+                        'date' => DatePicker::make($id)->required(),
+                        'money' => TextInput::make($id)->numeric()->minValue(0)->prefix('€')->required(),
+                        'textarea' => Textarea::make($id)->rows(4)->maxLength($f['max']),
+                        default => TextInput::make($id)->maxLength($f['max'])->placeholder($f['placeholder'] ?? null)
+                            ->datalist($f['suggest'] ?? null)->autocomplete(false)->required($name === 'TransferTime'),
+                    };
+                    $inputs[] = $input->label($f['label'])->helperText($f['hint'] ?? null)->visible($is($name));
+                }
+
+                return [
+                    Select::make('field')->label('Πεδίο')->required()->live()
+                        ->options(function () use ($fields): array {
+                            $grouped = [];
+                            foreach ($fields() as $name => $f) {
+                                $grouped[$f['group']][$name] = $f['label'];
+                            }
+
+                            return $grouped;
+                        }),
+                    ...$inputs,
+                ];
+            })
             ->visible(fn (): bool => TransferCellEdit::allowed())
             ->deselectRecordsAfterCompletion()
-            ->action(function (Collection $records, array $data) use ($field, $coach): void {
-                $value = (string) ($data['value'] ?? '');
+            ->action(function (Collection $records, array $data) use ($fields): void {
+                $field = (string) $data['field'];
+                $f = $fields()[$field] ?? abort(422);
+                $value = (string) ($data['v_'.$field] ?? '');
                 $refused = [];
                 foreach ($records as $record) {
                     if (($error = TransferCellEdit::save((int) $record->getKey(), $field, $value)) !== null) {
@@ -195,11 +233,15 @@ class TransferActions
                     }
                 }
                 $done = $records->count() - count($refused);
-                $label = ($coach ? 'Coach' : 'Status').': '.($value === '' ? '—' : $value);
+                $shown = match (true) {
+                    $value === '' => '—',
+                    $f['kind'] === 'date' => Carbon::parse($value)->format('d/m/Y'),
+                    default => Str::limit(str_replace("\n", ' ', $value), 40),
+                };
 
                 Notification::make()
                     ->{$refused === [] ? 'success' : 'warning'}()
-                    ->title($label.' σε '.$done.' transfers')
+                    ->title(Str::before($f['label'], ' (').': '.$shown.' σε '.$done.' transfers')
                     ->body($refused === [] ? null : implode("\n", $refused))
                     ->send();
             });

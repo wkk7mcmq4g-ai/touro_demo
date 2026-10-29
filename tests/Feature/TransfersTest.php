@@ -23,6 +23,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
+use App\Support\TransferCellEdit;
 use Tests\TestCase;
 
 class TransfersTest extends TestCase
@@ -315,8 +316,8 @@ class TransfersTest extends TestCase
         $save('TransferTime', str_repeat('9', 51))->assertReturned('Έως 50 χαρακτήρες.');
         $this->assertSame(['Completed', '16:45'], [$transfer->fresh()->Status, $transfer->fresh()->TransferTime]);
 
-        // Only fields of the window, only for users who may edit transfers.
-        Livewire::test(ListTransfers::class)->call('saveTransferCell', $transfer->getKey(), 'SalePrice', '1')->assertStatus(422);
+        // Only the editable fields, only for users who may edit transfers.
+        Livewire::test(ListTransfers::class)->call('saveTransferCell', $transfer->getKey(), 'LeadName', 'X')->assertStatus(422);
         $this->actingAs($this->makeLegacyUser('Drivers'));
         $this->assertSame([], \App\Support\TransferCellEdit::cellAttributes($transfer, 'Status'));
     }
@@ -328,7 +329,7 @@ class TransfersTest extends TestCase
         $other = $this->transfer(['CoachCompanyID' => '']);
 
         Livewire::test(ListTransfers::class)
-            ->callTableBulkAction('bulkCoach', $group, data: ['value' => 'VITO 2022'])
+            ->callTableBulkAction('bulkChange', $group, data: ['field' => 'CoachCompanyID', 'v_CoachCompanyID' => 'VITO 2022'])
             ->assertHasNoTableBulkActionErrors()
             ->assertNotified('Coach: VITO 2022 σε 3 transfers');
         foreach ($group as $t) {
@@ -338,14 +339,52 @@ class TransfersTest extends TestCase
         $this->assertSame('', $other->fresh()->CoachCompanyID);
 
         Livewire::test(ListTransfers::class)
-            ->callTableBulkAction('bulkStatus', array_slice($group, 0, 2), data: ['value' => 'Completed'])
+            ->callTableBulkAction('bulkChange', array_slice($group, 0, 2), data: ['field' => 'Status', 'v_Status' => 'Completed'])
             ->assertNotified('Status: Completed σε 2 transfers');
         $this->assertSame(['Completed', 'Completed', 'Pending'], array_map(fn ($t) => $t->fresh()->Status, $group));
 
         Livewire::test(ListTransfers::class)
-            ->callTableBulkAction('bulkCoach', $group, data: ['value' => null])
+            ->callTableBulkAction('bulkChange', $group, data: ['field' => 'CoachCompanyID', 'v_CoachCompanyID' => null])
             ->assertNotified('Coach: — σε 3 transfers');
         $this->assertSame(['', '', ''], array_map(fn ($t) => $t->fresh()->CoachCompanyID, $group));
+    }
+
+    public function test_bulk_change_of_more_fields(): void
+    {
+        $this->actingAs($this->makeLegacyUser('Admin'));
+        $group = [$this->transfer(), $this->transfer()];
+        $page = fn () => Livewire::test(ListTransfers::class)->set('activeTab', 'all');
+        $set = fn (string $field, mixed $value) => $page()->callTableBulkAction('bulkChange', $group, data: ['field' => $field, 'v_'.$field => $value])->assertHasNoTableBulkActionErrors();
+        $values = fn (string $field): array => array_map(fn ($t) => $t->fresh()->getAttribute($field), $group);
+
+        $newDate = Carbon::today()->addDays(4);
+        $set('TransferDate', $newDate->toDateString())->assertNotified('Transfer Date: '.$newDate->format('d/m/Y').' σε 2 transfers');
+        $this->assertSame([$newDate->toDateString(), $newDate->toDateString()], array_map(fn ($d) => $d->toDateString(), $values('TransferDate')));
+
+        $set('TransferTime', '07:45');
+        $set('Assistant', 'Eleni K');
+        $set('AssistantStatus', 'Request');
+        $set('TicketsRequested', 'Cash');
+        $set('DriverNotes', "Sign: ACME\nWater");
+        $set('TobeInvoiced', 'Απόδειξη');
+        $set('InvoicedIssued', 'Ναι');
+        $set('PaymentOnHoldFlag', 'Ναι');
+        $set('PurchasePrice', '45.5');
+        $this->assertSame(['07:45', 'Eleni K', 'Request', 'Cash', "Sign: ACME\nWater", 'Απόδειξη', 'Ναι', 'Ναι'],
+            array_map(fn ($f) => $values($f)[1], ['TransferTime', 'Assistant', 'AssistantStatus', 'TicketsRequested', 'DriverNotes', 'TobeInvoiced', 'InvoicedIssued', 'PaymentOnHoldFlag']));
+        $this->assertEquals([45.5, 45.5], $values('PurchasePrice'));
+
+        // The form's checks: a date in the past is refused and listed.
+        $page()->callTableBulkAction('bulkChange', $group, data: ['field' => 'TransferDate', 'v_TransferDate' => Carbon::today()->subDays(2)->toDateString()])
+            ->assertNotified('Transfer Date: '.Carbon::today()->subDays(2)->format('d/m/Y').' σε 0 transfers');
+        $this->assertSame($newDate->toDateString(), $group[0]->fresh()->TransferDate->toDateString());
+
+        // Entry doesn't see the money: no money fields, and the save refuses them.
+        $this->actingAs($this->makeLegacyUser('Entry'));
+        $this->assertArrayNotHasKey('SalePrice', TransferCellEdit::bulkFields());
+        $this->assertArrayHasKey('CarTypeID', TransferCellEdit::bulkFields());
+        $this->expectException(\Symfony\Component\HttpKernel\Exception\HttpException::class);
+        TransferCellEdit::save((int) $group[0]->getKey(), 'SalePrice', '10');
     }
 
     public function test_quick_find_by_number_passenger_phone_or_booking_code(): void

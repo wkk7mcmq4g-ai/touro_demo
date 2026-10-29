@@ -135,11 +135,8 @@ class TransfersTable
             ], position: RecordActionsPosition::BeforeColumns)
             // PHPRunner's "Τιμολόγηση" menu: buttons that work on the ticked transfers.
             ->toolbarActions([
-                // Change Coach or Status on all ticked transfers at once.
-                BulkActionGroup::make([
-                    TransferActions::bulkSet('CoachCompanyID'),
-                    TransferActions::bulkSet('Status'),
-                ])->label('Αλλαγή')->icon(Heroicon::OutlinedPencilSquare)->button(),
+                // One field, same value, on all ticked transfers.
+                TransferActions::bulkChange(),
                 BulkActionGroup::make([
                     BulkActionGroup::make(InvoicingActions::forTransfers())->dropdown(false),
                     BulkActionGroup::make([

@@ -13,6 +13,7 @@ use App\Filament\Resources\Transfers\RelationManagers\TaxiFilesRelationManager;
 use App\Models\Counterparty;
 use App\Models\Transfer;
 use App\Support\Lookups;
+use App\Support\TransferCellEdit;
 use App\Support\TransferRules;
 use Closure;
 use Filament\Actions\Action;
@@ -247,10 +248,10 @@ class TransferForm
                     TextInput::make('Assistant_Price')->label('Guide Rate')->numeric()->prefix('€'),
                     Select::make('AssistantStatus')
                         ->label('Guide status')
-                        ->options(array_combine($values = ['Request', 'Client Rejected', 'Payment Pending', 'Payment Received'], $values)),
+                        ->options(array_combine(TransferCellEdit::GUIDE_STATUSES, TransferCellEdit::GUIDE_STATUSES)),
                     Select::make('TicketsRequested')
                         ->label('Tickets')
-                        ->options(array_combine($values = ['Contacted', 'Paid in Advance', 'Cash', "Purchased by\u{a0}client", 'No tickets needed'], $values)),
+                        ->options(array_combine(TransferCellEdit::TICKETS, TransferCellEdit::TICKETS)),
                     Select::make('cID_Assistant')->label('Assistant company')->options(fn (): array => Lookups::assistantCompanies())->searchable()->columnSpan(['default' => 2, 'sm' => 1]),
                     TextInput::make('TicketsValue')->label('Tickets Value')->numeric()->prefix('€'),
                 ]),
@@ -286,7 +287,7 @@ class TransferForm
                         Select::make('PaymentOnHoldFlag')->label('Αναμ. Έκδ.')->options(['Ναι' => 'Ναι']),
                         ToggleButtons::make('TobeInvoiced')
                             ->label('Τύπος παραστ.')
-                            ->options(['Όχι' => 'Όχι', 'Τιμολόγιο' => 'Τιμολόγιο', 'Απόδειξη' => 'Απόδειξη'])
+                            ->options(array_combine(TransferCellEdit::INVOICE_TYPES, TransferCellEdit::INVOICE_TYPES))
                             ->inline()
                             ->hintIcon(Heroicon::OutlinedInformationCircle, 'Left empty, it is filled from the customer when saved.')
                             ->columnSpan(['default' => 2]),
