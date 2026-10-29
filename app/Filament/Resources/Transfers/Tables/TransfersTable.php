@@ -130,6 +130,7 @@ class TransfersTable
             ->recordActions([
                 EditAction::make()->iconButton()->tooltip('Επεξεργασία'),
                 TransferActions::copy()->iconButton()->tooltip('Αντιγραφή'),
+                TransferActions::returnTrip()->iconButton()->tooltip('Επιστροφή (Arrival ⇄ Departure)'),
                 TransferActions::sms()->iconButton(),
             ], position: RecordActionsPosition::BeforeColumns)
             // PHPRunner's "Τιμολόγηση" menu: buttons that work on the ticked transfers.

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Transfers\Pages;
 
+use App\Filament\Resources\Transfers\Actions\TransferActions;
 use App\Filament\Resources\Transfers\TransferResource;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
@@ -20,6 +21,7 @@ class EditTransfer extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            TransferActions::returnTrip(),
             DeleteAction::make(),
         ];
     }

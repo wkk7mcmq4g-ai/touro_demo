@@ -47,6 +47,60 @@ class TransferActions
             });
     }
 
+    /** Arrival ⇄ Departure for «Επιστροφή». */
+    public const RETURN_TYPES = ['Arrival' => 'Departure', 'Departure' => 'Arrival'];
+
+    /**
+     * «Επιστροφή»: the way back of an Arrival (or Departure) in one step. Copy_Transfer makes the copy
+     * (same customer, passenger, lead, pax, notes), then the copy gets the other type, From/To swapped,
+     * the date/time/flight given here, Status Pending and no vehicle, guide or driver notes. Saved
+     * through the model, so the price procedure and triggers run as for a new transfer.
+     */
+    public static function returnTrip(): Action
+    {
+        return Action::make('returnTrip')
+            ->label('Επιστροφή')
+            ->icon(Heroicon::OutlinedArrowsRightLeft)
+            ->color('gray')
+            ->visible(fn (?Transfer $record): bool => $record !== null
+                && array_key_exists((string) $record->TransferType, self::RETURN_TYPES)
+                && (bool) auth()->user()?->may('transfers', 'add'))
+            ->modalHeading(fn (Transfer $record): string => self::RETURN_TYPES[$record->TransferType].' για το #'.$record->getKey())
+            ->modalDescription(fn (Transfer $record): string => trim((string) $record->To).' → '.trim((string) $record->From).' · '.($record->LeadName ?: $record->PassengerName))
+            ->modalSubmitActionLabel('Δημιουργία')
+            ->modalWidth(Width::Medium)
+            ->schema([
+                DatePicker::make('date')->label('Ημερομηνία')->required()
+                    ->minDate(fn (Transfer $record) => $record->TransferType === 'Arrival' ? $record->TransferDate : null)
+                    ->maxDate(fn (Transfer $record) => $record->TransferType === 'Departure' ? $record->TransferDate : null),
+                TextInput::make('time')->label('Ώρα')->placeholder('14:30 ή TBD')->maxLength(50)->required(),
+                TextInput::make('flight')->label('Πτήση / Πλοίο')->maxLength(150),
+            ])
+            ->action(function (Transfer $record, array $data, Action $action): void {
+                $newId = (int) DB::selectOne('SELECT `Copy_Transfer`(?) AS newid', [$record->getKey()])->newid;
+
+                $copy = Transfer::query()->findOrFail($newId);
+                $copy->fill([
+                    'TransferType' => self::RETURN_TYPES[$record->TransferType],
+                    'From' => $record->To,
+                    'To' => $record->From,
+                    'TransferDate' => $data['date'],
+                    'TransferTime' => trim((string) $data['time']),
+                    'Flight_Ship_Num_From' => trim((string) ($data['flight'] ?? '')),
+                    'Status' => 'Pending',
+                    'CoachCompanyID' => '',
+                    'DriverNotes' => '',
+                    'Assistant' => '',
+                    'Assistant_Price' => null,
+                    'cID_Assistant' => null,
+                    'AssistantStatus' => '',
+                ])->save();
+
+                Notification::make()->success()->title('Δημιουργήθηκε η επιστροφή #'.$newId)->send();
+                $action->redirect(TransferResource::getUrl('edit', ['record' => $newId]));
+            });
+    }
+
     /**
      * Row button "SMS" (PHPRunner's sms field, Admin only): the job as a text for the driver, to copy
      * or open in WhatsApp with the driver's number.

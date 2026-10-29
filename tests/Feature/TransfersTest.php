@@ -412,6 +412,37 @@ class TransfersTest extends TestCase
         $this->assertSame(['Maria', 'Child seat'], [$copy->LeadName, $copy->Notes]);
     }
 
+    public function test_return_trip_in_one_step(): void
+    {
+        $this->actingAs($this->makeLegacyUser('Entry'));
+        $arrival = $this->transfer([
+            'TransferType' => 'Arrival', 'TransferDate' => Carbon::today(), 'TransferTime' => '10:00',
+            'From' => 'Athens Airport', 'To' => 'Hotel Plaka', 'Flight_Ship_Num_From' => 'A3 601',
+            'LeadName' => 'Maria', 'Pax' => 3, 'CoachCompanyID' => 'VITO', 'DriverNotes' => 'Sign', 'Assistant' => 'Eleni', 'Status' => 'Confirmed',
+        ]);
+        $tour = $this->transfer(['TransferType' => 'Tour']);
+
+        Livewire::test(ListTransfers::class)
+            ->assertTableActionVisible('returnTrip', $arrival)
+            ->assertTableActionHidden('returnTrip', $tour)
+            ->callTableAction('returnTrip', $arrival, data: ['date' => Carbon::today()->addDays(6)->toDateString(), 'time' => '18:15', 'flight' => 'A3 602'])
+            ->assertHasNoTableActionErrors()
+            ->assertRedirect();
+
+        $back = Transfer::query()->whereKeyNot([$arrival->getKey(), $tour->getKey()])->latest('TransferID')->firstOrFail();
+        $this->assertSame(
+            ['Departure', 'Hotel Plaka', 'Athens Airport', Carbon::today()->addDays(6)->toDateString(), '18:15', 'A3 602', 'Maria', 3, $this->customerId, 'Pending', '', '', ''],
+            [$back->TransferType, $back->From, $back->To, Carbon::parse($back->TransferDate)->toDateString(), $back->TransferTime, $back->Flight_Ship_Num_From,
+                $back->LeadName, (int) $back->Pax, (int) $back->cID_Customer, $back->Status, (string) $back->CoachCompanyID, (string) $back->DriverNotes, (string) $back->Assistant],
+        );
+        $this->assertSame('Arrival', $arrival->fresh()->TransferType);
+
+        // A departure before the arrival is refused.
+        Livewire::test(ListTransfers::class)
+            ->callTableAction('returnTrip', $arrival, data: ['date' => Carbon::yesterday()->toDateString(), 'time' => '09:00'])
+            ->assertHasTableActionErrors(['date']);
+    }
+
     public function test_closing_sales_and_purchases_on_selected_transfers(): void
     {
         $user = $this->makeLegacyUser('Entry');
