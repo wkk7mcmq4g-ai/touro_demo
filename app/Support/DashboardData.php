@@ -71,6 +71,31 @@ class DashboardData
         return ['count' => $query()->count(), 'next' => $next ? substr((string) $next, 0, 5) : null];
     }
 
+    /**
+     * The jobs of a day that have no vehicle yet, in pickup order (Dashboard "Χωρίς όχημα": a
+     * vehicle can be given right there).
+     *
+     * @return list<array{id: int, time: string, type: string, route: string, pax: string, customer: string, lead: string}>
+     */
+    public static function unassignedJobs(Carbon $day, int $limit = 40): array
+    {
+        return self::unassigned(self::active())
+            ->where('TransferDate', $day->toDateString())
+            ->with('customer:CID,SupplierName')
+            ->orderByRaw('`TransferTime_sort` IS NULL')->orderBy('TransferTime_sort')->orderBy('TransferID')
+            ->limit($limit)
+            ->get(['TransferID', 'TransferTime', 'TransferType', 'From', 'To', 'Pax', 'cID_Customer', 'LeadName'])
+            ->map(fn (Transfer $t): array => [
+                'id' => (int) $t->TransferID,
+                'time' => (string) $t->TransferTime,
+                'type' => (string) $t->TransferType,
+                'route' => $t->TransferType === 'Tour' ? (string) $t->To : trim($t->From.' → '.$t->To, ' →'),
+                'pax' => (string) $t->Pax,
+                'customer' => (string) ($t->customer?->SupplierName ?? ''),
+                'lead' => (string) $t->LeadName,
+            ])->all();
+    }
+
     public static function toSort(): int
     {
         return TransfersLoad::query()->where('Loaded', 0)->count();

@@ -2,7 +2,9 @@
 
 namespace App\Filament\Widgets\Dashboard;
 
+use App\Filament\Concerns\EditsTransferCells;
 use App\Filament\Pages\PartnerJobs;
+use App\Support\TransferCellEdit;
 use App\Filament\Resources\DailyTransfers\DailyTransfersResource;
 use App\Filament\Resources\Transfers\TransferResource;
 use App\Filament\Resources\TransfersToSort\TransferToSortResource;
@@ -15,6 +17,9 @@ use Throwable;
 /** What someone has to act on: jobs without a vehicle, open issues, bookings to sort, unread sends. */
 class NeedsAttention extends Widget
 {
+    // "Χωρίς όχημα": each job gets a button that opens the quick-edit window for its Coach.
+    use EditsTransferCells;
+
     protected static ?int $sort = 3;
 
     protected static bool $isLazy = false;
@@ -30,18 +35,21 @@ class NeedsAttention extends Widget
         $items = [];
 
         if (TransferResource::canAccess()) {
+            $canFix = TransferCellEdit::allowed();
             // No vehicle yet: today on its own line, first and red when something is open (most urgent).
             $today = DashboardData::unassignedOn(Carbon::today());
             $items[] = ['label' => 'Χωρίς όχημα · Σήμερα', 'count' => $today['count'], 'tone' => 'rose', 'icon' => 'heroicon-o-truck',
                 'urgent' => $today['count'] > 0,
                 'hint' => $today['count'] === 0 ? 'Όλα τα σημερινά έχουν όχημα'
                     : ($today['next'] ? 'Επόμενη παραλαβή χωρίς όχημα '.$today['next'] : 'Δεν έχει δοθεί όχημα'),
-                'url' => TransferResource::getUrl('index', ['tab' => 'today'])];
+                'url' => TransferResource::getUrl('index', ['tab' => 'today']),
+                'jobs' => $canFix && $today['count'] > 0 ? DashboardData::unassignedJobs(Carbon::today()) : [], 'open' => true];
             $tomorrow = DashboardData::unassignedOn(Carbon::tomorrow());
             $items[] = ['label' => 'Χωρίς όχημα · Αύριο', 'count' => $tomorrow['count'], 'tone' => 'amber', 'icon' => 'heroicon-o-truck',
                 'hint' => $tomorrow['count'] === 0 ? 'Όλα τα αυριανά έχουν όχημα'
                     : ($tomorrow['next'] ? 'Πρώτη παραλαβή '.$tomorrow['next'] : 'Δεν έχει δοθεί όχημα'),
-                'url' => TransferResource::getUrl('index', ['tab' => 'tomorrow'])];
+                'url' => TransferResource::getUrl('index', ['tab' => 'tomorrow']),
+                'jobs' => $canFix && $tomorrow['count'] > 0 ? DashboardData::unassignedJobs(Carbon::tomorrow()) : [], 'open' => false];
             $items[] = ['label' => 'Θέματα (7 ημέρες)', 'hint' => 'TBD, κενή διαδρομή ή πτήση', 'count' => DashboardData::issuesNextDays(),
                 'tone' => 'rose', 'icon' => 'heroicon-o-exclamation-triangle', 'url' => TransferResource::getUrl('index', ['tab' => 'issues'])];
         }
@@ -72,6 +80,6 @@ class NeedsAttention extends Widget
             }
         }
 
-        return ['items' => $items];
+        return ['items' => $items, 'canFix' => TransferResource::canAccess() && TransferCellEdit::allowed()];
     }
 }

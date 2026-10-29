@@ -57,4 +57,21 @@ class DashboardTodayTest extends TestCase
         DB::table('transfers')->where('TransferDate', $today)->update(['CoachCompanyID' => 'VITO']);
         Livewire::test(NeedsAttention::class)->assertSee('Όλα τα σημερινά έχουν όχημα')->assertDontSeeHtml('is-urgent');
     }
+
+    public function test_a_vehicle_is_given_right_on_the_dashboard(): void
+    {
+        $this->emptyTables(['transfers', 'counterparties', 'vehicles']);
+        DB::table('counterparties')->insert(['CounterShortName' => 'Blue', 'SupplierName' => 'Blue', 'CoachName' => 'BLUE BUS', 'IsCoach' => 1]);
+        $this->actingAs($this->makeLegacyUser('Admin'));
+        $id = DB::table('transfers')->insertGetId(['TransferDate' => now()->toDateString(), 'TransferTime' => '23:50', 'TransferType' => 'Arrival',
+            'From' => 'Airport', 'To' => 'Hotel Z', 'Pax' => '3', 'Status' => 'Pending', 'CoachCompanyID' => ''], 'TransferID');
+
+        // Today's job without a vehicle is listed with its Όχημα button and the quick-edit window is on the page.
+        Livewire::test(NeedsAttention::class)
+            ->assertSee('Airport → Hotel Z')->assertSee('#'.$id)
+            ->assertSeeHtml('myat-attention-job-go')->assertSeeHtml('saveTransferCell')
+            ->call('saveTransferCell', $id, 'CoachCompanyID', 'BLUE BUS')->assertReturned(null)
+            ->assertSee('Όλα τα σημερινά έχουν όχημα')->assertDontSee('Hotel Z');
+        $this->assertSame('BLUE BUS', DB::table('transfers')->where('TransferID', $id)->value('CoachCompanyID'));
+    }
 }
