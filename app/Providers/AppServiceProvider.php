@@ -6,6 +6,7 @@ use App\Auth\PhpRunnerUserProvider;
 use App\Filament\Resources\Transfers\Pages\ListTransfers;
 use App\Listeners\LogAccess;
 use App\Support\ActivityLog;
+use App\Support\TransferCellEdit;
 use App\Navigation\PersonalNavigationManager;
 use App\Support\ExcelFilters;
 use App\Support\Help;
@@ -157,9 +158,10 @@ class AppServiceProvider extends ServiceProvider
         FilamentView::registerRenderHook(TablesRenderHook::TOOLBAR_SEARCH_BEFORE, fn (): string => Livewire::current() instanceof ListTransfers
             ? view('filament.transfers.date-shortcuts')->render().view('filament.transfers.cancelled-toggle')->render() : '');
 
-        // Transfers: the Coach window opened by a double-click on a Coach cell (stays in the browser).
-        FilamentView::registerRenderHook(PanelsRenderHook::PAGE_END, fn (): string => auth()->user()?->may('transfers', 'edit')
-            ? view('filament.transfers.coach-editor')->render() : '', scopes: ListTransfers::class);
+        // Transfers: the quick-edit window opened by a double-click on a Coach / Status / Time /
+        // Assistant / Driver Notes cell (stays in the browser until Αποθήκευση).
+        FilamentView::registerRenderHook(PanelsRenderHook::PAGE_END, fn (): string => TransferCellEdit::allowed()
+            ? view('filament.transfers.cell-editor')->render() : '', scopes: ListTransfers::class);
 
         FilamentView::registerRenderHook(PanelsRenderHook::BODY_END, fn () => auth()->check() ? view('filament.tables.excel-and-widths').view('filament.tables.immersive') : '');
 

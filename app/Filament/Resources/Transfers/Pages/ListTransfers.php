@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Transfers\Pages;
 
 use App\Filament\Concerns\CopiesPhpRunnerLayout;
+use App\Filament\Concerns\EditsTransferCells;
 use App\Filament\Concerns\PinsFlagsColumn;
 use App\Filament\Resources\Transfers\Actions\TransferActions;
 use App\Filament\Resources\Transfers\Tables\TransfersTable;
@@ -28,6 +29,7 @@ use Livewire\Attributes\Session;
 
 class ListTransfers extends ListRecords
 {
+    use EditsTransferCells;
     use CopiesPhpRunnerLayout;
     use ExposesTableToWidgets;
     use PinsFlagsColumn;
@@ -59,22 +61,10 @@ class ListTransfers extends ListRecords
      */
     public const HIDE_CANCELLED = 'myat.transfers.hide_cancelled';
 
-    /**
-     * The Coach window (double-click in the list): saved through the model, so the same rules run
-     * as on the form (Update_Transfers_Price, own vehicle = no purchase price, the DB triggers).
-     */
-    public function setCoach(int $id, ?string $coach): void
+    /** Kept for the Coach window of #32: same as saveTransferCell for the Coach. */
+    public function setCoach(int $id, ?string $coach): ?string
     {
-        abort_unless((bool) auth()->user()?->may('transfers', 'edit'), 403);
-
-        $coach = trim((string) $coach);
-        abort_unless($coach === '' || array_key_exists($coach, Lookups::coaches()), 422);
-
-        $transfer = Transfer::query()->findOrFail($id);
-        $transfer->CoachCompanyID = $coach;
-        $transfer->save();
-
-        Notification::make()->success()->title('#'.$id.' · Coach: '.($coach !== '' ? $coach : '—'))->send();
+        return $this->saveTransferCell($id, 'CoachCompanyID', $coach);
     }
 
     public function showsCancelled(): bool

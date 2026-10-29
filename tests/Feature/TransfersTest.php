@@ -280,10 +280,45 @@ class TransfersTest extends TestCase
         $this->assertSame('', $transfer->fresh()->CoachCompanyID);
 
         // Only names from the coach list.
-        Livewire::test(ListTransfers::class)->call('setCoach', $transfer->getKey(), 'Nope')->assertStatus(422);
+        Livewire::test(ListTransfers::class)->call('setCoach', $transfer->getKey(), 'Nope')
+            ->assertReturned('Το «Nope» δεν είναι στη λίστα οχημάτων.');
         $this->assertSame('', $transfer->fresh()->CoachCompanyID);
 
         DB::table('counterparties')->where('CID', $coachId)->delete();
+    }
+
+    public function test_quick_edit_of_status_time_assistant_and_driver_notes(): void
+    {
+        $this->actingAs($this->makeLegacyUser('Admin'));
+        $transfer = $this->transfer(['Notes' => 'Child seat', 'DriverNotes' => '', 'Assistant' => '']);
+
+        // Every quick-edit cell carries its full value for the window (escaped into the attribute).
+        $html = Livewire::test(ListTransfers::class)->html();
+        foreach (['CoachCompanyID', 'Status', 'TransferTime', 'Assistant', 'DriverNotes'] as $field) {
+            $this->assertStringContainsString('&quot;field&quot;:&quot;'.$field.'&quot;', $html);
+        }
+        $this->assertStringContainsString('&quot;notes&quot;:&quot;Child seat&quot;', $html);
+
+        $save = fn (string $field, ?string $value) => Livewire::test(ListTransfers::class)->call('saveTransferCell', $transfer->getKey(), $field, $value);
+
+        $save('Status', 'Completed')->assertReturned(null);
+        $save('TransferTime', '16:45')->assertReturned(null);
+        $save('Assistant', 'Maria (new guide)')->assertReturned(null); // free input, like the form
+        $save('DriverNotes', "Line 1\nLine 2")->assertReturned(null);
+        $fresh = $transfer->fresh();
+        $this->assertSame(['Completed', '16:45', 'Maria (new guide)', "Line 1\nLine 2"], [$fresh->Status, $fresh->TransferTime, $fresh->Assistant, $fresh->DriverNotes]);
+
+        // The form's checks: required, from the list, length; nothing saved when refused.
+        $save('Status', 'Whatever')->assertReturned('Το «Whatever» δεν είναι στη λίστα.');
+        $save('Status', '')->assertReturned('Το Status είναι υποχρεωτικό.');
+        $save('TransferTime', '  ')->assertReturned('Η ώρα είναι υποχρεωτική.');
+        $save('TransferTime', str_repeat('9', 51))->assertReturned('Έως 50 χαρακτήρες.');
+        $this->assertSame(['Completed', '16:45'], [$transfer->fresh()->Status, $transfer->fresh()->TransferTime]);
+
+        // Only fields of the window, only for users who may edit transfers.
+        Livewire::test(ListTransfers::class)->call('saveTransferCell', $transfer->getKey(), 'SalePrice', '1')->assertStatus(422);
+        $this->actingAs($this->makeLegacyUser('Drivers'));
+        $this->assertSame([], \App\Support\TransferCellEdit::cellAttributes($transfer, 'Status'));
     }
 
     public function test_driver_column_wider_search_and_review_link_as_in_phprunner(): void

@@ -8,6 +8,7 @@ use App\Filament\Resources\Transfers\TransferResource;
 use App\Models\Transfer;
 use App\Support\FilterValues;
 use App\Support\Lookups;
+use App\Support\TransferCellEdit;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
@@ -143,17 +144,12 @@ class TransfersTable
     }
 
     /**
-     * Coach: double-click the cell to change it in a small window (users who may edit transfers).
-     * The window lives in the browser (filament/transfers/coach-editor), so opening and Cancel
-     * cost nothing; Αποθήκευση calls ListTransfers::setCoach.
+     * Double-click the cell to change the value in a small window (App\Support\TransferCellEdit,
+     * view filament/transfers/cell-editor): Coach, Status, Transfer Time, Assistant, Driver Notes.
      */
-    private static function coachColumn(TextColumn $column): TextColumn
+    private static function quickEdit(Column $column, string $field): Column
     {
-        return $column->extraCellAttributes(fn (Transfer $record): array => auth()->user()?->may('transfers', 'edit') ? [
-            'class' => 'myat-dblclick-edit',
-            'title' => 'Διπλό κλικ για αλλαγή',
-            'x-on:dblclick.prevent' => "\$dispatch('myat-coach', { id: ".(int) $record->getKey().", coach: \$el.innerText.trim() })",
-        ] : [], merge: true);
+        return $column->extraCellAttributes(fn (Transfer $record): array => TransferCellEdit::cellAttributes($record, $field), merge: true);
     }
 
     /**
@@ -219,7 +215,7 @@ class TransfersTable
             $text('Pax', 'Pax'),
             $dot('TransferType', 'Type', 'TransferType'),
             TextColumn::make('TransferDate')->label('Transfer Date')->date('d/m/Y')->sortable()->toggleable(),
-            $text('TransferTime', 'Transfer Time')->sortable(query: fn (Builder $query, string $direction) => $query->orderBy('TransferTime_sort', $direction)),
+            self::quickEdit($text('TransferTime', 'Transfer Time')->sortable(query: fn (Builder $query, string $direction) => $query->orderBy('TransferTime_sort', $direction)), 'TransferTime'),
             $text('From', 'From', 40)->searchable()->sortable(),
             $text('To', 'To', 40)->searchable()->sortable(),
             $text('Flight_Ship_Num_From', 'Flight / Ship', 30)->searchable(),
@@ -230,7 +226,7 @@ class TransfersTable
             $dot('AssistantStatus', 'Guide status', 'AssistantStatus'),
             $money('Assistant_Price', 'Guide Rate'),
             $dot('CarTypeID', 'Car Type', 'CarType'),
-            self::coachColumn($text('CoachCompanyID', 'Coach')->sortable()),
+            self::quickEdit($text('CoachCompanyID', 'Coach')->sortable(), 'CoachCompanyID'),
             // PHPRunner's DriverName (datasource; there it was searchable only): the vehicle's driver
             // that day from the assignments, or the partner for an outside coach (Get_Driver_name).
             TextColumn::make('DriverName')->label('Οδηγός')->toggleable()->placeholder('')
@@ -245,7 +241,7 @@ class TransfersTable
                 ->when(strlen($digits = preg_replace('/\D/', '', $search)) >= 4, fn (Builder $q) => $q
                     ->orWhereRaw("REGEXP_REPLACE(`transfers`.`LeadPhone`, '[^0-9]', '') LIKE ?", ['%'.$digits.'%']))),
             $text('PassengerName', 'Passenger List', 40)->searchable(),
-            $dot('Status', 'Status', 'Status'),
+            self::quickEdit($dot('Status', 'Status', 'Status'), 'Status'),
             $money('PlatformPrice', 'Τιμή Πλατφ.', total: true),
             $money('Assets', 'Απαιτ.', total: true),
             $money('Liabilities', 'Υποχρ.', total: true),
@@ -267,9 +263,9 @@ class TransfersTable
             $text('VPOS', 'Kωδ. πληρ.'),
             $text('SalesInvoiceNum', 'ΑΑ Εσόδων')->searchable(),
             $text('PurchaseInvoiceNum', 'ΑΑ Εξόδων')->searchable(),
-            $text('DriverNotes', 'Driver Notes', 40)->searchable(),
+            self::quickEdit($text('DriverNotes', 'Driver Notes', 40)->searchable(), 'DriverNotes'),
             $text('PaymentOnHoldFlag', 'Αναμ. Έκδ.'),
-            $text('Assistant', 'Assistant', 30),
+            self::quickEdit($text('Assistant', 'Assistant', 30), 'Assistant'),
             $text('Platform', 'Πλατφ.'),
             $text('PaymentType', 'Τρόπος πληρ.'),
             TextColumn::make('Voucher_StartDt')->label('Ημερομηνία έναρξης')->getStateUsing(fn (Transfer $record) => TransferCellColors::voucherValue($record, 'Voucher_StartDt'))->date('d/m/Y')->toggleable(),

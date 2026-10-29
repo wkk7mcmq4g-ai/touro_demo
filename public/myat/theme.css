@@ -3956,7 +3956,7 @@ html.myat-tl-full .fi-main { padding-top:.5rem; }
 .myat-dblclick-edit { cursor: cell; user-select: none; }
 .myat-dblclick-edit:hover { box-shadow: inset 0 0 0 1px var(--primary-300); border-radius: .375rem; }
 
-/* Transfers: the Coach window (double-click a Coach cell; filament/transfers/coach-editor). */
+/* Transfers: the quick-edit window (double-click a Coach / Status / Time / Assistant / Driver Notes cell; filament/transfers/cell-editor). */
 .myat-coach-wrap { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 1rem; }
 .myat-coach-backdrop { position: absolute; inset: 0; background: rgb(15 23 42 / .45); }
 .myat-coach { position: relative; width: min(26rem, 100%); max-height: min(34rem, calc(100dvh - 2rem)); display: flex; flex-direction: column; gap: .75rem;
@@ -3974,8 +3974,9 @@ html.myat-tl-full .fi-main { padding-top:.5rem; }
 .myat-coach-list li { padding: .45rem .6rem; border-radius: .45rem; font-size: .875rem; cursor: pointer; color: var(--gray-800); }
 .myat-coach-list li:hover { background: var(--gray-100); }
 .myat-coach-list li.is-on { background: var(--primary-50); color: var(--primary-700); font-weight: 600; }
-.myat-coach-list li:first-child { color: var(--gray-500); font-style: italic; }
-.myat-coach-list li:first-child.is-on { color: var(--primary-700); }
+.myat-coach-list li.is-empty { color: var(--gray-500); font-style: italic; }
+.myat-coach-list li.is-empty.is-on { color: var(--primary-700); }
+.myat-coach-list li.is-new { color: var(--primary-700); }
 .myat-coach-list .myat-coach-none { cursor: default; color: var(--gray-500); }
 .myat-coach-hint { font-size: .75rem; color: var(--gray-500); }
 .myat-coach-actions { display: flex; gap: .5rem; }
@@ -4018,3 +4019,13 @@ html.myat-tl-full .fi-main { padding-top:.5rem; }
 .dark .myat-activity-meta dd { color: var(--gray-100); }
 .dark .myat-activity-sql { background: var(--gray-800); border-color: var(--gray-700); }
 .dark .myat-activity-table th, .dark .myat-activity-table td { border-color: var(--gray-700); }
+
+/* Quick-edit window: text fields, the Driver Notes copy button and refusals. */
+.myat-cell-body { display: flex; flex-direction: column; gap: .5rem; min-height: 0; flex: 1; }
+.myat-cell-input { width: 100%; border: 1px solid var(--gray-300); border-radius: .6rem; padding: .55rem .7rem; font-size: .9rem; background: #fff; color: var(--gray-900); }
+.myat-cell-input:focus { outline: none; border-color: var(--primary-500); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-500) 18%, transparent); }
+textarea.myat-cell-input { resize: vertical; min-height: 7rem; }
+.myat-cell-copy { align-self: flex-start; font-size: .78rem; font-weight: 600; color: var(--primary-700); padding: .2rem .4rem; border-radius: .4rem; }
+.myat-cell-copy:hover { background: var(--primary-50); }
+.myat-cell-error { font-size: .8rem; font-weight: 600; color: var(--danger-600, #dc2626); }
+.dark .myat-cell-input { background: var(--gray-900); border-color: var(--gray-700); color: var(--gray-100); }
