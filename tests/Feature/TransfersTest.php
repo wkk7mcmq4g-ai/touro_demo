@@ -321,6 +321,28 @@ class TransfersTest extends TestCase
         $this->assertSame([], \App\Support\TransferCellEdit::cellAttributes($transfer, 'Status'));
     }
 
+    public function test_quick_find_by_number_passenger_phone_or_booking_code(): void
+    {
+        $this->actingAs($this->makeLegacyUser('Entry'));
+        $coming = $this->transfer(['LeadName' => 'Maria Papadopoulou', 'LeadPhone' => '+30 697 712 3456', 'SupplierCode' => 'GYG-ABC123', 'TransferDate' => Carbon::today()->addDays(3)]);
+        $past = $this->transfer(['LeadName' => 'Maria Other', 'TransferDate' => Carbon::today()->subDays(3)]);
+
+        $find = fn (string $q): array => TransferResource::getGlobalSearchResults($q)->map(fn ($r) => $r->title)->values()->all();
+
+        $this->assertSame(['#'.$coming->TransferID.' · Maria Papadopoulou'], array_slice($find((string) $coming->TransferID), 0, 1), 'the exact number first');
+        $this->assertSame(['#'.$coming->TransferID.' · Maria Papadopoulou', '#'.$past->TransferID.' · Maria Other'], $find('maria'), 'coming ones before past ones');
+        $this->assertSame(['#'.$coming->TransferID.' · Maria Papadopoulou'], $find('6977123456'));
+        $this->assertSame(['#'.$coming->TransferID.' · Maria Papadopoulou'], $find('abc123'));
+        $this->assertSame([], $find('x'));
+
+        $first = TransferResource::getGlobalSearchResults('papadopoulou')->first();
+        $this->assertSame(TransferResource::getUrl('edit', ['record' => $coming]), $first->url);
+        $this->assertSame('Athens Airport → Hotel Grande Bretagne', $first->details['Διαδρομή']);
+
+        // Ctrl/⌘+K opens the search box from any screen.
+        $this->assertSame(['command+k', 'ctrl+k'], \Filament\Facades\Filament::getPanel('admin')->getGlobalSearchKeyBindings());
+    }
+
     public function test_driver_column_wider_search_and_review_link_as_in_phprunner(): void
     {
         $this->actingAs($this->makeLegacyUser('Admin'));

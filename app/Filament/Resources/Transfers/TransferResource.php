@@ -17,12 +17,14 @@ use App\Filament\Resources\Transfers\Schemas\TransferForm;
 use App\Filament\Resources\Transfers\Tables\TransfersTable;
 use App\Models\Transfer;
 use BackedEnum;
+use Filament\GlobalSearch\GlobalSearchResult;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 use UnitEnum;
 
 class TransferResource extends Resource
@@ -50,6 +52,52 @@ class TransferResource extends Resource
             ->where('TransferDate', '>=', Transfer::ARCHIVE_BEFORE)
             ->withoutBlobs()
             ->with('customer:CID,SupplierName');
+    }
+
+    /**
+     * Quick find (search box at the top of the side menu, Ctrl/⌘+K from any screen): a transfer by
+     * its number, the passenger's name (lead or list), the phone (digits only, as PHPRunner's
+     * PhoneClean) or the supplier's booking code. The exact number first, then the coming ones by
+     * date, then past ones (latest first). Opens the transfer.
+     */
+    public static function getGlobalSearchResults(string $search): Collection
+    {
+        $search = trim($search);
+        if (mb_strlen($search) < 2 && ! ctype_digit($search)) {
+            return collect();
+        }
+
+        $digits = preg_replace('/\D/', '', $search);
+        $like = '%'.$search.'%';
+
+        return static::getEloquentQuery()
+            ->where(function (Builder $q) use ($search, $digits, $like): void {
+                if (ctype_digit($search)) {
+                    $q->orWhere('TransferID', (int) $search);
+                }
+                $q->orWhere('LeadName', 'like', $like)
+                    ->orWhere('PassengerName', 'like', $like)
+                    ->orWhere('SupplierCode', 'like', $like);
+                if (strlen($digits) >= 6) {
+                    $q->orWhereRaw("REGEXP_REPLACE(`LeadPhone`, '[^0-9]', '') LIKE ?", ['%'.$digits.'%']);
+                }
+            })
+            ->orderByRaw('`TransferID` = ? DESC', [ctype_digit($search) ? (int) $search : 0])
+            ->orderByRaw('`TransferDate` >= CURRENT_DATE DESC')
+            ->orderByRaw('IF(`TransferDate` >= CURRENT_DATE, `TransferDate`, NULL) ASC')
+            ->orderByDesc('TransferDate')
+            ->limit(8)
+            ->get(['TransferID', 'TransferDate', 'TransferTime', 'TransferType', 'From', 'To', 'LeadName', 'Status', 'cID_Customer'])
+            ->map(fn (Transfer $t): GlobalSearchResult => new GlobalSearchResult(
+                title: '#'.$t->TransferID.($t->LeadName ? ' · '.$t->LeadName : ''),
+                url: static::getUrl('edit', ['record' => $t]),
+                details: array_filter([
+                    'Πότε' => trim(($t->TransferDate?->format('d/m/Y') ?? '').' '.$t->TransferTime),
+                    'Διαδρομή' => $t->TransferType === 'Tour' ? (string) $t->To : trim($t->From.' → '.$t->To, ' →'),
+                    'Πελάτης' => (string) ($t->customer?->SupplierName ?? ''),
+                    'Status' => (string) $t->Status,
+                ]),
+            ));
     }
 
     public static function getRecordTitle(?Model $record): string

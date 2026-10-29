@@ -36,6 +36,9 @@ class Theme
             ->font('Manrope', url: asset('myat/fonts.css'), provider: LocalFontProvider::class)
             ->topbar(false)
             ->globalSearch(position: GlobalSearchPosition::Sidebar)
+            // Quick find from any screen (TransferResource::getGlobalSearchResults).
+            ->globalSearchKeyBindings(['command+k', 'ctrl+k'])
+            ->globalSearchFieldSuffix(fn (): string => str_contains((string) request()->userAgent(), 'Mac') ? '⌘K' : 'Ctrl K')
             ->userMenu(position: UserMenuPosition::Sidebar)
             ->renderHook(PanelsRenderHook::STYLES_AFTER, fn (): string => '<link rel="stylesheet" href="'.asset('myat/theme.css').'?v='.@filemtime(public_path('myat/theme.css')).'">'.self::colorVariables())
             ->defaultAvatarProvider(InitialsAvatarProvider::class)
